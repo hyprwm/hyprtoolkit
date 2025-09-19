@@ -87,6 +87,9 @@ CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData
             }
         }
 
+        if (m_waylandState.logicalSize == Vector2D{w, h})
+            return;
+
         configure({w, h}, m_waylandState.serial);
     });
 
