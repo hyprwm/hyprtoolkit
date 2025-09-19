@@ -6,6 +6,10 @@
 
 using namespace Hyprtoolkit;
 
+CColumnLayoutElement::CColumnLayoutElement(const SColumnLayoutData& data) : m_data(data) {
+    ;
+}
+
 void CColumnLayoutElement::paint() {
     ; // no-op
 }
@@ -44,13 +48,13 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 
         if (usedY + cSize.y > MAX_Y) {
             // we exceeded our available space.
-            if (!child->minimumSize()) {
+            if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
                 child->m_failedPositioning = true;
                 continue;
             }
 
-            cSize = *child->minimumSize();
+            cSize = *child->minimumSize(box.size());
 
             if (usedY + cSize.y > MAX_Y) {
                 // doesn't fit: disable and expand the last if possible
@@ -59,7 +63,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
                     // try to expand last child
                     const auto& lastChild = C.at(i - 1);
 
-                    if (lastChild->maximumSize() && heights.at(i - 1) + MAX_Y - usedY > lastChild->maximumSize()->y)
+                    if (lastChild->maximumSize(box.size()) && heights.at(i - 1) + MAX_Y - usedY > lastChild->maximumSize(box.size())->y)
                         continue; // too bad, we'll have a gap
 
                     heights.at(i - 1) += MAX_Y - usedY;
@@ -101,7 +105,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
             continue;
 
         Vector2D   cSize   = childSize(child);
-        const auto maxSize = child->maximumSize();
+        const auto maxSize = child->maximumSize(box.size());
 
         bool       EXPANDS_W = box.w > cSize.x;
 
@@ -126,24 +130,34 @@ Hyprutils::Math::Vector2D CColumnLayoutElement::size() {
 }
 
 Hyprutils::Math::Vector2D CColumnLayoutElement::childSize(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (child->preferredSize())
-        return *child->preferredSize();
-    else if (child->minimumSize())
-        return *child->minimumSize();
+    if (child->preferredSize(m_position.size()))
+        return *child->preferredSize(m_position.size());
+    else if (child->minimumSize(m_position.size()))
+        return *child->minimumSize(m_position.size());
     return {-1, -1};
 }
 
-std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize() {
+std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
+    auto calc = m_data.size.calculate(parent);
+
+    if (calc.x != -1 && calc.y != -1)
+        return calc;
+
     Vector2D max;
     for (const auto& child : m_children) {
         max.x = std::max(childSize(child).x, max.x);
         max.y += childSize(child).y;
     }
 
-    return max;
+    if (calc.x == -1)
+        calc.x = max.x;
+    if (calc.y == -1)
+        calc.y = max.y;
+
+    return calc;
 }
 
-std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::minimumSize() {
+std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
     Vector2D min;
     for (const auto& child : m_children) {
         min.x = std::max(min.x, childSize(child).x);

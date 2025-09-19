@@ -10,15 +10,15 @@ void IElement::setAbsolutePosition(const Hyprutils::Math::Vector2D& offset) {
     m_absoluteOffset = offset;
 }
 
-std::optional<Hyprutils::Math::Vector2D> IElement::preferredSize() {
+std::optional<Hyprutils::Math::Vector2D> IElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
     return std::nullopt;
 }
 
-std::optional<Hyprutils::Math::Vector2D> IElement::minimumSize() {
+std::optional<Hyprutils::Math::Vector2D> IElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
     return std::nullopt;
 }
 
-std::optional<Hyprutils::Math::Vector2D> IElement::maximumSize() {
+std::optional<Hyprutils::Math::Vector2D> IElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {
     return std::nullopt;
 }
 

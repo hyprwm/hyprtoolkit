@@ -26,9 +26,9 @@ namespace Hyprtoolkit {
         virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
 
         /* Sizes for auto positioning in layouts */
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize();
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize();
-        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize();
+        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual void                                     setGrow(bool grow);
 
         //

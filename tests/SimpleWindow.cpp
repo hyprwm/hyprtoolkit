@@ -20,13 +20,11 @@ int main(int argc, char** argv, char** envp) {
     //
     auto window = backend->openWindow(Hyprtoolkit::SWindowCreationData{
         .preferredSize = Vector2D{640, 480},
-        .minSize       = Vector2D{640, 480},
-        .maxSize       = Vector2D{640, 480},
         .title         = "Hello World!",
         .class_        = "hyprtoolkit",
     });
 
-    window->m_rootElement->m_children.emplace_back(makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
+    window->m_rootElement->m_children.emplace_back(makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
         .color = Hyprgraphics::CColor::SSRGB{.r = 1.F, .g = 0.2F, .b = 0.2F},
     }));
 
@@ -34,35 +32,35 @@ int main(int argc, char** argv, char** envp) {
 
     window->m_rootElement->m_children.emplace_back(layout);
 
-    auto rect3 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.7F, .b = 0.7F},
+    auto rect3 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.7F, .b = 0.7F},
         .rounding = 10,
-        .size = {150, 150},
+        .size     = {Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, {150, 150}},
     });
 
-    auto rect4 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.2F, .b = 0.7F},
+    auto rect4 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.2F, .b = 0.7F},
         .rounding = 10,
-        .size = {50, 50},
+        .size     = {Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}},
     });
 
-    auto layout2 = makeShared<Hyprtoolkit::CColumnLayoutElement>();
+    auto layout2 = makeShared<Hyprtoolkit::CColumnLayoutElement>(
+        Hyprtoolkit::SColumnLayoutData{.size = {Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}}});
 
-    layout2->setGrow(true);
-
-    auto rect2a = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 1.F, .b = 0.2F},
+    auto rect2a = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 1.F, .b = 0.2F},
         .rounding = 10,
-        .size = {250, 350},
+        .size     = {Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, {250, 350}},
     });
 
-    auto rect2b = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.2F},
+    auto rect2b = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.2F},
         .rounding = 10,
-        .size = {50, 50},
+        .size     = {Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, Hyprtoolkit::CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}},
     });
 
     rect2b->setGrow(true);
+    rect4->setGrow(true);
 
     layout2->m_children.emplace_back(rect2a);
     layout2->m_children.emplace_back(rect2b);

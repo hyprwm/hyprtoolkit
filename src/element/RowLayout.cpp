@@ -6,6 +6,10 @@
 
 using namespace Hyprtoolkit;
 
+CRowLayoutElement::CRowLayoutElement(const SRowLayoutData& data) : m_data(data) {
+    ;
+}
+
 void CRowLayoutElement::paint() {
     ; // no-op
 }
@@ -44,13 +48,13 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 
         if (usedX + cSize.x > MAX_X) {
             // we exceeded our available space.
-            if (!child->minimumSize()) {
+            if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
                 child->m_failedPositioning = true;
                 continue;
             }
 
-            cSize = *child->minimumSize();
+            cSize = *child->minimumSize(box.size());
 
             if (usedX + cSize.x > MAX_X) {
                 // doesn't fit: disable and expand the last if possible
@@ -59,7 +63,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
                     // try to expand last child
                     const auto& lastChild = C.at(i - 1);
 
-                    if (lastChild->maximumSize() && widths.at(i - 1) + MAX_X - usedX > lastChild->maximumSize()->x)
+                    if (lastChild->maximumSize(box.size()) && widths.at(i - 1) + MAX_X - usedX > lastChild->maximumSize(box.size())->x)
                         continue; // too bad, we'll have a gap
 
                     widths.at(i - 1) += MAX_X - usedX;
@@ -101,7 +105,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
             continue;
 
         Vector2D   cSize   = childSize(child);
-        const auto maxSize = child->maximumSize();
+        const auto maxSize = child->maximumSize(box.size());
 
         bool       EXPANDS_H = box.h > cSize.y;
 
@@ -122,10 +126,10 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 }
 
 Hyprutils::Math::Vector2D CRowLayoutElement::childSize(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (child->preferredSize())
-        return *child->preferredSize();
-    else if (child->minimumSize())
-        return *child->minimumSize();
+    if (child->preferredSize(m_position.size()))
+        return *child->preferredSize(m_position.size());
+    else if (child->minimumSize(m_position.size()))
+        return *child->minimumSize(m_position.size());
     return {-1, -1};
 }
 
@@ -133,17 +137,27 @@ Hyprutils::Math::Vector2D CRowLayoutElement::size() {
     return m_position.size();
 }
 
-std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::preferredSize() {
+std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
+    auto calc = m_data.size.calculate(parent);
+
+    if (calc.x != -1 && calc.y != -1)
+        return calc;
+
     Vector2D max;
     for (const auto& child : m_children) {
         max.x += childSize(child).x;
         max.y = std::max(max.y, childSize(child).y);
     }
 
-    return max;
+    if (calc.x == -1)
+        calc.x = max.x;
+    if (calc.y == -1)
+        calc.y = max.y;
+
+    return calc;
 }
 
-std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::minimumSize() {
+std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
     Vector2D min;
     for (const auto& child : m_children) {
         min.y = std::max(min.y, childSize(child).y);
