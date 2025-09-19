@@ -21,11 +21,6 @@ void CRectangleElement::paint() {
 void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
     m_position = box;
 
-    if (m_data.size != Vector2D{}) {
-        m_position.w = m_data.size.x;
-        m_position.h = m_data.size.y;
-    }
-
     const auto C = m_children;
 
     for (const auto& c : C) {
@@ -35,4 +30,12 @@ void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
 
 Hyprutils::Math::Vector2D CRectangleElement::size() {
     return m_position.size();
+}
+
+std::optional<Vector2D> CRectangleElement::preferredSize() {
+    return m_data.size;
+}
+
+std::optional<Vector2D> CRectangleElement::minimumSize() {
+    return Vector2D{0, 0};
 }

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <optional>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/math/Box.hpp>
@@ -24,10 +25,19 @@ namespace Hyprtoolkit {
         virtual void                      setPositionMode(ePositionMode mode);
         virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
 
+        /* Sizes for auto positioning in layouts */
+        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize();
+        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize();
+        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize();
+        virtual void                                     setGrow(bool grow);
+
         //
         std::vector<Hyprutils::Memory::CSharedPointer<IElement>> m_children;
 
         ePositionMode                                            m_positionMode = HT_POSITION_AUTO;
         Hyprutils::Math::Vector2D                                m_absoluteOffset;
+        bool                                                     m_grow = false;
+
+        bool                                                     m_failedPositioning = false;
     };
 };

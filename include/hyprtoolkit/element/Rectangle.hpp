@@ -18,12 +18,14 @@ namespace Hyprtoolkit {
         virtual ~CRectangleElement() = default;
 
       private:
-        virtual void                      paint();
-        virtual void                      reposition(const Hyprutils::Math::CBox& box);
-        virtual Hyprutils::Math::Vector2D size();
+        virtual void                                     paint();
+        virtual void                                     reposition(const Hyprutils::Math::CBox& box);
+        virtual Hyprutils::Math::Vector2D                size();
+        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize();
+        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize();
 
-        SRectangleData                    m_data;
+        SRectangleData                                   m_data;
 
-        Hyprutils::Math::CBox             m_position;
+        Hyprutils::Math::CBox                            m_position;
     };
 };

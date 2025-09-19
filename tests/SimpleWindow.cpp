@@ -1,6 +1,8 @@
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/window/Window.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
+#include <hyprtoolkit/element/RowLayout.hpp>
+#include <hyprtoolkit/element/ColumnLayout.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -28,22 +30,45 @@ int main(int argc, char** argv, char** envp) {
         .color = Hyprgraphics::CColor::SSRGB{.r = 1.F, .g = 0.2F, .b = 0.2F},
     }));
 
-    auto rect2 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 1.F, .b = 0.2F},
-        .rounding = 10,
-        .size = {250, 250},
-    });
-    rect2->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
-    window->m_rootElement->m_children.emplace_back(rect2);
+    auto layout = makeShared<Hyprtoolkit::CRowLayoutElement>();
+
+    window->m_rootElement->m_children.emplace_back(layout);
 
     auto rect3 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.2F, .b = 1.F},
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.7F, .b = 0.7F},
         .rounding = 10,
-        .size = {100, 100},
+        .size = {150, 150},
     });
-    rect3->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
-    rect3->setAbsolutePosition({75, 75});
-    rect2->m_children.emplace_back(rect3);
+
+    auto rect4 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.2F, .b = 0.7F},
+        .rounding = 10,
+        .size = {50, 50},
+    });
+
+    auto layout2 = makeShared<Hyprtoolkit::CColumnLayoutElement>();
+
+    layout2->setGrow(true);
+
+    auto rect2a = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 1.F, .b = 0.2F},
+        .rounding = 10,
+        .size = {250, 350},
+    });
+
+    auto rect2b = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::CRectangleElement::SRectangleData{
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.2F},
+        .rounding = 10,
+        .size = {50, 50},
+    });
+
+    rect2b->setGrow(true);
+
+    layout2->m_children.emplace_back(rect2a);
+    layout2->m_children.emplace_back(rect2b);
+    layout->m_children.emplace_back(layout2);
+    layout->m_children.emplace_back(rect3);
+    layout->m_children.emplace_back(rect4);
 
     backend->enterLoop();
 

@@ -129,7 +129,10 @@ void COpenGLRenderer::beginRendering(SP<IWindow> window) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    breadthfirst(window->m_rootElement, [](SP<IElement> el) { el->paint(); });
+    breadthfirst(window->m_rootElement, [](SP<IElement> el) {
+        if (!el->m_failedPositioning)
+            el->paint();
+    });
 
     glDisable(GL_BLEND);
 }
