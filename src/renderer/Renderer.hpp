@@ -1,0 +1,31 @@
+#pragma once
+
+#include <hyprutils/math/Box.hpp>
+#include <hyprgraphics/color/Color.hpp>
+
+#include "../helpers/Memory.hpp"
+
+using namespace Hyprutils::Math;
+using namespace Hyprgraphics;
+
+namespace Hyprtoolkit {
+    class IWindow;
+
+    class IRenderer {
+      public:
+        IRenderer()          = default;
+        virtual ~IRenderer() = default;
+
+        struct SRectangleRenderData {
+            CBox   box;
+            CColor color{{.r = 1.F, .g = 1.F, .b = 1.F}};
+            float  a        = 1.F;
+            int    rounding = 0;
+        };
+
+        virtual void beginRendering(SP<IWindow> window)                = 0;
+        virtual void renderRectangle(const SRectangleRenderData& data) = 0;
+    };
+
+    inline UP<IRenderer> g_renderer;
+}

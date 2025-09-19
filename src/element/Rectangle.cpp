@@ -1,0 +1,38 @@
+#include <hyprtoolkit/element/Rectangle.hpp>
+
+#include "../layout/Positioner.hpp"
+#include "../renderer/Renderer.hpp"
+
+using namespace Hyprtoolkit;
+
+CRectangleElement::CRectangleElement(const SRectangleData& data) : m_data(data) {
+    ;
+}
+
+void CRectangleElement::paint() {
+    g_renderer->renderRectangle({
+        .box      = m_position,
+        .color    = m_data.color,
+        .a        = m_data.a,
+        .rounding = m_data.rounding,
+    });
+}
+
+void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
+    m_position = box;
+
+    if (m_data.size != Vector2D{}) {
+        m_position.w = m_data.size.x;
+        m_position.h = m_data.size.y;
+    }
+
+    const auto C = m_children;
+
+    for (const auto& c : C) {
+        g_positioner->position(c, m_position);
+    }
+}
+
+Hyprutils::Math::Vector2D CRectangleElement::size() {
+    return m_position.size();
+}
