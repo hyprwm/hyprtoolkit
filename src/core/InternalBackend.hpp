@@ -1,6 +1,8 @@
 #pragma once
 
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprutils/os/FileDescriptor.hpp>
+#include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 
 #include "../helpers/Env.hpp"
 
@@ -31,7 +33,7 @@ namespace Hyprtoolkit {
         }
     };
 
-    inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackend>       g_backend;
-    inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackendLogger> g_logger;
-
+    inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackend>                g_backend;
+    inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackendLogger>          g_logger;
+    inline Hyprutils::Memory::CSharedPointer<Hyprgraphics::CAsyncResourceGatherer> g_asyncResourceGatherer;
 }

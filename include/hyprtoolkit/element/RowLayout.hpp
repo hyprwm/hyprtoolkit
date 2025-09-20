@@ -10,10 +10,12 @@ namespace Hyprtoolkit {
 
     class CRowLayoutElement : public IElement {
       public:
-        CRowLayoutElement(const SRowLayoutData& data = {});
+        static Hyprutils::Memory::CSharedPointer<CRowLayoutElement> create(const SRowLayoutData& data = {});
         virtual ~CRowLayoutElement() = default;
 
       private:
+        CRowLayoutElement(const SRowLayoutData& data);
+
         virtual void                                     paint();
         virtual void                                     reposition(const Hyprutils::Math::CBox& box);
         virtual Hyprutils::Math::Vector2D                size();
@@ -21,8 +23,6 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
 
         Hyprutils::Math::Vector2D                        childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
-
-        Hyprutils::Math::CBox                            m_position;
 
         SRowLayoutData                                   m_data;
     };

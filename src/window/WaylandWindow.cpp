@@ -126,7 +126,7 @@ CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData
 
     inputRegion->sendDestroy();
 
-    m_rootElement = makeShared<CRectangleElement>();
+    m_rootElement = CRectangleElement::create();
 }
 
 CWaylandWindow::~CWaylandWindow() {

@@ -36,9 +36,13 @@ void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
     if (std::ranges::find(m_elementData->children, child) != m_elementData->children.end())
         return;
 
+    child->m_elementData->parent = m_self.lock();
     m_elementData->children.emplace_back(child);
 }
 
 void IElement::clearChildren() {
+    for (auto& c : m_elementData->children) {
+        c->m_elementData->parent.reset();
+    }
     m_elementData->children.clear();
 }

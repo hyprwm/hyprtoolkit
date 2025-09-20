@@ -7,6 +7,12 @@
 
 using namespace Hyprtoolkit;
 
+SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
+    auto p = SP<CRectangleElement>(new CRectangleElement(data));
+    p->m_self = p;
+    return p;
+}
+
 CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_data(data) {
     ;
 }

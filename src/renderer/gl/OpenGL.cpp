@@ -7,6 +7,9 @@
 #include "../../core/InternalBackend.hpp"
 #include "../../element/Element.hpp"
 #include "Shaders.hpp"
+#include "GLTexture.hpp"
+
+#include <hyprutils/memory/Casts.hpp>
 
 using namespace Hyprtoolkit;
 
@@ -80,6 +83,25 @@ COpenGLRenderer::COpenGLRenderer() {
     m_rectShader.topLeft   = glGetUniformLocation(prog, "topLeft");
     m_rectShader.fullSize  = glGetUniformLocation(prog, "fullSize");
     m_rectShader.radius    = glGetUniformLocation(prog, "radius");
+
+    prog                          = createProgram(TEXVERTSRC, TEXFRAGSRCRGBA);
+    m_texShader.program           = prog;
+    m_texShader.proj              = glGetUniformLocation(prog, "proj");
+    m_texShader.tex               = glGetUniformLocation(prog, "tex");
+    m_texShader.alphaMatte        = glGetUniformLocation(prog, "texMatte");
+    m_texShader.alpha             = glGetUniformLocation(prog, "alpha");
+    m_texShader.texAttrib         = glGetAttribLocation(prog, "texcoord");
+    m_texShader.matteTexAttrib    = glGetAttribLocation(prog, "texcoordMatte");
+    m_texShader.posAttrib         = glGetAttribLocation(prog, "pos");
+    m_texShader.discardOpaque     = glGetUniformLocation(prog, "discardOpaque");
+    m_texShader.discardAlpha      = glGetUniformLocation(prog, "discardAlpha");
+    m_texShader.discardAlphaValue = glGetUniformLocation(prog, "discardAlphaValue");
+    m_texShader.topLeft           = glGetUniformLocation(prog, "topLeft");
+    m_texShader.fullSize          = glGetUniformLocation(prog, "fullSize");
+    m_texShader.radius            = glGetUniformLocation(prog, "radius");
+    m_texShader.applyTint         = glGetUniformLocation(prog, "applyTint");
+    m_texShader.tint              = glGetUniformLocation(prog, "tint");
+    m_texShader.useAlphaMatte     = glGetUniformLocation(prog, "useAlphaMatte");
 }
 
 COpenGLRenderer::~COpenGLRenderer() {
@@ -165,4 +187,54 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDisableVertexAttribArray(m_rectShader.posAttrib);
+}
+
+SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
+    const auto TEX = m_glTextures.emplace_back(makeShared<CGLTexture>(data.resource));
+    return TEX;
+}
+
+void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
+    const auto ROUNDEDBOX = data.box.copy().round();
+    Mat3x3     matrix     = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    Mat3x3     glMatrix   = m_projection.copy().multiply(matrix);
+
+    CShader*   shader = &m_texShader;
+
+    RASSERT(data.texture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl texture");
+
+    SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(data.texture);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(tex->m_target, tex->m_texID);
+
+    glUseProgram(shader->program);
+
+    glUniformMatrix3fv(shader->proj, 1, GL_TRUE, glMatrix.getMatrix().data());
+    glUniform1i(shader->tex, 0);
+    glUniform1f(shader->alpha, data.a);
+    const auto TOPLEFT  = Vector2D(ROUNDEDBOX.x, ROUNDEDBOX.y);
+    const auto FULLSIZE = Vector2D(ROUNDEDBOX.width, ROUNDEDBOX.height);
+
+    // Rounded corners
+    glUniform2f(shader->topLeft, TOPLEFT.x, TOPLEFT.y);
+    glUniform2f(shader->fullSize, FULLSIZE.x, FULLSIZE.y);
+    glUniform1f(shader->radius, data.rounding);
+
+    glUniform1i(shader->discardOpaque, 0);
+    glUniform1i(shader->discardAlpha, 0);
+    glUniform1i(shader->applyTint, 0);
+
+    glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+
+    glEnableVertexAttribArray(shader->posAttrib);
+    glEnableVertexAttribArray(shader->texAttrib);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glDisableVertexAttribArray(shader->posAttrib);
+    glDisableVertexAttribArray(shader->texAttrib);
+
+    glBindTexture(tex->m_target, 0);
 }

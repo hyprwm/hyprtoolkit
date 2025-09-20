@@ -5,6 +5,7 @@
 #include <optional>
 
 #include <hyprutils/memory/SharedPtr.hpp>
+#include <hyprutils/memory/WeakPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
 #include <hyprutils/math/Box.hpp>
 
@@ -40,6 +41,8 @@ namespace Hyprtoolkit {
         //
 
         Hyprutils::Memory::CUniquePointer<SElementInternalData> m_elementData;
+        Hyprutils::Memory::CWeakPointer<IElement>               m_self;
+        Hyprutils::Math::CBox                                   m_position;
 
       protected:
         IElement();

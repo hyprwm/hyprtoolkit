@@ -37,7 +37,8 @@ CBackend::CBackend() {
     option.backendRequestMode = Aquamarine::eBackendRequestMode::AQ_BACKEND_REQUEST_MANDATORY;
     implementations.emplace_back(option);
 
-    m_aqBackend = Aquamarine::CBackend::create(implementations, options);
+    m_aqBackend             = Aquamarine::CBackend::create(implementations, options);
+    g_asyncResourceGatherer = makeShared<CAsyncResourceGatherer>();
 }
 
 SP<CBackend> CBackend::create() {
@@ -74,6 +75,21 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
     auto w    = makeShared<CWaylandWindow>(data);
     w->m_self = w;
     return w;
+}
+
+ASP<CTimer> CBackend::addTimer(const std::chrono::system_clock::duration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force) {
+    std::lock_guard<std::mutex> lg(m_sLoopState.timersMutex);
+    const auto                  T = m_timers.emplace_back(makeAtomicShared<CTimer>(timeout, cb_, data, force));
+    m_sLoopState.timerEvent       = true;
+    m_sLoopState.timerCV.notify_all();
+    return T;
+}
+
+void CBackend::addIdle(const std::function<void()>& fn) {
+    std::lock_guard<std::mutex> lg(m_sLoopState.idlesMutex);
+    m_idles.emplace_back(makeAtomicShared<std::function<void()>>(fn));
+    m_sLoopState.idleEvent = true;
+    m_sLoopState.idleCV.notify_all();
 }
 
 void CBackend::enterLoop() {
@@ -139,6 +155,19 @@ void CBackend::enterLoop() {
         }
     });
 
+    std::thread idleThr([this]() {
+        while (!m_terminate) {
+            std::unique_lock lk(m_sLoopState.timerRequestMutex);
+            m_sLoopState.idleCV.wait(lk, [this] { return m_sLoopState.idleEvent; });
+            m_sLoopState.idleEvent = false;
+
+            // notify main
+            std::lock_guard<std::mutex> lg2(m_sLoopState.eventLoopMutex);
+            m_sLoopState.event = true;
+            m_sLoopState.loopCV.notify_all();
+        }
+    });
+
     m_sLoopState.event = true; // let it process once
 
     while (!m_terminate) {
@@ -179,6 +208,14 @@ void CBackend::enterLoop() {
         m_sLoopState.timersMutex.lock();
         std::erase_if(m_timers, [passed](const auto& timer) { return std::find(passed.begin(), passed.end(), timer) != passed.end(); });
         m_sLoopState.timersMutex.unlock();
+
+        // do idles
+        m_sLoopState.idlesMutex.lock();
+        for (const auto& i : m_idles) {
+            (*i)();
+        }
+        m_idles.clear();
+        m_sLoopState.idlesMutex.unlock();
 
         passed.clear();
     }

@@ -8,6 +8,12 @@
 
 using namespace Hyprtoolkit;
 
+SP<CRowLayoutElement> CRowLayoutElement::create(const SRowLayoutData& data) {
+    auto p = SP<CRowLayoutElement>(new CRowLayoutElement(data));
+    p->m_self = p;
+    return p;
+}
+
 CRowLayoutElement::CRowLayoutElement(const SRowLayoutData& data) : IElement(), m_data(data) {
     ;
 }

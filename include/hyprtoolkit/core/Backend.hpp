@@ -51,6 +51,11 @@ namespace Hyprtoolkit {
       private:
         CBackend();
 
+        Hyprutils::Memory::CAtomicSharedPointer<CTimer>         addTimer(const std::chrono::system_clock::duration&                                            timeout,
+                                                                         std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
+                                                                         bool force = false);
+        void                                                    addIdle(const std::function<void()>& fn);
+
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
         LogFn                                                   m_logFn;
@@ -59,6 +64,7 @@ namespace Hyprtoolkit {
 
         struct {
             std::mutex              timersMutex;
+            std::mutex              idlesMutex;
             std::mutex              eventRequestMutex;
             std::mutex              eventLoopMutex;
             std::condition_variable loopCV;
@@ -70,12 +76,19 @@ namespace Hyprtoolkit {
             std::condition_variable timerCV;
             std::mutex              timerRequestMutex;
             bool                    timerEvent = false;
+
+            std::condition_variable idleCV;
+            std::mutex              idleRequestMutex;
+            bool                    idleEvent = false;
         } m_sLoopState;
 
-        std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>> m_timers;
+        std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
+        std::vector<Hyprutils::Memory::CAtomicSharedPointer<std::function<void()>>> m_idles;
 
         friend class CBackendLogger;
         friend class CWaylandPlatform;
         friend class CWaylandWindow;
+        friend class CGLTexture;
+        friend class CTextElement;
     };
 };

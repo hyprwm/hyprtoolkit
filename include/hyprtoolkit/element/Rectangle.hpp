@@ -16,10 +16,12 @@ namespace Hyprtoolkit {
 
     class CRectangleElement : public IElement {
       public:
-        CRectangleElement(const SRectangleData& data = {});
+        static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data = {});
         virtual ~CRectangleElement() = default;
 
       private:
+        CRectangleElement(const SRectangleData& data);
+
         virtual void                                     paint();
         virtual void                                     reposition(const Hyprutils::Math::CBox& box);
         virtual Hyprutils::Math::Vector2D                size();
@@ -27,7 +29,5 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
 
         SRectangleData                                   m_data;
-
-        Hyprutils::Math::CBox                            m_position;
     };
 };

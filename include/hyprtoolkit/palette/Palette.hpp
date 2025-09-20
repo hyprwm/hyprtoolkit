@@ -8,7 +8,7 @@ namespace Hyprtoolkit {
       public:
         CToolkitColor() = default;
         CToolkitColor(const Hyprgraphics::CColor& color, float a = 1.F);
-        ~CToolkitColor();
+        ~CToolkitColor() = default;
 
         Hyprgraphics::CColor m_color = Hyprgraphics::CColor::SSRGB{.r = 0.F, .g = 0.F, .b = 0.F};
         float                m_a     = 1.F;
@@ -41,5 +41,5 @@ namespace Hyprtoolkit {
 
       private:
         CPalette() = default;
-    }
-};
+    };
+}

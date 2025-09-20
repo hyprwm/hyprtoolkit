@@ -16,7 +16,7 @@ SP<CPalette> CPalette::palette() {
 }
 
 SP<CPalette> CPalette::defaultPalette() {
-    auto palette = makeShared<CPalette>();
+    auto palette = SP<CPalette>(new CPalette());
 
     palette->m_colors.background      = {Hyprgraphics::CColor::SSRGB{.r = 24 / 255.F, .g = 24 / 255.F, .b = 24 / 255.F}, 1.F};
     palette->m_colors.base            = {Hyprgraphics::CColor::SSRGB{.r = 32 / 255.F, .g = 32 / 255.F, .b = 32 / 255.F}, 1.F};
@@ -30,7 +30,7 @@ SP<CPalette> CPalette::defaultPalette() {
 }
 
 SP<CPalette> CPalette::emptyPalette() {
-    return makeShared<CPalette>();
+    return SP<CPalette>(new CPalette());
 }
 
 SP<CPalette> CPalette::configPalette() {

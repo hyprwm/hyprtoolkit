@@ -8,6 +8,12 @@
 
 using namespace Hyprtoolkit;
 
+SP<CColumnLayoutElement> CColumnLayoutElement::create(const SColumnLayoutData& data) {
+    auto p = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
+    p->m_self = p;
+    return p;
+}
+
 CColumnLayoutElement::CColumnLayoutElement(const SColumnLayoutData& data) : IElement(), m_data(data) {
     ;
 }

@@ -10,10 +10,12 @@ namespace Hyprtoolkit {
 
     class CColumnLayoutElement : public IElement {
       public:
-        CColumnLayoutElement(const SColumnLayoutData& data = {});
+        static Hyprutils::Memory::CSharedPointer<CColumnLayoutElement> create(const SColumnLayoutData& data = {});
         virtual ~CColumnLayoutElement() = default;
 
       private:
+        CColumnLayoutElement(const SColumnLayoutData& data);
+
         virtual void                                     paint();
         virtual void                                     reposition(const Hyprutils::Math::CBox& box);
         virtual Hyprutils::Math::Vector2D                size();
@@ -21,8 +23,6 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
 
         Hyprutils::Math::Vector2D                        childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
-
-        Hyprutils::Math::CBox                            m_position;
 
         SColumnLayoutData                                m_data;
     };
