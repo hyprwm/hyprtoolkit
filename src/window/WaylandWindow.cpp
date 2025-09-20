@@ -198,6 +198,9 @@ void CWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
 }
 
 void CWaylandWindow::render() {
+    if (m_waylandState.frameCallback)
+        return;
+
     g_pEGL->makeCurrent(m_waylandState.eglSurface);
 
     g_renderer->beginRendering(m_self.lock());
