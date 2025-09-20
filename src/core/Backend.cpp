@@ -8,6 +8,7 @@
 #include "../window/WaylandWindow.hpp"
 #include "../Macros.hpp"
 #include "../helpers/Timer.hpp"
+#include "../element/Element.hpp"
 
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -72,8 +73,9 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
         g_renderer = makeUnique<COpenGLRenderer>();
     }
 
-    auto w    = makeShared<CWaylandWindow>(data);
-    w->m_self = w;
+    auto w                         = makeShared<CWaylandWindow>(data);
+    w->m_self                      = w;
+    w->m_rootElement->impl->window = w;
     return w;
 }
 

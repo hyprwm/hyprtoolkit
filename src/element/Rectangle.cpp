@@ -9,7 +9,7 @@ using namespace Hyprtoolkit;
 
 SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
     auto p = SP<CRectangleElement>(new CRectangleElement(data));
-    p->m_self = p;
+    p->impl->self = p;
     return p;
 }
 
@@ -19,7 +19,7 @@ CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m
 
 void CRectangleElement::paint() {
     g_renderer->renderRectangle({
-        .box      = m_position,
+        .box      = impl->position,
         .color    = m_data.color,
         .a        = m_data.a,
         .rounding = m_data.rounding,
@@ -27,17 +27,17 @@ void CRectangleElement::paint() {
 }
 
 void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
-    m_position = box;
+    impl->position = box;
 
-    const auto C = m_elementData->children;
+    const auto C = impl->children;
 
     for (const auto& c : C) {
-        g_positioner->position(c, m_position);
+        g_positioner->position(c, impl->position);
     }
 }
 
 Hyprutils::Math::Vector2D CRectangleElement::size() {
-    return m_position.size();
+    return impl->position.size();
 }
 
 std::optional<Vector2D> CRectangleElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {

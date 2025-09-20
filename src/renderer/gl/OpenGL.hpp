@@ -24,9 +24,6 @@ namespace Hyprtoolkit {
         virtual void                 renderTexture(const STextureRenderData& data);
 
       private:
-        void                        bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
-        void                        breadthfirst(SP<IElement> element, const std::function<void(SP<IElement>)>& fn);
-
         CBox                        logicalToGL(const CBox& box);
 
         std::vector<SP<CGLTexture>> m_glTextures;

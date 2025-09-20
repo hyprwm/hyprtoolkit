@@ -30,17 +30,26 @@ namespace Hyprtoolkit {
       private:
         CTextElement(const STextData& data);
 
-        virtual void                                                         paint();
-        virtual void                                                         reposition(const Hyprutils::Math::CBox& box);
-        virtual Hyprutils::Math::Vector2D                                    size();
-        virtual std::optional<Hyprutils::Math::Vector2D>                     preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D>                     minimumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D>                     maximumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual void                                     paint();
+        virtual void                                     reposition(const Hyprutils::Math::CBox& box);
+        virtual Hyprutils::Math::Vector2D                size();
+        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
 
-        STextData                                                            m_data;
+        void                                             renderTex();
+
+        STextData                                        m_data;
+
+        // for scaling
+        size_t                                                               m_rawFontSize = 16;
+        float                                                                m_lastScale   = 1.F;
+        Hyprutils::Math::Vector2D                                            unscale();
 
         Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_tex;
         Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CTextResource> m_resource;
         Hyprutils::Math::Vector2D                                            m_size;
+
+        bool                                                                 m_waitingForTex = false;
     };
 };

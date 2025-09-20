@@ -9,7 +9,7 @@ using namespace Hyprtoolkit;
 
 SP<CTextureElement> CTextureElement::create(const STextureData& data) {
     auto p = SP<CTextureElement>(new CTextureElement(data));
-    p->m_self = p;
+    p->impl->self = p;
     return p;
 }
 
@@ -22,17 +22,17 @@ void CTextureElement::paint() {
 }
 
 void CTextureElement::reposition(const Hyprutils::Math::CBox& box) {
-    m_position = box;
+    impl->position = box;
 
-    const auto C = m_elementData->children;
+    const auto C = impl->children;
 
     for (const auto& c : C) {
-        g_positioner->position(c, m_position);
+        g_positioner->position(c, impl->position);
     }
 }
 
 Hyprutils::Math::Vector2D CTextureElement::size() {
-    return m_position.size();
+    return impl->position.size();
 }
 
 std::optional<Vector2D> CTextureElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {

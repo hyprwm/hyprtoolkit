@@ -5,15 +5,15 @@
 using namespace Hyprtoolkit;
 
 IElement::IElement() {
-    m_elementData = UP<SElementInternalData>(new SElementInternalData());
+    impl = UP<SElementInternalData>(new SElementInternalData());
 }
 
 void IElement::setPositionMode(ePositionMode mode) {
-    m_elementData->positionMode = mode;
+    impl->positionMode = mode;
 }
 
 void IElement::setAbsolutePosition(const Hyprutils::Math::Vector2D& offset) {
-    m_elementData->absoluteOffset = offset;
+    impl->absoluteOffset = offset;
 }
 
 std::optional<Hyprutils::Math::Vector2D> IElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
@@ -29,20 +29,47 @@ std::optional<Hyprutils::Math::Vector2D> IElement::maximumSize(const Hyprutils::
 }
 
 void IElement::setGrow(bool grow) {
-    m_elementData->grow = grow;
+    impl->grow = grow;
 }
 
 void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (std::ranges::find(m_elementData->children, child) != m_elementData->children.end())
+    if (std::ranges::find(impl->children, child) != impl->children.end())
         return;
 
-    child->m_elementData->parent = m_self.lock();
-    m_elementData->children.emplace_back(child);
+    child->impl->parent = impl->self.lock();
+    child->impl->window = impl->window;
+    child->impl->breadthfirst([w = impl->window](SP<IElement> e) { e->impl->window = w; });
+    impl->children.emplace_back(child);
 }
 
 void IElement::clearChildren() {
-    for (auto& c : m_elementData->children) {
-        c->m_elementData->parent.reset();
+    for (auto& c : impl->children) {
+        c->impl->parent.reset();
+        c->impl->window.reset();
     }
-    m_elementData->children.clear();
+    impl->children.clear();
+}
+
+void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
+    for (const auto& e : elements) {
+        fn(e);
+    }
+
+    std::vector<SP<IElement>> els;
+    for (const auto& e : elements) {
+        for (const auto& c : e->impl->children) {
+            els.emplace_back(c);
+        }
+    }
+
+    if (!els.empty())
+        bfHelper(els, fn);
+}
+
+void SElementInternalData::breadthfirst(const std::function<void(SP<IElement>)>& fn) {
+    fn(self.lock());
+
+    std::vector<SP<IElement>> els = children;
+
+    bfHelper(els, fn);
 }

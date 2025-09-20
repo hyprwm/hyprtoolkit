@@ -114,30 +114,6 @@ CBox COpenGLRenderer::logicalToGL(const CBox& box) {
     return b;
 }
 
-void COpenGLRenderer::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
-    for (const auto& e : elements) {
-        fn(e);
-    }
-
-    std::vector<SP<IElement>> els;
-    for (const auto& e : elements) {
-        for (const auto& c : e->m_elementData->children) {
-            els.emplace_back(c);
-        }
-    }
-
-    if (!els.empty())
-        bfHelper(els, fn);
-}
-
-void COpenGLRenderer::breadthfirst(SP<IElement> element, const std::function<void(SP<IElement>)>& fn) {
-    fn(element);
-
-    std::vector<SP<IElement>> els = element->m_elementData->children;
-
-    bfHelper(els, fn);
-}
-
 void COpenGLRenderer::beginRendering(SP<IWindow> window) {
     m_projection      = Mat3x3::outputProjection(window->pixelSize(), HYPRUTILS_TRANSFORM_NORMAL);
     m_currentViewport = window->pixelSize();
@@ -151,8 +127,8 @@ void COpenGLRenderer::beginRendering(SP<IWindow> window) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    breadthfirst(window->m_rootElement, [](SP<IElement> el) {
-        if (!el->m_elementData->failedPositioning)
+    window->m_rootElement->impl->breadthfirst([](SP<IElement> el) {
+        if (!el->impl->failedPositioning)
             el->paint();
     });
 
@@ -195,7 +171,7 @@ SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
 }
 
 void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
-    const auto ROUNDEDBOX = data.box.copy().round();
+    const auto ROUNDEDBOX = logicalToGL(data.box);
     Mat3x3     matrix     = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
     Mat3x3     glMatrix   = m_projection.copy().multiply(matrix);
 

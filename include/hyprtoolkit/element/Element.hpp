@@ -12,6 +12,7 @@
 namespace Hyprtoolkit {
 
     struct SElementInternalData;
+    class IWindow;
 
     class IElement {
       public:
@@ -40,9 +41,7 @@ namespace Hyprtoolkit {
 
         //
 
-        Hyprutils::Memory::CUniquePointer<SElementInternalData> m_elementData;
-        Hyprutils::Memory::CWeakPointer<IElement>               m_self;
-        Hyprutils::Math::CBox                                   m_position;
+        Hyprutils::Memory::CUniquePointer<SElementInternalData> impl;
 
       protected:
         IElement();
