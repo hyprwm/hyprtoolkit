@@ -5,9 +5,13 @@
 #include <optional>
 
 #include <hyprutils/memory/SharedPtr.hpp>
+#include <hyprutils/memory/UniquePtr.hpp>
 #include <hyprutils/math/Box.hpp>
 
 namespace Hyprtoolkit {
+
+    struct SElementInternalData;
+
     class IElement {
       public:
         enum ePositionMode : uint8_t {
@@ -24,6 +28,8 @@ namespace Hyprtoolkit {
 
         virtual void                      setPositionMode(ePositionMode mode);
         virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
+        virtual void                      addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void                      clearChildren();
 
         /* Sizes for auto positioning in layouts */
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
@@ -32,12 +38,10 @@ namespace Hyprtoolkit {
         virtual void                                     setGrow(bool grow);
 
         //
-        std::vector<Hyprutils::Memory::CSharedPointer<IElement>> m_children;
 
-        ePositionMode                                            m_positionMode = HT_POSITION_AUTO;
-        Hyprutils::Math::Vector2D                                m_absoluteOffset;
-        bool                                                     m_grow = false;
+        Hyprutils::Memory::CUniquePointer<SElementInternalData> m_elementData;
 
-        bool                                                     m_failedPositioning = false;
+      protected:
+        IElement();
     };
 };

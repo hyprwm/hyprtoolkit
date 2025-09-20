@@ -44,12 +44,12 @@ SP<CBackend> CBackend::create() {
     if (g_backend)
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
-    g_logger = SP<CBackendLogger>(new CBackendLogger());
+    g_logger  = SP<CBackendLogger>(new CBackendLogger());
     if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
         return nullptr;
     }
-    
+
     return g_backend;
 };
 
@@ -67,11 +67,11 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
         g_waylandPlatform = makeUnique<CWaylandPlatform>();
         if (!g_waylandPlatform->attempt())
             return nullptr;
-        g_pEGL = makeUnique<CEGL>(g_waylandPlatform->m_waylandState.display);
+        g_pEGL     = makeUnique<CEGL>(g_waylandPlatform->m_waylandState.display);
         g_renderer = makeUnique<COpenGLRenderer>();
     }
 
-    auto w = makeShared<CWaylandWindow>(data);
+    auto w    = makeShared<CWaylandWindow>(data);
     w->m_self = w;
     return w;
 }

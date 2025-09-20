@@ -4,9 +4,11 @@
 #include "../renderer/Renderer.hpp"
 #include "../core/InternalBackend.hpp"
 
+#include "Element.hpp"
+
 using namespace Hyprtoolkit;
 
-CColumnLayoutElement::CColumnLayoutElement(const SColumnLayoutData& data) : m_data(data) {
+CColumnLayoutElement::CColumnLayoutElement(const SColumnLayoutData& data) : IElement(), m_data(data) {
     ;
 }
 
@@ -18,7 +20,7 @@ void CColumnLayoutElement::paint() {
 void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
     m_position = box;
 
-    const auto C = m_children;
+    const auto C = m_elementData->children;
 
     // position children in this layout.
 
@@ -28,21 +30,21 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
     size_t              i = 0;
 
     std::vector<size_t> heights;
-    heights.resize(m_children.size());
+    heights.resize(m_elementData->children.size());
 
     for (i = 0; i < C.size(); ++i) {
         const auto& child = C.at(i);
 
         if (MAX_Y <= usedY) {
             // no more space
-            child->m_failedPositioning = true;
+            child->m_elementData->failedPositioning = true;
             continue;
         }
 
         Vector2D cSize = childSize(child);
         if (cSize == Vector2D{-1, -1}) {
             g_logger->log(HT_LOG_ERROR, "child {:x} of ColumnLayout has no preferred or minimum size: positioning will fail", (uintptr_t)child.get());
-            child->m_failedPositioning = true;
+            child->m_elementData->failedPositioning = true;
             continue;
         }
 
@@ -50,7 +52,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
             // we exceeded our available space.
             if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
-                child->m_failedPositioning = true;
+                child->m_elementData->failedPositioning = true;
                 continue;
             }
 
@@ -58,7 +60,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 
             if (usedY + cSize.y > MAX_Y) {
                 // doesn't fit: disable and expand the last if possible
-                child->m_failedPositioning = true;
+                child->m_elementData->failedPositioning = true;
                 if (i != 0) {
                     // try to expand last child
                     const auto& lastChild = C.at(i - 1);
@@ -77,8 +79,8 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         }
 
         // can fit: use preferred
-        heights.at(i)              = cSize.y;
-        child->m_failedPositioning = false;
+        heights.at(i)                           = cSize.y;
+        child->m_elementData->failedPositioning = false;
         usedY += cSize.y;
     }
 
@@ -87,7 +89,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         for (i = 0; i < C.size(); ++i) {
             const auto& child = C.at(i);
 
-            if (!child->m_grow)
+            if (!child->m_elementData->grow)
                 continue;
 
             heights.at(i) += MAX_Y - usedY;
@@ -101,7 +103,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
     for (i = 0; i < C.size(); ++i) {
         const auto& child = C.at(i);
 
-        if (child->m_failedPositioning)
+        if (child->m_elementData->failedPositioning)
             continue;
 
         Vector2D   cSize   = childSize(child);
@@ -144,7 +146,7 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
         return calc;
 
     Vector2D max;
-    for (const auto& child : m_children) {
+    for (const auto& child : m_elementData->children) {
         max.x = std::max(childSize(child).x, max.x);
         max.y += childSize(child).y;
     }
@@ -159,7 +161,7 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
 
 std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
     Vector2D min;
-    for (const auto& child : m_children) {
+    for (const auto& child : m_elementData->children) {
         min.x = std::max(min.x, childSize(child).x);
     }
 

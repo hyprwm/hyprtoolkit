@@ -60,8 +60,8 @@ bool CWaylandPlatform::attempt() {
             m_waylandState.viewporter = makeShared<CCWpViewporter>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_viewporter_interface, 1));
         } else if (NAME == wp_fractional_scale_manager_v1_interface.name) {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.fractional =
-                makeShared<CCWpFractionalScaleManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_fractional_scale_manager_v1_interface, 1));
+            m_waylandState.fractional = makeShared<CCWpFractionalScaleManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_fractional_scale_manager_v1_interface, 1));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             m_waylandState.dmabuf =

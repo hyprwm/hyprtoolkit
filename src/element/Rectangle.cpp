@@ -3,9 +3,11 @@
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
 
+#include "Element.hpp"
+
 using namespace Hyprtoolkit;
 
-CRectangleElement::CRectangleElement(const SRectangleData& data) : m_data(data) {
+CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_data(data) {
     ;
 }
 
@@ -21,7 +23,7 @@ void CRectangleElement::paint() {
 void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
     m_position = box;
 
-    const auto C = m_children;
+    const auto C = m_elementData->children;
 
     for (const auto& c : C) {
         g_positioner->position(c, m_position);

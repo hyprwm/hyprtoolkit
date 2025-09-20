@@ -24,13 +24,13 @@ int main(int argc, char** argv, char** envp) {
         .class_        = "hyprtoolkit",
     });
 
-    window->m_rootElement->m_children.emplace_back(makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
+    window->m_rootElement->addChild(makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
         .color = Hyprgraphics::CColor::SSRGB{.r = 1.F, .g = 0.2F, .b = 0.2F},
     }));
 
     auto layout = makeShared<Hyprtoolkit::CRowLayoutElement>();
 
-    window->m_rootElement->m_children.emplace_back(layout);
+    window->m_rootElement->addChild(layout);
 
     auto rect3 = makeShared<Hyprtoolkit::CRectangleElement>(Hyprtoolkit::SRectangleData{
         .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.7F, .b = 0.7F},
@@ -62,11 +62,11 @@ int main(int argc, char** argv, char** envp) {
     rect2b->setGrow(true);
     rect4->setGrow(true);
 
-    layout2->m_children.emplace_back(rect2a);
-    layout2->m_children.emplace_back(rect2b);
-    layout->m_children.emplace_back(layout2);
-    layout->m_children.emplace_back(rect3);
-    layout->m_children.emplace_back(rect4);
+    layout2->addChild(rect2a);
+    layout2->addChild(rect2b);
+    layout->addChild(layout2);
+    layout->addChild(rect3);
+    layout->addChild(rect4);
 
     backend->enterLoop();
 

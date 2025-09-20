@@ -1,11 +1,11 @@
 #include "OpenGL.hpp"
 
 #include <hyprtoolkit/window/Window.hpp>
-#include <hyprtoolkit/element/Element.hpp>
 
 #include "../../core/renderPlatforms/Egl.hpp"
 #include "../../Macros.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../element/Element.hpp"
 #include "Shaders.hpp"
 
 using namespace Hyprtoolkit;
@@ -99,7 +99,7 @@ void COpenGLRenderer::bfHelper(std::vector<SP<IElement>> elements, const std::fu
 
     std::vector<SP<IElement>> els;
     for (const auto& e : elements) {
-        for (const auto& c : e->m_children) {
+        for (const auto& c : e->m_elementData->children) {
             els.emplace_back(c);
         }
     }
@@ -111,7 +111,7 @@ void COpenGLRenderer::bfHelper(std::vector<SP<IElement>> elements, const std::fu
 void COpenGLRenderer::breadthfirst(SP<IElement> element, const std::function<void(SP<IElement>)>& fn) {
     fn(element);
 
-    std::vector<SP<IElement>> els = element->m_children;
+    std::vector<SP<IElement>> els = element->m_elementData->children;
 
     bfHelper(els, fn);
 }
@@ -130,7 +130,7 @@ void COpenGLRenderer::beginRendering(SP<IWindow> window) {
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     breadthfirst(window->m_rootElement, [](SP<IElement> el) {
-        if (!el->m_failedPositioning)
+        if (!el->m_elementData->failedPositioning)
             el->paint();
     });
 
