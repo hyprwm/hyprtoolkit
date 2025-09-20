@@ -90,5 +90,6 @@ namespace Hyprtoolkit {
         friend class CWaylandWindow;
         friend class CGLTexture;
         friend class CTextElement;
+        friend class CImageElement;
     };
 };

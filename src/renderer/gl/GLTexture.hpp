@@ -26,7 +26,7 @@ namespace Hyprtoolkit {
         virtual ~CGLTexture();
 
         virtual size_t            id();
-        virtual eTextureType type();
+        virtual eTextureType      type();
         virtual void              destroy();
 
         eGLTextureType            m_type      = TEXTURE_RGBA;

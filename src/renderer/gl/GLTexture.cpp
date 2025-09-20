@@ -14,11 +14,10 @@ CGLTexture::CGLTexture(ASP<Hyprgraphics::IAsyncResource> resource) {
     // not ready yet, add a timer when it is and do it
     // FIXME: could UAF. Maybe keep wref?
     resource->m_events.finished.listenStatic([this, resource] {
-        g_backend->addIdle(
-            [this, resource]() {
-                m_resource = resource;
-                upload();
-            });
+        g_backend->addIdle([this, resource]() {
+            m_resource = resource;
+            upload();
+        });
     });
 }
 

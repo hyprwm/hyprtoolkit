@@ -9,7 +9,7 @@
 using namespace Hyprtoolkit;
 
 SP<CColumnLayoutElement> CColumnLayoutElement::create(const SColumnLayoutData& data) {
-    auto p = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
+    auto p        = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
     p->impl->self = p;
     return p;
 }
@@ -85,7 +85,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         }
 
         // can fit: use preferred
-        heights.at(i)                           = cSize.y;
+        heights.at(i)                  = cSize.y;
         child->impl->failedPositioning = false;
         usedY += cSize.y;
     }

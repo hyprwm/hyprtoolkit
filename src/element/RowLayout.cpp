@@ -9,7 +9,7 @@
 using namespace Hyprtoolkit;
 
 SP<CRowLayoutElement> CRowLayoutElement::create(const SRowLayoutData& data) {
-    auto p = SP<CRowLayoutElement>(new CRowLayoutElement(data));
+    auto p        = SP<CRowLayoutElement>(new CRowLayoutElement(data));
     p->impl->self = p;
     return p;
 }
@@ -85,7 +85,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         }
 
         // can fit: use preferred
-        widths.at(i)                            = cSize.x;
+        widths.at(i)                   = cSize.x;
         child->impl->failedPositioning = false;
         usedX += cSize.x;
     }

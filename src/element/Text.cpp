@@ -12,7 +12,7 @@ using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
 SP<CTextElement> CTextElement::create(const STextData& data) {
-    auto p    = SP<CTextElement>(new CTextElement(data));
+    auto p        = SP<CTextElement>(new CTextElement(data));
     p->impl->self = p;
     return p;
 }

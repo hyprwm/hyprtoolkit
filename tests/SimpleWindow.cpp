@@ -4,6 +4,7 @@
 #include <hyprtoolkit/element/RowLayout.hpp>
 #include <hyprtoolkit/element/ColumnLayout.hpp>
 #include <hyprtoolkit/element/Text.hpp>
+#include <hyprtoolkit/element/Image.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -27,7 +28,7 @@ int main(int argc, char** argv, char** envp) {
     });
 
     window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
-        .color = Hyprgraphics::CColor::SSRGB{.r = 1.F, .g = 0.2F, .b = 0.2F},
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.1F, .g = 0.1F, .b = 0.1F},
     }));
 
     auto layout = CRowLayoutElement::create();
@@ -35,35 +36,33 @@ int main(int argc, char** argv, char** envp) {
     window->m_rootElement->addChild(layout);
 
     auto rect3 = CRectangleElement::create(SRectangleData{
-        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.7F, .b = 0.7F},
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 0.4F, .b = 0.4F},
         .rounding = 10,
         .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150, 150}},
     });
 
     auto rect4 = CRectangleElement::create(SRectangleData{
-        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.2F, .b = 0.7F},
+        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.4F, .g = 0.2F, .b = 0.4F},
         .rounding = 10,
         .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}},
     });
 
-    auto layout2 = CColumnLayoutElement::create(
-        SColumnLayoutData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}}});
+    auto layout2 = CColumnLayoutElement::create(SColumnLayoutData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}}});
 
-    auto rect2a = CRectangleElement::create(SRectangleData{
-        .color    = Hyprgraphics::CColor::SSRGB{.r = 0.2F, .g = 1.F, .b = 0.2F},
-        .rounding = 10,
-        .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {250, 350}},
+    auto image = CImageElement::create(SImageData{
+        .path = "/home/vaxry/Documents/Hypr/thats a clip.jpg",
+        .size = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {250, 250}},
     });
 
     auto text = CTextElement::create(STextData{
         .text  = "That's a clip!!!!",
-        .color = Hyprgraphics::CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.7F},
+        .color = Hyprgraphics::CColor::SSRGB{.r = 0.4F, .g = 0.4F, .b = 0.4F},
     });
 
-    rect2a->setGrow(true);
+    text->setGrow(true);
     rect4->setGrow(true);
 
-    layout2->addChild(rect2a);
+    layout2->addChild(image);
     layout2->addChild(text);
     layout->addChild(layout2);
     layout->addChild(rect3);
