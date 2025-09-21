@@ -3,6 +3,8 @@
 #include <hyprutils/memory/Casts.hpp>
 
 #include "../InternalBackend.hpp"
+#include "../Input.hpp"
+#include "../../window/WaylandWindow.hpp"
 #include "../../Macros.hpp"
 
 #include <xf86drm.h>
@@ -11,6 +13,7 @@
 #include <fcntl.h>
 
 using namespace Hyprtoolkit;
+using namespace Hyprutils::Math;
 
 static std::string fourccToName(uint32_t drmFormat) {
     auto        fmt  = drmGetFormatName(drmFormat);
@@ -119,9 +122,71 @@ bool CWaylandPlatform::dispatchEvents() {
     return true;
 }
 
+SP<CWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
+    for (const auto& w : m_windows) {
+        if (w->m_waylandState.surface->resource() == proxy)
+            return w.lock();
+    }
+    return nullptr;
+}
+
 void CWaylandPlatform::initSeat() {
     m_waylandState.seat->setCapabilities([this](CCWlSeat* r, wl_seat_capability cap) {
-        ; // FIXME:
+        const bool HAS_KEYBOARD = ((uint32_t)cap) & WL_SEAT_CAPABILITY_KEYBOARD;
+        const bool HAS_POINTER  = ((uint32_t)cap) & WL_SEAT_CAPABILITY_POINTER;
+
+        if (HAS_KEYBOARD && !m_waylandState.keyboard) {
+            m_waylandState.keyboard = makeShared<CCWlKeyboard>(m_waylandState.seat->sendGetKeyboard());
+
+            // TODO:
+
+        } else if (!HAS_KEYBOARD && m_waylandState.keyboard)
+            m_waylandState.keyboard.reset();
+
+        if (HAS_POINTER && !m_waylandState.pointer) {
+            m_waylandState.pointer = makeShared<CCWlPointer>(m_waylandState.seat->sendGetPointer());
+
+            m_waylandState.pointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf, wl_fixed_t x, wl_fixed_t y) {
+                auto w = windowForSurf(surf);
+
+                if (!w)
+                    return;
+
+                Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
+
+                w->mouseEnter(local);
+                m_currentWindow   = w;
+                m_lastEnterSerial = serial;
+            });
+
+            m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
+                auto w = windowForSurf(surf);
+
+                if (!w)
+                    return;
+
+                w->mouseLeave();
+                m_currentWindow.reset();
+            });
+
+            m_waylandState.pointer->setMotion([this](CCWlPointer* r, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
+                if (!m_currentWindow)
+                    return;
+
+                Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
+
+                m_currentWindow->mouseMove(local);
+            });
+
+            m_waylandState.pointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, wl_pointer_button_state state) {
+                if (!m_currentWindow)
+                    return;
+
+                m_currentWindow->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
+            });
+
+        } else if (!HAS_POINTER && m_waylandState.pointer)
+            m_waylandState.pointer.reset();
     });
 }
 

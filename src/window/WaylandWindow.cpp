@@ -148,6 +148,8 @@ CWaylandWindow::~CWaylandWindow() {
         m_waylandState.xdgSurface->sendDestroy();
     if (m_waylandState.surface)
         m_waylandState.surface->sendDestroy();
+
+    std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
 }
 
 void CWaylandWindow::onScaleUpdate() {

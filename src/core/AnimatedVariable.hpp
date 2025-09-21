@@ -53,7 +53,7 @@ concept OneOf = (... or std::same_as<T, U>);
 // This is mainly to get better errors if we put a type that's not supported
 // Otherwise template errors are ugly
 template <class T>
-concept Animable = OneOf<T, Hyprutils::Math::Vector2D, float, CHyprColor/*, CGradientValueData*/>;
+concept Animable = OneOf<T, Hyprutils::Math::Vector2D, float, CHyprColor /*, CGradientValueData*/>;
 
 struct SAnimationContext {};
 

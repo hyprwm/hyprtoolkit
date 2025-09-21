@@ -41,7 +41,7 @@ CBackend::CBackend() {
 
     m_aqBackend             = Aquamarine::CBackend::create(implementations, options);
     g_asyncResourceGatherer = makeShared<CAsyncResourceGatherer>();
-    g_animationManager = makeShared<CHTAnimationManager>();
+    g_animationManager      = makeShared<CHTAnimationManager>();
 }
 
 SP<CBackend> CBackend::create() {
@@ -78,6 +78,7 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
     auto w                         = makeShared<CWaylandWindow>(data);
     w->m_self                      = w;
     w->m_rootElement->impl->window = w;
+    g_waylandPlatform->m_windows.emplace_back(w);
     return w;
 }
 

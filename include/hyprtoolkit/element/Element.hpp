@@ -38,6 +38,8 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual void                                     setGrow(bool grow);
 
+        virtual bool                                     acceptsMouseInput();
+
         //
 
         Hyprutils::Memory::CUniquePointer<SElementInternalData> impl;

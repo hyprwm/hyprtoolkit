@@ -51,6 +51,10 @@ void IElement::clearChildren() {
     impl->children.clear();
 }
 
+bool IElement::acceptsMouseInput() {
+    return false;
+}
+
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
     for (const auto& e : elements) {
         fn(e);

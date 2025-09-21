@@ -77,5 +77,7 @@ namespace Hyprtoolkit {
         void                                  resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
         SWindowCreationData                   m_creationData;
+
+        friend class CWaylandPlatform;
     };
 };

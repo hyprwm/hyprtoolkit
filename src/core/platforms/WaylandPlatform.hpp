@@ -19,18 +19,22 @@
 namespace Hyprtoolkit {
     typedef std::function<void(void)> FIdleCallback;
 
+    class CWaylandWindow;
+
     class CWaylandPlatform {
       public:
         CWaylandPlatform() = default;
         ~CWaylandPlatform();
 
-        bool attempt();
+        bool               attempt();
 
-        void initSeat();
-        void initShell();
-        bool initDmabuf();
+        void               initSeat();
+        void               initShell();
+        bool               initDmabuf();
 
-        bool dispatchEvents();
+        bool               dispatchEvents();
+
+        SP<CWaylandWindow> windowForSurf(wl_proxy* proxy);
 
         //
         std::vector<FIdleCallback> m_idleCallbacks;
@@ -53,6 +57,8 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwpLinuxDmabufFeedbackV1>   dmabufFeedback;
             Hyprutils::Memory::CSharedPointer<CCWpFractionalScaleManagerV1> fractional;
             Hyprutils::Memory::CSharedPointer<CCWpViewporter>               viewporter;
+            Hyprutils::Memory::CSharedPointer<CCWlKeyboard>                 keyboard;
+            Hyprutils::Memory::CSharedPointer<CCWlPointer>                  pointer;
 
             // control
             bool dmabufFailed = false;
@@ -62,6 +68,10 @@ namespace Hyprtoolkit {
             int         fd       = -1;
             std::string nodeName = "";
         } m_drmState;
+
+        std::vector<WP<CWaylandWindow>> m_windows;
+        WP<CWaylandWindow>              m_currentWindow;
+        uint32_t                        m_lastEnterSerial = 0;
     };
 
     inline UP<CWaylandPlatform> g_waylandPlatform;

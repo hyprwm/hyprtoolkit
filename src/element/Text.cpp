@@ -21,23 +21,38 @@ CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data) {
     ;
 }
 
-void CTextElement::paint() {
-    if (!m_tex && m_waitingForTex)
-        return;
+STextData CTextElement::dataCopy() {
+    return m_data;
+}
 
-    if (!m_tex) {
-        renderTex();
+void CTextElement::replaceData(const STextData& data) {
+    m_data = data;
+    renderTex();
+}
+
+void CTextElement::paint() {
+    SP<IRendererTexture> textureToUse = m_tex;
+
+    if (!m_tex)
+        textureToUse = m_oldTex;
+
+    if (!textureToUse) {
+        if (!m_waitingForTex)
+            renderTex();
         return;
     }
 
     if (impl->window && impl->window->scale() != m_lastScale) {
         renderTex();
-        return;
+        textureToUse = m_oldTex;
     }
+
+    if (!textureToUse)
+        return; // ???
 
     g_renderer->renderTexture({
         .box      = impl->position,
-        .texture  = m_tex,
+        .texture  = textureToUse,
         .a        = 1.F,
         .rounding = 0,
     });
@@ -56,6 +71,8 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box) {
 }
 
 void CTextElement::renderTex() {
+    m_oldTex = m_tex;
+
     m_resource.reset();
     m_tex.reset();
 
@@ -91,6 +108,9 @@ void CTextElement::renderTex() {
                 g_positioner->position(impl->parent.lock(), impl->parent->impl->position);
 
             m_waitingForTex = false;
+
+            if (m_data.callback)
+                m_data.callback();
         });
     });
 }

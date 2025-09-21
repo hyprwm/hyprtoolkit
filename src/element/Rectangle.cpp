@@ -62,5 +62,15 @@ std::optional<Vector2D> CRectangleElement::preferredSize(const Hyprutils::Math::
 }
 
 std::optional<Vector2D> CRectangleElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
+    auto s = m_impl->data.size.calculate(parent);
+    if (s.x != -1 && s.y != -1)
+        return s;
     return Vector2D{0, 0};
+}
+
+std::optional<Vector2D> CRectangleElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {
+    auto s = m_impl->data.size.calculate(parent);
+    if (s.x != -1 && s.y != -1)
+        return s;
+    return std::nullopt;
 }

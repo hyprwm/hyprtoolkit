@@ -4,6 +4,7 @@
 
 #include "../helpers/DamageRing.hpp"
 #include "../helpers/Memory.hpp"
+#include "../core/Input.hpp"
 
 namespace Hyprtoolkit {
 
@@ -24,10 +25,20 @@ namespace Hyprtoolkit {
         virtual void render() = 0;
         virtual void scheduleReposition(WP<IElement> e);
 
+        virtual void mouseEnter(const Hyprutils::Math::Vector2D& local);
+        virtual void mouseMove(const Hyprutils::Math::Vector2D& local);
+        virtual void mouseButton(const Input::eMouseButton button, bool state);
+        virtual void mouseLeave();
+
+        virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
+
         // Damage ring is in pixel coords
         CDamageRing               m_damageRing;
         bool                      m_needsFrame = true;
         WP<IToolkitWindow>        m_self;
+        Hyprutils::Math::Vector2D m_mousePos;
+
+        SP<IElement>              m_hoveredElement;
 
         std::vector<WP<IElement>> m_needsReposition;
     };

@@ -20,12 +20,16 @@ namespace Hyprtoolkit {
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
         CDynamicSize                             size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
+        std::function<void()>                    callback;                                                                 // called after resource is loaded
     };
 
     class CTextElement : public IElement {
       public:
         static Hyprutils::Memory::CSharedPointer<CTextElement> create(const STextData& data = {});
         virtual ~CTextElement() = default;
+
+        STextData dataCopy();
+        void      replaceData(const STextData& data);
 
       private:
         CTextElement(const STextData& data);
@@ -47,6 +51,7 @@ namespace Hyprtoolkit {
         Hyprutils::Math::Vector2D                                            unscale();
 
         Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_tex;
+        Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_oldTex; // while loading a new one
         Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CTextResource> m_resource;
         Hyprutils::Math::Vector2D                                            m_size;
 
