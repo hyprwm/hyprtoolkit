@@ -2,15 +2,15 @@
 
 #include "../core/InternalBackend.hpp"
 #include "../layout/Positioner.hpp"
+#include "../core/AnimationManager.hpp"
 
 using namespace Hyprtoolkit;
 
 void IToolkitWindow::damage(const Hyprutils::Math::CRegion& rg) {
     auto newRg = rg.copy().scale(scale());
 
-    if (m_damageRing.damage(newRg) && !m_needsFrame) {
+    if (m_damageRing.damage(newRg))
         scheduleFrame();
-    }
 }
 
 void IToolkitWindow::damageEntire() {
@@ -32,6 +32,8 @@ void IToolkitWindow::scheduleFrame() {
 }
 
 void IToolkitWindow::onPreRender() {
+    g_animationManager->tick();
+
     for (const auto& e : m_needsReposition) {
         g_positioner->repositionNeeded(e.lock());
     }

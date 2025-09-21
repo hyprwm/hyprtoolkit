@@ -6,6 +6,7 @@
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
 #include "../renderer/Renderer.hpp"
+#include "../core/AnimationManager.hpp"
 
 #include "../Macros.hpp"
 
@@ -205,6 +206,9 @@ void CWaylandWindow::render() {
 
     onPreRender();
 
+    // FIXME: this is required because we use the stupid fucking eglSwapBuffers thing
+    damageEntire();
+
     m_needsFrame = false;
 
     g_pEGL->makeCurrent(m_waylandState.eglSurface);
@@ -229,6 +233,8 @@ void CWaylandWindow::render() {
         g_logger->log(HT_LOG_TRACE, "wayland: last frame took {:.2f}ms, FPS: {:.2f}", durMs, 1000.F / durMs);
         m_lastFrame = std::chrono::steady_clock::now();
     }
+
+    m_needsFrame = g_animationManager->shouldTickForNext();
 }
 
 void CWaylandWindow::onCallback() {

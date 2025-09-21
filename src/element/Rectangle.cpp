@@ -1,9 +1,9 @@
-#include <hyprtoolkit/element/Rectangle.hpp>
+#include "Rectangle.hpp"
 
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../window/ToolkitWindow.hpp"
-
+#include "../core/AnimationManager.hpp"
 #include "Element.hpp"
 
 using namespace Hyprtoolkit;
@@ -14,16 +14,21 @@ SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
     return p;
 }
 
-CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_data(data) {
-    ;
+CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_impl(makeUnique<SRectangleImpl>()) {
+    m_impl->data = data;
+
+    g_animationManager->createAnimation(CHyprColor{data.color, data.a}, m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
+    m_impl->color->setUpdateCallback([this](auto) { impl->damageEntire(); });
+    m_impl->color->setCallbackOnBegin([this](auto) { impl->damageEntire(); }, false);
 }
 
 void CRectangleElement::paint() {
+    const auto c = m_impl->color->value();
     g_renderer->renderRectangle({
         .box      = impl->position,
-        .color    = m_data.color,
-        .a        = m_data.a,
-        .rounding = m_data.rounding,
+        .color    = c.asRGB(),
+        .a        = sc<float>(c.a),
+        .rounding = m_impl->data.rounding,
     });
 }
 
@@ -38,11 +43,12 @@ void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
 }
 
 SRectangleData CRectangleElement::dataCopy() {
-    return m_data;
+    return m_impl->data;
 }
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
-    m_data = data;
+    m_impl->data   = data;
+    *m_impl->color = CHyprColor{data.color, data.a};
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
 }
@@ -52,7 +58,7 @@ Hyprutils::Math::Vector2D CRectangleElement::size() {
 }
 
 std::optional<Vector2D> CRectangleElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_data.size.calculate(parent);
+    return m_impl->data.size.calculate(parent);
 }
 
 std::optional<Vector2D> CRectangleElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {

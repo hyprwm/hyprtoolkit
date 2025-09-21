@@ -176,6 +176,9 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     Mat3x3     matrix     = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_NORMAL, data.box.rot);
     Mat3x3     glMatrix   = m_projection.copy().multiply(matrix);
 
+    if (m_damage.copy().intersect(ROUNDEDBOX).empty())
+        return;
+
     glUseProgram(m_rectShader.program);
 
     glUniformMatrix3fv(m_rectShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
@@ -214,7 +217,10 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     Mat3x3     matrix     = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
     Mat3x3     glMatrix   = m_projection.copy().multiply(matrix);
 
-    CShader*   shader = &m_texShader;
+    if (m_damage.copy().intersect(ROUNDEDBOX).empty())
+        return;
+
+    CShader* shader = &m_texShader;
 
     RASSERT(data.texture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl texture");
 

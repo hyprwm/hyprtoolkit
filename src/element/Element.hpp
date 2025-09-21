@@ -28,6 +28,7 @@ namespace Hyprtoolkit {
         void bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
         void breadthfirst(const std::function<void(SP<IElement>)>& fn);
         void setWindow(SP<IToolkitWindow> w);
+        void damageEntire();
     };
 
 }

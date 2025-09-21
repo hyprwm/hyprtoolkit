@@ -4,8 +4,11 @@
 #include "../types/SizeType.hpp"
 
 #include <hyprgraphics/color/Color.hpp>
+#include <hyprutils/memory/UniquePtr.hpp>
 
 namespace Hyprtoolkit {
+
+    struct SRectangleImpl;
 
     struct SRectangleData {
         Hyprgraphics::CColor color    = Hyprgraphics::CColor{{.r = 1.F, .g = 1.F, .b = 1.F}};
@@ -25,12 +28,12 @@ namespace Hyprtoolkit {
       private:
         CRectangleElement(const SRectangleData& data);
 
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box);
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual void                                      paint();
+        virtual void                                      reposition(const Hyprutils::Math::CBox& box);
+        virtual Hyprutils::Math::Vector2D                 size();
+        virtual std::optional<Hyprutils::Math::Vector2D>  preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>  minimumSize(const Hyprutils::Math::Vector2D& parent);
 
-        SRectangleData                                   m_data;
+        Hyprutils::Memory::CUniquePointer<SRectangleImpl> m_impl;
     };
 };

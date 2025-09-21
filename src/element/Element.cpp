@@ -80,3 +80,9 @@ void SElementInternalData::setWindow(SP<IToolkitWindow> w) {
     if (w)
         w->scheduleReposition(self);
 }
+
+void SElementInternalData::damageEntire() {
+    if (!window)
+        return;
+    window->damage(position);
+}

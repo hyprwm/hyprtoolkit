@@ -1,6 +1,7 @@
 #include <hyprtoolkit/core/Backend.hpp>
 
 #include "InternalBackend.hpp"
+#include "AnimationManager.hpp"
 
 #include "./platforms/WaylandPlatform.hpp"
 #include "./renderPlatforms/Egl.hpp"
@@ -40,6 +41,7 @@ CBackend::CBackend() {
 
     m_aqBackend             = Aquamarine::CBackend::create(implementations, options);
     g_asyncResourceGatherer = makeShared<CAsyncResourceGatherer>();
+    g_animationManager = makeShared<CHTAnimationManager>();
 }
 
 SP<CBackend> CBackend::create() {
