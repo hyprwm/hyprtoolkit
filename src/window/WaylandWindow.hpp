@@ -9,6 +9,7 @@
 #include <aquamarine/allocator/GBM.hpp>
 
 #include "../helpers/Memory.hpp"
+#include "ToolkitWindow.hpp"
 
 #include <wayland.hpp>
 #include <xdg-shell.hpp>
@@ -18,7 +19,7 @@
 #include <wayland-egl.h>
 #include "../core/renderPlatforms/Egl.hpp"
 
-#include <array>
+#include <chrono>
 
 namespace Hyprtoolkit {
     class CWaylandBuffer {
@@ -36,13 +37,14 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CWeakPointer<Aquamarine::IBuffer> m_buffer;
     };
 
-    class CWaylandWindow : public IWindow {
+    class CWaylandWindow : public IToolkitWindow {
       public:
         CWaylandWindow(const SWindowCreationData& data);
         ~CWaylandWindow();
 
         virtual Hyprutils::Math::Vector2D pixelSize();
         virtual float                     scale();
+        virtual void                      render();
 
       private:
         float m_fractionalScale = 1.0;
@@ -67,12 +69,13 @@ namespace Hyprtoolkit {
             uint32_t                  serial     = 0;
         } m_waylandState;
 
-        void                render();
-        void                onCallback();
-        void                onScaleUpdate();
-        void                configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
-        void                resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
+        std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();
 
-        SWindowCreationData m_creationData;
+        void                                  onCallback();
+        void                                  onScaleUpdate();
+        void                                  configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
+        void                                  resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
+
+        SWindowCreationData                   m_creationData;
     };
 };

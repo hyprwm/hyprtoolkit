@@ -83,8 +83,6 @@ int main(int argc, char** argv, char** envp) {
     layout->addChild(rect3);
     layout->addChild(rect4);
 
-    
-
     backend->enterLoop();
 
     return 0;

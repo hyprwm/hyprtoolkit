@@ -12,7 +12,6 @@
 namespace Hyprtoolkit {
 
     struct SElementInternalData;
-    class IWindow;
 
     class IElement {
       public:

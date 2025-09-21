@@ -213,11 +213,13 @@ void CBackend::enterLoop() {
 
         // do idles
         m_sLoopState.idlesMutex.lock();
-        for (const auto& i : m_idles) {
-            (*i)();
-        }
+        auto idlesCpy = m_idles;
         m_idles.clear();
         m_sLoopState.idlesMutex.unlock();
+
+        for (const auto& i : idlesCpy) {
+            (*i)();
+        }
 
         passed.clear();
     }

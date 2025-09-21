@@ -2,6 +2,7 @@
 
 #include <hyprtoolkit/element/Rectangle.hpp>
 
+#include "../element/Element.hpp"
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
 #include "../renderer/Renderer.hpp"
@@ -162,6 +163,7 @@ void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
     m_waylandState.surface->sendSetBufferScale(1);
 
     resizeSwapchain(m_waylandState.size);
+    damageEntire();
 
     m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
 
@@ -176,8 +178,6 @@ void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
         RASSERT(m_waylandState.eglSurface, "Couldn't create eglSurface");
     }
 
-    m_waylandState.surface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
-
     // m_waylandState.surface->sendAttach(m_waylandState.wlBuffers[0]->m_waylandState.buffer.get(), 0, 0);
     // m_waylandState.surface->sendCommit();
 
@@ -185,6 +185,8 @@ void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
 }
 
 void CWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
+    m_damageRing.setSize(pixelSize);
+
     // m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
     //     .length = 2,
     //     .size   = pixelSize,
@@ -201,6 +203,10 @@ void CWaylandWindow::render() {
     if (m_waylandState.frameCallback)
         return;
 
+    onPreRender();
+
+    m_needsFrame = false;
+
     g_pEGL->makeCurrent(m_waylandState.eglSurface);
 
     g_renderer->beginRendering(m_self.lock());
@@ -208,15 +214,28 @@ void CWaylandWindow::render() {
     m_waylandState.frameCallback = makeShared<CCWlCallback>(m_waylandState.surface->sendFrame());
     m_waylandState.frameCallback->setDone([this](CCWlCallback* r, uint32_t frameTime) { onCallback(); });
 
-    m_waylandState.surface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
+    m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN).forEachRect([this](const pixman_box32_t box) {
+        m_waylandState.surface->sendDamageBuffer(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+    });
+
+    g_renderer->endRendering();
 
     eglSwapBuffers(g_pEGL->eglDisplay, m_waylandState.eglSurface);
+
+    // print frame time
+    if (Env::isTrace()) {
+        auto dur   = std::chrono::steady_clock::now() - m_lastFrame;
+        auto durMs = std::chrono::duration_cast<std::chrono::microseconds>(dur).count() / 1000.F;
+        g_logger->log(HT_LOG_TRACE, "wayland: last frame took {:.2f}ms, FPS: {:.2f}", durMs, 1000.F / durMs);
+        m_lastFrame = std::chrono::steady_clock::now();
+    }
 }
 
 void CWaylandWindow::onCallback() {
     m_waylandState.frameCallback.reset();
 
-    render();
+    if (m_needsFrame)
+        render();
 }
 
 Hyprutils::Math::Vector2D CWaylandWindow::pixelSize() {

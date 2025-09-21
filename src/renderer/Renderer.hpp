@@ -10,7 +10,7 @@ using namespace Hyprutils::Math;
 using namespace Hyprgraphics;
 
 namespace Hyprtoolkit {
-    class IWindow;
+    class IToolkitWindow;
     class IRendererTexture;
 
     class IRenderer {
@@ -36,7 +36,8 @@ namespace Hyprtoolkit {
             int                  rounding = 0;
         };
 
-        virtual void                 beginRendering(SP<IWindow> window)                = 0;
+        virtual void                 beginRendering(SP<IToolkitWindow> window)         = 0;
+        virtual void                 endRendering()                                    = 0;
         virtual void                 renderRectangle(const SRectangleRenderData& data) = 0;
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data)           = 0;
         virtual void                 renderTexture(const STextureRenderData& data)     = 0;

@@ -1,6 +1,7 @@
 #include "Element.hpp"
 
 #include "../helpers/Memory.hpp"
+#include "../window/ToolkitWindow.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -38,7 +39,7 @@ void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
 
     child->impl->parent = impl->self.lock();
     child->impl->window = impl->window;
-    child->impl->breadthfirst([w = impl->window](SP<IElement> e) { e->impl->window = w; });
+    child->impl->breadthfirst([w = impl->window.lock()](SP<IElement> e) { e->impl->setWindow(w); });
     impl->children.emplace_back(child);
 }
 
@@ -72,4 +73,10 @@ void SElementInternalData::breadthfirst(const std::function<void(SP<IElement>)>&
     std::vector<SP<IElement>> els = children;
 
     bfHelper(els, fn);
+}
+
+void SElementInternalData::setWindow(SP<IToolkitWindow> w) {
+    window = w;
+    if (w)
+        w->scheduleReposition(self);
 }

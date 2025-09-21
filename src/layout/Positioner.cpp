@@ -1,17 +1,25 @@
 #include "Positioner.hpp"
 
 #include "../element/Element.hpp"
+#include "../window/ToolkitWindow.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
 void CPositioner::position(SP<IElement> element, const CBox& box) {
+    if (!element->impl->window)
+        return;
+
+    CBox newBox = box.copy();
+
     if (element->impl->positionMode == IElement::HT_POSITION_ABSOLUTE)
-        element->reposition(box.copy().translate(element->impl->absoluteOffset));
+        newBox.translate(element->impl->absoluteOffset);
     else if (element->impl->positionMode == IElement::HT_POSITION_CENTER)
-        element->reposition(box.copy().translate((box.size() - element->size()) / 2.F));
-    else
-        element->reposition(box);
+        newBox.translate((box.size() - element->size()) / 2.F);
+
+    element->reposition(newBox);
+
+    element->impl->window->damage(newBox);
 }
 
 void CPositioner::repositionNeeded(SP<IElement> element) {

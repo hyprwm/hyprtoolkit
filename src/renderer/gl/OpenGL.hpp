@@ -6,10 +6,10 @@
 
 #include "Shader.hpp"
 
-#include <functional>
+#include <hyprutils/math/Region.hpp>
 
 namespace Hyprtoolkit {
-    class IWindow;
+    class IToolkitWindow;
     class IElement;
     class CGLTexture;
 
@@ -18,13 +18,19 @@ namespace Hyprtoolkit {
         COpenGLRenderer();
         virtual ~COpenGLRenderer();
 
-        virtual void                 beginRendering(SP<IWindow> window);
+        virtual void                 beginRendering(SP<IToolkitWindow> window);
+        virtual void                 endRendering();
         virtual void                 renderRectangle(const SRectangleRenderData& data);
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data);
         virtual void                 renderTexture(const STextureRenderData& data);
 
       private:
         CBox                        logicalToGL(const CBox& box);
+        void                        scissor(const CBox& box);
+        void                        scissor(const pixman_box32_t* box);
+
+        SP<IToolkitWindow>          m_window;
+        CRegion                     m_damage;
 
         std::vector<SP<CGLTexture>> m_glTextures;
 

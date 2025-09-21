@@ -1,7 +1,6 @@
 #include "OpenGL.hpp"
 
-#include <hyprtoolkit/window/Window.hpp>
-
+#include "../../window/ToolkitWindow.hpp"
 #include "../../core/renderPlatforms/Egl.hpp"
 #include "../../Macros.hpp"
 #include "../../core/InternalBackend.hpp"
@@ -114,10 +113,15 @@ CBox COpenGLRenderer::logicalToGL(const CBox& box) {
     return b;
 }
 
-void COpenGLRenderer::beginRendering(SP<IWindow> window) {
+void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window) {
     m_projection      = Mat3x3::outputProjection(window->pixelSize(), HYPRUTILS_TRANSFORM_NORMAL);
     m_currentViewport = window->pixelSize();
     m_scale           = window->scale();
+    m_window          = window;
+    m_damage          = window->m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN);
+
+    if (m_damage.empty())
+        return;
 
     glViewport(0, 0, window->pixelSize().x, window->pixelSize().y);
 
@@ -133,6 +137,38 @@ void COpenGLRenderer::beginRendering(SP<IWindow> window) {
     });
 
     glDisable(GL_BLEND);
+}
+
+void COpenGLRenderer::endRendering() {
+    m_window->m_damageRing.rotate();
+    m_window.reset();
+    m_damage.clear();
+}
+
+void COpenGLRenderer::scissor(const pixman_box32_t* box) {
+    scissor(CBox{
+        sc<double>(box->x1),
+        sc<double>(box->y1),
+        sc<double>(box->x2 - box->x1),
+        sc<double>(box->y2 - box->y1),
+    });
+}
+
+void COpenGLRenderer::scissor(const CBox& box) {
+    // only call glScissor if the box has changed
+    static CBox m_lastScissorBox = {};
+
+    if (box.empty()) {
+        glDisable(GL_SCISSOR_TEST);
+        return;
+    }
+
+    if (box != m_lastScissorBox) {
+        glScissor(box.x, box.y, box.width, box.height);
+        m_lastScissorBox = box;
+    }
+
+    glEnable(GL_SCISSOR_TEST);
 }
 
 void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
@@ -160,7 +196,10 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 
     glEnableVertexAttribArray(m_rectShader.posAttrib);
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    m_damage.forEachRect([this](const auto& RECT) {
+        scissor(&RECT);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    });
 
     glDisableVertexAttribArray(m_rectShader.posAttrib);
 }
@@ -207,7 +246,10 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glEnableVertexAttribArray(shader->posAttrib);
     glEnableVertexAttribArray(shader->texAttrib);
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    m_damage.forEachRect([this](const auto& RECT) {
+        scissor(&RECT);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    });
 
     glDisableVertexAttribArray(shader->posAttrib);
     glDisableVertexAttribArray(shader->texAttrib);

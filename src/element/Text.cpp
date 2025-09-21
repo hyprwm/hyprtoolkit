@@ -1,6 +1,6 @@
 #include <hyprtoolkit/element/Text.hpp>
-#include <hyprtoolkit/window/Window.hpp>
 
+#include "../window/ToolkitWindow.hpp"
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../core/InternalBackend.hpp"

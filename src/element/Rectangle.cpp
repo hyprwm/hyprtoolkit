@@ -2,6 +2,7 @@
 
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
+#include "../window/ToolkitWindow.hpp"
 
 #include "Element.hpp"
 
@@ -42,7 +43,8 @@ SRectangleData CRectangleElement::dataCopy() {
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
     m_data = data;
-    g_positioner->repositionNeeded(impl->self.lock());
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 Hyprutils::Math::Vector2D CRectangleElement::size() {

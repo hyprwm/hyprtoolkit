@@ -7,9 +7,11 @@
 #include "../helpers/Memory.hpp"
 
 namespace Hyprtoolkit {
+    class IToolkitWindow;
+
     struct SElementInternalData {
         Hyprutils::Memory::CWeakPointer<IElement>                self;
-        Hyprutils::Memory::CWeakPointer<IWindow>                 window;
+        Hyprutils::Memory::CWeakPointer<IToolkitWindow>          window;
         Hyprutils::Math::CBox                                    position;
 
         std::vector<Hyprutils::Memory::CSharedPointer<IElement>> children;
@@ -25,6 +27,7 @@ namespace Hyprtoolkit {
         //
         void bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
         void breadthfirst(const std::function<void(SP<IElement>)>& fn);
+        void setWindow(SP<IToolkitWindow> w);
     };
 
 }

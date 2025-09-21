@@ -22,11 +22,10 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;
 
-        Hyprutils::Memory::CWeakPointer<IWindow>    m_self;
-
       private:
         IWindow() = default;
 
         friend class CWaylandWindow;
+        friend class IToolkitWindow;
     };
 };
