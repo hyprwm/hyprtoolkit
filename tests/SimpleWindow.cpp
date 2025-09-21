@@ -17,8 +17,21 @@ using namespace Hyprtoolkit;
 #define WP CWeakPointer
 #define UP CUniquePointer
 
+static SP<CBackend> backend;
+
+static void addTimer(SP<CRectangleElement> rect) {
+    backend->addTimer(std::chrono::seconds(1), [rect] (Hyprutils::Memory::CAtomicSharedPointer<CTimer> timer, void * data) {
+        
+        auto rectData = rect->dataCopy();
+        rectData.color = Hyprgraphics::CColor::SSRGB{.r = rand() % 1000 / 1000.F, .g = rand() % 1000 / 1000.F, .b = rand() % 1000 / 1000.F};
+        rect->replaceData(rectData);
+        
+        addTimer(rect);
+    }, nullptr);
+}
+
 int main(int argc, char** argv, char** envp) {
-    SP<CBackend> backend = CBackend::create();
+    backend = CBackend::create();
 
     //
     auto window = backend->openWindow(SWindowCreationData{
@@ -62,11 +75,15 @@ int main(int argc, char** argv, char** envp) {
     text->setGrow(true);
     rect4->setGrow(true);
 
+    addTimer(rect4);
+
     layout2->addChild(image);
     layout2->addChild(text);
     layout->addChild(layout2);
     layout->addChild(rect3);
     layout->addChild(rect4);
+
+    
 
     backend->enterLoop();
 

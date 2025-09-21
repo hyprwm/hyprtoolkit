@@ -9,6 +9,7 @@ namespace Hyprtoolkit {
     class CPositioner {
       public:
         void position(SP<IElement> element, const Hyprutils::Math::CBox& box);
+        void repositionNeeded(SP<IElement> element);
     };
 
     inline UP<CPositioner> g_positioner = makeUnique<CPositioner>();

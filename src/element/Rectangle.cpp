@@ -36,6 +36,15 @@ void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
     }
 }
 
+SRectangleData CRectangleElement::dataCopy() {
+    return m_data;
+}
+
+void CRectangleElement::replaceData(const SRectangleData& data) {
+    m_data = data;
+    g_positioner->repositionNeeded(impl->self.lock());
+}
+
 Hyprutils::Math::Vector2D CRectangleElement::size() {
     return impl->position.size();
 }

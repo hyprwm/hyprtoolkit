@@ -13,3 +13,10 @@ void CPositioner::position(SP<IElement> element, const CBox& box) {
     else
         element->reposition(box);
 }
+
+void CPositioner::repositionNeeded(SP<IElement> element) {
+    if (!element->impl->parent)
+        return;
+
+    position(element->impl->parent.lock(), element->impl->parent->impl->position);
+}

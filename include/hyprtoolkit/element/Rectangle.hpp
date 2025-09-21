@@ -19,6 +19,9 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data = {});
         virtual ~CRectangleElement() = default;
 
+        SRectangleData dataCopy();
+        void           replaceData(const SRectangleData& data);
+
       private:
         CRectangleElement(const SRectangleData& data);
 
