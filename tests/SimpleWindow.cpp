@@ -50,12 +50,12 @@ int main(int argc, char** argv, char** envp) {
     auto layout2 = CColumnLayoutElement::create(SColumnLayoutData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}}});
 
     auto image = CImageElement::create(SImageData{
-        .path = "/home/vaxry/Documents/Hypr/thats a clip.jpg",
-        .size = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {250, 250}},
+        .path = "/home/vaxry/Documents/born to C++.png",
+        .size = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {447, 447}},
     });
 
     auto text = CTextElement::create(STextData{
-        .text  = "That's a clip!!!!",
+        .text  = "world is a fuck",
         .color = Hyprgraphics::CColor::SSRGB{.r = 0.4F, .g = 0.4F, .b = 0.4F},
     });
 

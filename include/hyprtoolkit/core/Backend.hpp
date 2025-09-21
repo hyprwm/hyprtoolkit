@@ -44,17 +44,26 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<IWindow> openWindow(const SWindowCreationData& data);
 
         /*
+            Add a timer func. This will return a pointer, but the pointer doesn't need
+            to be kept.
+        */
+        Hyprutils::Memory::CAtomicSharedPointer<CTimer> addTimer(const std::chrono::system_clock::duration&                                            timeout,
+                                                                 std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
+                                                                 bool force = false);
+
+        /*
+            Add an idle func. This fn will be executed as soon as possible, but
+            after every pending event
+        */
+        void addIdle(const std::function<void()>& fn);
+
+        /*
             Enter the loop.
         */
         void enterLoop();
 
       private:
         CBackend();
-
-        Hyprutils::Memory::CAtomicSharedPointer<CTimer>         addTimer(const std::chrono::system_clock::duration&                                            timeout,
-                                                                         std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
-                                                                         bool force = false);
-        void                                                    addIdle(const std::function<void()>& fn);
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
