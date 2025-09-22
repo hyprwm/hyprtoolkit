@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hyprtoolkit/types/PointerShape.hpp>
+
 #include "../../helpers/Memory.hpp"
 
 #include <vector>
@@ -12,6 +14,7 @@
 #include <linux-dmabuf-v1.hpp>
 #include <fractional-scale-v1.hpp>
 #include <viewporter.hpp>
+#include <cursor-shape-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -31,6 +34,7 @@ namespace Hyprtoolkit {
         void               initSeat();
         void               initShell();
         bool               initDmabuf();
+        void               setCursor(ePointerShape shape);
 
         bool               dispatchEvents();
 
@@ -59,6 +63,8 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWpViewporter>               viewporter;
             Hyprutils::Memory::CSharedPointer<CCWlKeyboard>                 keyboard;
             Hyprutils::Memory::CSharedPointer<CCWlPointer>                  pointer;
+            Hyprutils::Memory::CSharedPointer<CCWpCursorShapeManagerV1>     cursorShapeMgr;
+            Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>      cursorShapeDev;
 
             // control
             bool dmabufFailed = false;

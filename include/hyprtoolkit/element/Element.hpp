@@ -9,6 +9,8 @@
 #include <hyprutils/memory/UniquePtr.hpp>
 #include <hyprutils/math/Box.hpp>
 
+#include "../types/PointerShape.hpp"
+
 namespace Hyprtoolkit {
 
     struct SElementInternalData;
@@ -39,6 +41,7 @@ namespace Hyprtoolkit {
         virtual void                                     setGrow(bool grow);
 
         virtual bool                                     acceptsMouseInput();
+        virtual ePointerShape                            pointerShape();
 
         //
 

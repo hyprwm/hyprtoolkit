@@ -65,6 +65,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.fractional = makeShared<CCWpFractionalScaleManagerV1>(
                 (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_fractional_scale_manager_v1_interface, 1));
+        } else if (NAME == wp_cursor_shape_manager_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.cursorShapeMgr =
+                makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_cursor_shape_manager_v1_interface, 1));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             m_waylandState.dmabuf =
@@ -157,6 +161,8 @@ void CWaylandPlatform::initSeat() {
                 w->mouseEnter(local);
                 m_currentWindow   = w;
                 m_lastEnterSerial = serial;
+
+                setCursor(HT_POINTER_ARROW);
             });
 
             m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
@@ -185,8 +191,12 @@ void CWaylandPlatform::initSeat() {
                 m_currentWindow->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
             });
 
-        } else if (!HAS_POINTER && m_waylandState.pointer)
+            m_waylandState.cursorShapeDev = makeShared<CCWpCursorShapeDeviceV1>(m_waylandState.cursorShapeMgr->sendGetPointer(m_waylandState.pointer->resource()));
+
+        } else if (!HAS_POINTER && m_waylandState.pointer) {
             m_waylandState.pointer.reset();
+            m_waylandState.cursorShapeDev.reset();
+        }
     });
 }
 
@@ -298,4 +308,19 @@ bool CWaylandPlatform::initDmabuf() {
     nullBackend->setFormats(m_dmabufFormats);
 
     return true;
+}
+
+void CWaylandPlatform::setCursor(ePointerShape shape) {
+    if (!m_waylandState.cursorShapeDev)
+        return;
+
+    wpCursorShapeDeviceV1Shape wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
+
+    switch (shape) {
+        case HT_POINTER_ARROW: break;
+        case HT_POINTER_POINTER: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER; break;
+        default: break;
+    }
+
+    m_waylandState.cursorShapeDev->sendSetShape(m_lastEnterSerial, wlShape);
 }

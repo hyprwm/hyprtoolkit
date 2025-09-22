@@ -153,3 +153,7 @@ std::optional<Vector2D> CButtonElement::maximumSize(const Hyprutils::Math::Vecto
 bool CButtonElement::acceptsMouseInput() {
     return true;
 }
+
+ePointerShape CButtonElement::pointerShape() {
+    return HT_POINTER_POINTER;
+}

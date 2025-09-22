@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/window/Window.hpp>
+#include <hyprtoolkit/types/PointerShape.hpp>
 
 #include "../helpers/DamageRing.hpp"
 #include "../helpers/Memory.hpp"
@@ -31,6 +32,7 @@ namespace Hyprtoolkit {
         virtual void mouseLeave();
 
         virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
+        virtual void setCursor(ePointerShape shape) = 0;
 
         // Damage ring is in pixel coords
         CDamageRing               m_damageRing;

@@ -45,6 +45,7 @@ namespace Hyprtoolkit {
         virtual Hyprutils::Math::Vector2D pixelSize();
         virtual float                     scale();
         virtual void                      render();
+        virtual void                      setCursor(ePointerShape shape);
 
       private:
         float m_fractionalScale = 1.0;

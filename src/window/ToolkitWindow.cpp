@@ -66,6 +66,8 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
     m_hoveredElement = el;
     if (m_hoveredElement)
         m_hoveredElement->impl->m_externalEvents.mouseEnter.emit(coords - m_hoveredElement->impl->position.pos());
+
+    setCursor(m_hoveredElement ? m_hoveredElement->pointerShape() : HT_POINTER_ARROW);
 }
 
 void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {

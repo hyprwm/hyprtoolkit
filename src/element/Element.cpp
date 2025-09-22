@@ -55,6 +55,10 @@ bool IElement::acceptsMouseInput() {
     return false;
 }
 
+ePointerShape IElement::pointerShape() {
+    return HT_POINTER_ARROW;
+}
+
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
     for (const auto& e : elements) {
         fn(e);

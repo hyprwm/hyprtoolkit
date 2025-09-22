@@ -253,3 +253,7 @@ Hyprutils::Math::Vector2D CWaylandWindow::pixelSize() {
 float CWaylandWindow::scale() {
     return m_fractionalScale;
 }
+
+void CWaylandWindow::setCursor(ePointerShape shape) {
+    g_waylandPlatform->setCursor(shape);
+}
