@@ -76,7 +76,7 @@ void CButtonElement::paint() {
     ;
 }
 
-void CButtonElement::reposition(const Hyprutils::Math::CBox& box) {
+void CButtonElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
     g_positioner->position(m_impl->background, impl->position);
@@ -84,7 +84,7 @@ void CButtonElement::reposition(const Hyprutils::Math::CBox& box) {
     // center label box in box
     auto labelBox = CBox{
         box.pos(),
-        m_impl->label->impl->position.size(),
+        m_impl->label->preferredSize(impl->position.size()).value(),
     };
 
     const bool LABEL_CHANGED = m_impl->labelChanged;
@@ -94,7 +94,7 @@ void CButtonElement::reposition(const Hyprutils::Math::CBox& box) {
         g_positioner->position(m_impl->label, impl->position);
     }
 
-    labelBox.translate((box.size() - m_impl->label->impl->position.size()) / 2.F);
+    labelBox.translate((box.size() - m_impl->label->preferredSize(impl->position.size()).value()) / 2.F);
 
     g_positioner->position(m_impl->label, labelBox);
 

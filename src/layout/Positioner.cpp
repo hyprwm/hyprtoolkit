@@ -6,7 +6,7 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-void CPositioner::position(SP<IElement> element, const CBox& box) {
+void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     if (!element->impl->window)
         return;
 
@@ -17,7 +17,7 @@ void CPositioner::position(SP<IElement> element, const CBox& box) {
     else if (element->impl->positionMode == IElement::HT_POSITION_CENTER)
         newBox.translate((box.size() - element->size()) / 2.F);
 
-    element->reposition(newBox);
+    element->reposition(newBox, maxSize);
 
     element->impl->window->damage(newBox);
 }

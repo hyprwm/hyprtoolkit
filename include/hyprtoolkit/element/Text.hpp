@@ -13,6 +13,7 @@
 namespace Hyprtoolkit {
 
     class IRendererTexture;
+    struct STextImpl;
 
     struct STextData {
         std::string                              text;
@@ -36,26 +37,19 @@ namespace Hyprtoolkit {
         CTextElement(const STextData& data);
 
         virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box);
+        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual Hyprutils::Math::Vector2D                size();
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
 
         void                                             renderTex();
+        Hyprutils::Math::Vector2D                        unscale();
 
         STextData                                        m_data;
 
-        // for scaling
-        size_t                                                               m_lastFontSizeUnscaled = 0;
-        float                                                                m_lastScale            = 1.F;
-        Hyprutils::Math::Vector2D                                            unscale();
+        Hyprutils::Memory::CUniquePointer<STextImpl>     m_impl;
 
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_tex;
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_oldTex; // while loading a new one
-        Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CTextResource> m_resource;
-        Hyprutils::Math::Vector2D                                            m_size;
-
-        bool                                                                 m_waitingForTex = false;
+        friend class CButtonElement;
     };
 };

@@ -66,13 +66,14 @@ void IElement::setMargin(float thick) {
     impl->margin = thick;
 }
 
-void IElement::reposition(const Hyprutils::Math::CBox& box) {
+void IElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     impl->setPosition(box);
 }
 
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
-    position.expand(-margin);
+    // FIXME: this shrinks every recalc idk why
+    //position.expand(-margin);
 }
 
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {

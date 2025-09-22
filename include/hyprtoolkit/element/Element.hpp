@@ -27,7 +27,7 @@ namespace Hyprtoolkit {
 
         virtual void                      paint() = 0;
         virtual Hyprutils::Math::Vector2D size()  = 0;
-        virtual void                      reposition(const Hyprutils::Math::CBox& box);
+        virtual void                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
 
         virtual void                      setPositionMode(ePositionMode mode);
         virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);

@@ -64,7 +64,7 @@ void CImageElement::renderTex() {
     });
 }
 
-void CImageElement::reposition(const Hyprutils::Math::CBox& box) {
+void CImageElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
     const auto C = impl->children;

@@ -48,7 +48,7 @@ int                 main(int argc, char** argv, char** envp) {
     });
 
     auto content = CTextElement::create(STextData{
-                        .text  = "This is an example dialog. This first line is long on purpose, so that we overflow.<br/><br/>Woo!",
+                        .text  = "This is an example dialog. This first line is long on purpose, so that we overflow.\n\nWoo!",
                         .color = backend->getPalette()->m_colors.text,
     });
 

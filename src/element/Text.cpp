@@ -1,4 +1,5 @@
-#include <hyprtoolkit/element/Text.hpp>
+#include "Text.hpp"
+
 #include <hyprtoolkit/palette/Palette.hpp>
 #include <hyprgraphics/color/Color.hpp>
 
@@ -19,8 +20,8 @@ SP<CTextElement> CTextElement::create(const STextData& data) {
     return p;
 }
 
-CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data), m_lastFontSizeUnscaled(m_data.fontSize.value_or(g_palette->m_vars.fontSize)) {
-    ;
+CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data), m_impl(makeUnique<STextImpl>()) {
+    m_impl->lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
 }
 
 STextData CTextElement::dataCopy() {
@@ -28,26 +29,26 @@ STextData CTextElement::dataCopy() {
 }
 
 void CTextElement::replaceData(const STextData& data) {
-    m_data                 = data;
-    m_lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
+    m_data                       = data;
+    m_impl->lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
     renderTex();
 }
 
 void CTextElement::paint() {
-    SP<IRendererTexture> textureToUse = m_tex;
+    SP<IRendererTexture> textureToUse = m_impl->tex;
 
-    if (!m_tex)
-        textureToUse = m_oldTex;
+    if (!m_impl->tex)
+        textureToUse = m_impl->oldTex;
 
     if (!textureToUse) {
-        if (!m_waitingForTex)
+        if (!m_impl->waitingForTex)
             renderTex();
         return;
     }
 
-    if (impl->window && impl->window->scale() != m_lastScale) {
+    if ((impl->window && impl->window->scale() != m_impl->lastScale) || m_impl->needsTexRefresh) {
         renderTex();
-        textureToUse = m_oldTex;
+        textureToUse = m_impl->oldTex;
     }
 
     if (!textureToUse)
@@ -61,11 +62,13 @@ void CTextElement::paint() {
     });
 }
 
-void CTextElement::reposition(const Hyprutils::Math::CBox& box) {
+void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    impl->position.w = unscale().x;
-    impl->position.h = unscale().y;
+    if (m_impl->lastMaxSize != maxSize) {
+        m_impl->needsTexRefresh = true;
+        m_impl->lastMaxSize     = maxSize;
+    }
 
     const auto C = impl->children;
 
@@ -75,29 +78,34 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box) {
 }
 
 void CTextElement::renderTex() {
-    m_oldTex = m_tex;
+    m_impl->oldTex          = m_impl->tex;
+    m_impl->needsTexRefresh = false;
 
-    m_resource.reset();
-    m_tex.reset();
+    m_impl->resource.reset();
+    m_impl->tex.reset();
 
-    m_waitingForTex = true;
+    m_impl->waitingForTex = true;
 
-    m_lastScale = impl->window ? impl->window->scale() : 1.F;
+    m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
 
-    m_resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
+    std::optional<Vector2D> maxSize = m_data.clampSize.value_or(m_impl->lastMaxSize);
+    if (maxSize == Vector2D{0, 0})
+        maxSize = std::nullopt;
+
+    m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
         .text = m_data.text,
         // .font
-        .fontSize = sc<size_t>(m_lastFontSizeUnscaled * m_lastScale),
+        .fontSize = sc<size_t>(m_impl->lastFontSizeUnscaled * m_impl->lastScale),
         .color    = CColor{CColor::SSRGB{.r = m_data.color.r, .g = m_data.color.g, .b = m_data.color.b}},
         // .align
-        .maxSize = m_data.clampSize,
+        .maxSize = maxSize,
     });
 
-    ASP<IAsyncResource> resourceGeneric(m_resource);
+    ASP<IAsyncResource> resourceGeneric(m_impl->resource);
 
     g_asyncResourceGatherer->enqueue(resourceGeneric);
 
-    m_resource->m_events.finished.listenStatic([this, self = impl->self] {
+    m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
         if (!self)
             return;
 
@@ -105,13 +113,13 @@ void CTextElement::renderTex() {
             if (!self)
                 return;
 
-            ASP<IAsyncResource> resourceGeneric(m_resource);
-            m_size = m_resource->m_asset.pixelSize;
-            m_tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+            ASP<IAsyncResource> resourceGeneric(m_impl->resource);
+            m_impl->size = m_impl->resource->m_asset.pixelSize;
+            m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
             if (impl->parent)
-                g_positioner->position(impl->parent.lock(), impl->parent->impl->position);
+                g_positioner->repositionNeeded(impl->self.lock());
 
-            m_waitingForTex = false;
+            m_impl->waitingForTex = false;
 
             if (m_data.callback)
                 m_data.callback();
@@ -121,8 +129,8 @@ void CTextElement::renderTex() {
 
 Hyprutils::Math::Vector2D CTextElement::unscale() {
     if (!impl->window)
-        return m_size;
-    return m_size / impl->window->scale();
+        return m_impl->size;
+    return m_impl->size / impl->window->scale();
 }
 
 Hyprutils::Math::Vector2D CTextElement::size() {

@@ -23,7 +23,7 @@ void CRowLayoutElement::paint() {
 }
 
 // FIXME: de-dup with columnlayout?
-void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
+void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(sbox);
 
     const auto& box = impl->position;
@@ -131,7 +131,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
 
         CBox childBox = CBox{box.x + currentX, EXPANDS_H ? box.y + ((box.h - cSize.y) / 2) : box.y, (double)widths.at(i), cSize.y};
 
-        g_positioner->position(child, childBox);
+        g_positioner->position(child, childBox, Vector2D{-1.F, box.h});
 
         currentX += childBox.w + m_data.gap;
     }

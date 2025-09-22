@@ -30,7 +30,7 @@ namespace Hyprtoolkit {
         CRectangleElement(const SRectangleData& data);
 
         virtual void                                      paint();
-        virtual void                                      reposition(const Hyprutils::Math::CBox& box);
+        virtual void                                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual Hyprutils::Math::Vector2D                 size();
         virtual std::optional<Hyprutils::Math::Vector2D>  preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>  minimumSize(const Hyprutils::Math::Vector2D& parent);

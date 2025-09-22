@@ -23,7 +23,7 @@ void CColumnLayoutElement::paint() {
 }
 
 // FIXME: de-dup with rowlayout?
-void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
+void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(sbox);
 
     const auto& box = impl->position;
@@ -132,7 +132,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
 
         CBox childBox = CBox{EXPANDS_W ? box.x + ((box.w - cSize.x) / 2) : box.x, box.y + currentY, cSize.x, (double)heights.at(i)};
 
-        g_positioner->position(child, childBox);
+        g_positioner->position(child, childBox, Vector2D{box.w, -1.F});
 
         currentY += childBox.h + m_data.gap;
     }

@@ -22,7 +22,7 @@ void CNullElement::paint() {
     ;
 }
 
-void CNullElement::reposition(const Hyprutils::Math::CBox& box) {
+void CNullElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
     const auto C = impl->children;

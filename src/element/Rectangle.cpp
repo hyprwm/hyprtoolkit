@@ -51,7 +51,7 @@ void CRectangleElement::paint() {
     }
 }
 
-void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {
+void CRectangleElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
     const auto C = impl->children;
