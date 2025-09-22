@@ -1,5 +1,7 @@
 #include "AnimationManager.hpp"
 
+#include "../Macros.hpp"
+
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 

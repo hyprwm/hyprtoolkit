@@ -2,8 +2,8 @@
 
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
+#include "../palette/Color.hpp"
 
-#include <hyprgraphics/color/Color.hpp>
 #include <hyprgraphics/resource/resources/TextResource.hpp>
 
 #include <hyprutils/memory/Atomic.hpp>
@@ -16,7 +16,8 @@ namespace Hyprtoolkit {
 
     struct STextData {
         std::string                              text;
-        Hyprgraphics::CColor                     color = Hyprgraphics::CColor::SSRGB{.r = 1.F, .g = 1.F, .b = 1.F};
+        std::optional<size_t>                    fontSize;
+        CHyprColor                               color = CHyprColor{1.F, 1.F, 1.F, 1.F};
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
         CDynamicSize                             size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
@@ -46,8 +47,8 @@ namespace Hyprtoolkit {
         STextData                                        m_data;
 
         // for scaling
-        size_t                                                               m_rawFontSize = 16;
-        float                                                                m_lastScale   = 1.F;
+        size_t                                                               m_lastFontSizeUnscaled = 0;
+        float                                                                m_lastScale            = 1.F;
         Hyprutils::Math::Vector2D                                            unscale();
 
         Hyprutils::Memory::CSharedPointer<IRendererTexture>                  m_tex;

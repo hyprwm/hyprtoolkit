@@ -1,18 +1,10 @@
 #pragma once
 
 #include <hyprutils/memory/SharedPtr.hpp>
-#include <hyprgraphics/color/Color.hpp>
+
+#include "Color.hpp"
 
 namespace Hyprtoolkit {
-    class CToolkitColor {
-      public:
-        CToolkitColor() = default;
-        CToolkitColor(const Hyprgraphics::CColor& color, float a = 1.F);
-        ~CToolkitColor() = default;
-
-        Hyprgraphics::CColor m_color = Hyprgraphics::CColor::SSRGB{.r = 0.F, .g = 0.F, .b = 0.F};
-        float                m_a     = 1.F;
-    };
 
     class CPalette {
       public:
@@ -30,14 +22,19 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CPalette> configPalette();
 
         struct {
-            CToolkitColor background;
-            CToolkitColor text;
-            CToolkitColor base;
-            CToolkitColor alternateBase;
-            CToolkitColor brightText;
-            CToolkitColor accent;
-            CToolkitColor accentSecondary;
+            CHyprColor background;
+            CHyprColor text;
+            CHyprColor base;
+            CHyprColor alternateBase;
+            CHyprColor brightText;
+            CHyprColor accent;
+            CHyprColor accentSecondary;
         } m_colors;
+
+        struct {
+            int fontSize      = 12;
+            int smallFontSize = 11;
+        } m_vars;
 
       private:
         CPalette() = default;

@@ -2,8 +2,8 @@
 
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
+#include "../palette/Color.hpp"
 
-#include <hyprgraphics/color/Color.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
 
 namespace Hyprtoolkit {
@@ -11,12 +11,11 @@ namespace Hyprtoolkit {
     struct SRectangleImpl;
 
     struct SRectangleData {
-        Hyprgraphics::CColor color           = Hyprgraphics::CColor{{.r = 1.F, .g = 1.F, .b = 1.F}};
-        float                a               = 1.F;
-        int                  rounding        = 0;
-        Hyprgraphics::CColor borderColor     = Hyprgraphics::CColor{{.r = 1.F, .g = 1.F, .b = 1.F}};
-        int                  borderThickness = 0;
-        CDynamicSize         size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
+        CHyprColor   color           = CHyprColor{1.F, 1.F, 1.F, 1.F};
+        int          rounding        = 0;
+        CHyprColor   borderColor     = CHyprColor{1.F, 1.F, 1.F, 1.F};
+        int          borderThickness = 0;
+        CDynamicSize size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
     };
 
     class CRectangleElement : public IElement {

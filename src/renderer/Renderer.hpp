@@ -1,11 +1,11 @@
 #pragma once
 
+#include <hyprtoolkit/palette/Color.hpp>
 #include <hyprutils/math/Box.hpp>
 #include <hyprgraphics/color/Color.hpp>
 #include <hyprgraphics/resource/resources/AsyncResource.hpp>
 
 #include "../helpers/Memory.hpp"
-#include "../helpers/Color.hpp"
 
 using namespace Hyprutils::Math;
 using namespace Hyprgraphics;

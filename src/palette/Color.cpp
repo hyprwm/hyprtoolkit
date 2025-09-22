@@ -1,4 +1,7 @@
-#include "Color.hpp"
+#include <hyprtoolkit/palette/Color.hpp>
+#include "../Macros.hpp"
+
+using namespace Hyprtoolkit;
 
 #define ALPHA(c) ((double)(((c) >> 24) & 0xff) / 255.0)
 #define RED(c)   ((double)(((c) >> 16) & 0xff) / 255.0)
@@ -26,6 +29,25 @@ CHyprColor::CHyprColor(const Hyprgraphics::CColor& color, float a_) : a(a_) {
     okLab = color.asOkLab();
 }
 
+bool CHyprColor::operator==(const CHyprColor& c2) const {
+    return c2.r == r && c2.g == g && c2.b == b && c2.a == a;
+}
+
+CHyprColor CHyprColor::operator-(const CHyprColor& c2) const {
+    RASSERT(false, "CHyprColor: - is a STUB");
+    return {};
+}
+
+CHyprColor CHyprColor::operator+(const CHyprColor& c2) const {
+    RASSERT(false, "CHyprColor: + is a STUB");
+    return {};
+}
+
+CHyprColor CHyprColor::operator*(const float& c2) const {
+    RASSERT(false, "CHyprColor: * is a STUB");
+    return {};
+}
+
 uint32_t CHyprColor::getAsHex() const {
     return ((uint32_t)(a * 255.f) * 0x1000000) + ((uint32_t)(r * 255.f) * 0x10000) + ((uint32_t)(g * 255.f) * 0x100) + ((uint32_t)(b * 255.f) * 0x1);
 }
@@ -44,4 +66,12 @@ Hyprgraphics::CColor::SHSL CHyprColor::asHSL() const {
 
 CHyprColor CHyprColor::stripA() const {
     return {r, g, b, 1.F};
+}
+
+CHyprColor CHyprColor::brighten(float coeff) const {
+    return {r * (1.F + coeff), g * (1.F + coeff), b * (1.F + coeff), a};
+}
+
+CHyprColor CHyprColor::darken(float coeff) const {
+    return {r * (1.F - coeff), g * (1.F - coeff), b * (1.F - coeff), a};
 }

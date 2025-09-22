@@ -8,6 +8,8 @@
 
 namespace Hyprtoolkit {
 
+    class CPalette;
+
     class CBackendLogger {
       public:
         void log(eLogLevel level, std::string str);
@@ -36,4 +38,5 @@ namespace Hyprtoolkit {
     inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackend>                g_backend;
     inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackendLogger>          g_logger;
     inline Hyprutils::Memory::CSharedPointer<Hyprgraphics::CAsyncResourceGatherer> g_asyncResourceGatherer;
+    inline Hyprutils::Memory::CSharedPointer<CPalette>                             g_palette;
 }

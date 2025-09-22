@@ -1,5 +1,8 @@
 #include "Button.hpp"
 
+#include <hyprtoolkit/palette/Palette.hpp>
+
+#include "../core/InternalBackend.hpp"
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../window/ToolkitWindow.hpp"
@@ -20,16 +23,16 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleElement::create(SRectangleData{
-        .color           = CColor::SSRGB{.r = 0.2F, .g = 0.2F, .b = 0.2F},
+        .color           = g_palette->m_colors.base,
         .rounding        = 5,
-        .borderColor     = CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.7F},
+        .borderColor     = g_palette->m_colors.alternateBase,
         .borderThickness = 1,
         .size            = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
     });
 
     m_impl->label = CTextElement::create(STextData{
         .text  = data.label,
-        .color = CColor::SSRGB{.r = 0.9F, .g = 0.9F, .b = 0.9F},
+        .color = g_palette->m_colors.text,
         .size  = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
         .callback =
             [this] {
@@ -43,13 +46,13 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         auto bg  = m_impl->background->dataCopy();
-        bg.color = CColor::SSRGB{.r = 0.3F, .g = 0.3F, .b = 0.3F};
+        bg.color = g_palette->m_colors.base.brighten(0.2F);
         m_impl->background->replaceData(bg);
     });
 
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
         auto bg  = m_impl->background->dataCopy();
-        bg.color = CColor::SSRGB{.r = 0.2F, .g = 0.2F, .b = 0.2F};
+        bg.color = g_palette->m_colors.base;
         m_impl->background->replaceData(bg);
     });
 

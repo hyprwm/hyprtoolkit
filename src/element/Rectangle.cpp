@@ -17,7 +17,7 @@ SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
 CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_impl(makeUnique<SRectangleImpl>()) {
     m_impl->data = data;
 
-    g_animationManager->createAnimation(CHyprColor{data.color, data.a}, m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
+    g_animationManager->createAnimation(data.color, m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
     m_impl->color->setUpdateCallback([this](auto) { impl->damageEntire(); });
     m_impl->color->setCallbackOnBegin([this](auto) { impl->damageEntire(); }, false);
 }
@@ -33,7 +33,7 @@ void CRectangleElement::paint() {
     if (m_impl->data.borderThickness > 0) {
         g_renderer->renderBorder({
             .box      = impl->position,
-            .color    = c,
+            .color    = m_impl->data.borderColor,
             .rounding = m_impl->data.rounding,
             .thick    = m_impl->data.borderThickness,
         });
@@ -56,7 +56,7 @@ SRectangleData CRectangleElement::dataCopy() {
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
     m_impl->data   = data;
-    *m_impl->color = CHyprColor{data.color, data.a};
+    *m_impl->color = data.color;
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
 }

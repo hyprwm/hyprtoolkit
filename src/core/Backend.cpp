@@ -1,4 +1,5 @@
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprtoolkit/palette/Palette.hpp>
 
 #include "InternalBackend.hpp"
 #include "AnimationManager.hpp"
@@ -49,6 +50,7 @@ SP<CBackend> CBackend::create() {
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
     g_logger  = SP<CBackendLogger>(new CBackendLogger());
+    g_palette = CPalette::palette();
     if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
         return nullptr;

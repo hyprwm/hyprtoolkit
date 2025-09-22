@@ -1,4 +1,6 @@
 #include <hyprtoolkit/element/Text.hpp>
+#include <hyprtoolkit/palette/Palette.hpp>
+#include <hyprgraphics/color/Color.hpp>
 
 #include "../window/ToolkitWindow.hpp"
 #include "../layout/Positioner.hpp"
@@ -17,7 +19,7 @@ SP<CTextElement> CTextElement::create(const STextData& data) {
     return p;
 }
 
-CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data) {
+CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data), m_lastFontSizeUnscaled(m_data.fontSize.value_or(g_palette->m_vars.fontSize)) {
     ;
 }
 
@@ -26,7 +28,8 @@ STextData CTextElement::dataCopy() {
 }
 
 void CTextElement::replaceData(const STextData& data) {
-    m_data = data;
+    m_data                 = data;
+    m_lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
     renderTex();
 }
 
@@ -83,8 +86,8 @@ void CTextElement::renderTex() {
     m_resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
         .text = m_data.text,
         // .font
-        .fontSize = sc<size_t>(m_rawFontSize * m_lastScale),
-        .color    = m_data.color,
+        .fontSize = sc<size_t>(m_lastFontSizeUnscaled * m_lastScale),
+        .color    = CColor{CColor::SSRGB{.r = m_data.color.r, .g = m_data.color.g, .b = m_data.color.b}},
         // .align
         .maxSize = m_data.clampSize,
     });
