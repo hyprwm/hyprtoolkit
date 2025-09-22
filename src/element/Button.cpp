@@ -20,9 +20,11 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleElement::create(SRectangleData{
-        .color    = CColor::SSRGB{.r = 0.2F, .g = 0.2F, .b = 0.2F},
-        .rounding = 5,
-        .size     = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+        .color           = CColor::SSRGB{.r = 0.2F, .g = 0.2F, .b = 0.2F},
+        .rounding        = 5,
+        .borderColor     = CColor::SSRGB{.r = 0.7F, .g = 0.7F, .b = 0.7F},
+        .borderThickness = 1,
+        .size            = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
     });
 
     m_impl->label = CTextElement::create(STextData{

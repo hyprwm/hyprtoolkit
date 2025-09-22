@@ -5,6 +5,7 @@
 #include <hyprgraphics/resource/resources/AsyncResource.hpp>
 
 #include "../helpers/Memory.hpp"
+#include "../helpers/Color.hpp"
 
 using namespace Hyprutils::Math;
 using namespace Hyprgraphics;
@@ -19,10 +20,9 @@ namespace Hyprtoolkit {
         virtual ~IRenderer() = default;
 
         struct SRectangleRenderData {
-            CBox   box;
-            CColor color{{.r = 1.F, .g = 1.F, .b = 1.F}};
-            float  a        = 1.F;
-            int    rounding = 0;
+            CBox       box;
+            CHyprColor color;
+            int        rounding = 0;
         };
 
         struct STextureData {
@@ -36,11 +36,19 @@ namespace Hyprtoolkit {
             int                  rounding = 0;
         };
 
+        struct SBorderRenderData {
+            CBox       box;
+            CHyprColor color    = {1, 1, 1, 1};
+            int        rounding = 0;
+            int        thick    = 0;
+        };
+
         virtual void                 beginRendering(SP<IToolkitWindow> window)         = 0;
         virtual void                 endRendering()                                    = 0;
         virtual void                 renderRectangle(const SRectangleRenderData& data) = 0;
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data)           = 0;
         virtual void                 renderTexture(const STextureRenderData& data)     = 0;
+        virtual void                 renderBorder(const SBorderRenderData& data)       = 0;
     };
 
     inline UP<IRenderer> g_renderer;

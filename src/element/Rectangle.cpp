@@ -26,10 +26,18 @@ void CRectangleElement::paint() {
     const auto c = m_impl->color->value();
     g_renderer->renderRectangle({
         .box      = impl->position,
-        .color    = c.asRGB(),
-        .a        = sc<float>(c.a),
+        .color    = c,
         .rounding = m_impl->data.rounding,
     });
+
+    if (m_impl->data.borderThickness > 0) {
+        g_renderer->renderBorder({
+            .box      = impl->position,
+            .color    = c,
+            .rounding = m_impl->data.rounding,
+            .thick    = m_impl->data.borderThickness,
+        });
+    }
 }
 
 void CRectangleElement::reposition(const Hyprutils::Math::CBox& box) {

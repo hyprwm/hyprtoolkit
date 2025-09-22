@@ -101,6 +101,27 @@ COpenGLRenderer::COpenGLRenderer() {
     m_texShader.applyTint         = glGetUniformLocation(prog, "applyTint");
     m_texShader.tint              = glGetUniformLocation(prog, "tint");
     m_texShader.useAlphaMatte     = glGetUniformLocation(prog, "useAlphaMatte");
+
+    prog                                 = createProgram(QUADVERTSRC, FRAGBORDER);
+    m_borderShader.program               = prog;
+    m_borderShader.proj                  = glGetUniformLocation(prog, "proj");
+    m_borderShader.thick                 = glGetUniformLocation(prog, "thick");
+    m_borderShader.posAttrib             = glGetAttribLocation(prog, "pos");
+    m_borderShader.texAttrib             = glGetAttribLocation(prog, "texcoord");
+    m_borderShader.topLeft               = glGetUniformLocation(prog, "topLeft");
+    m_borderShader.bottomRight           = glGetUniformLocation(prog, "bottomRight");
+    m_borderShader.fullSize              = glGetUniformLocation(prog, "fullSize");
+    m_borderShader.fullSizeUntransformed = glGetUniformLocation(prog, "fullSizeUntransformed");
+    m_borderShader.radius                = glGetUniformLocation(prog, "radius");
+    m_borderShader.radiusOuter           = glGetUniformLocation(prog, "radiusOuter");
+    m_borderShader.gradient              = glGetUniformLocation(prog, "gradient");
+    m_borderShader.gradientLength        = glGetUniformLocation(prog, "gradientLength");
+    m_borderShader.angle                 = glGetUniformLocation(prog, "angle");
+    m_borderShader.gradient2             = glGetUniformLocation(prog, "gradient2");
+    m_borderShader.gradient2Length       = glGetUniformLocation(prog, "gradient2Length");
+    m_borderShader.angle2                = glGetUniformLocation(prog, "angle2");
+    m_borderShader.gradientLerp          = glGetUniformLocation(prog, "gradientLerp");
+    m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
 }
 
 COpenGLRenderer::~COpenGLRenderer() {
@@ -184,8 +205,8 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     glUniformMatrix3fv(m_rectShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
 
     // premultiply the color as well as we don't work with straight alpha
-    const auto COL = data.color.asRgb();
-    glUniform4f(m_rectShader.color, COL.r * data.a, COL.g * data.a, COL.b * data.a, data.a);
+    const auto COL = data.color;
+    glUniform4f(m_rectShader.color, COL.r * COL.a, COL.g * COL.a, COL.b * COL.a, COL.a);
 
     const auto TOPLEFT  = Vector2D(ROUNDEDBOX.x, ROUNDEDBOX.y);
     const auto FULLSIZE = Vector2D(ROUNDEDBOX.width, ROUNDEDBOX.height);
@@ -261,4 +282,44 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glDisableVertexAttribArray(shader->texAttrib);
 
     glBindTexture(tex->m_target, 0);
+}
+
+void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
+    const auto ROUNDEDBOX = logicalToGL(data.box).round();
+    Mat3x3     matrix     = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_NORMAL, data.box.rot);
+    Mat3x3     glMatrix   = m_projection.copy().multiply(matrix);
+
+    glUseProgram(m_borderShader.program);
+
+    glUniformMatrix3fv(m_borderShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
+
+    const auto           OKLAB = data.color.asOkLab();
+    std::array<float, 4> grad  = {sc<float>(OKLAB.l), sc<float>(OKLAB.a), sc<float>(OKLAB.b), sc<float>(data.color.a)};
+
+    glUniform4fv(m_borderShader.gradient, grad.size() / 4, (float*)grad.data());
+    glUniform1i(m_borderShader.gradientLength, grad.size() / 4);
+    glUniform1f(m_borderShader.angle, (int)(0.F / (M_PI / 180.0)) % 360 * (M_PI / 180.0));
+    glUniform1f(m_borderShader.alpha, 1.F);
+    glUniform1i(m_borderShader.gradient2Length, 0);
+
+    const auto TOPLEFT  = Vector2D(ROUNDEDBOX.x, ROUNDEDBOX.y);
+    const auto FULLSIZE = Vector2D(ROUNDEDBOX.width, ROUNDEDBOX.height);
+
+    glUniform2f(m_borderShader.topLeft, (float)TOPLEFT.x, (float)TOPLEFT.y);
+    glUniform2f(m_borderShader.fullSize, (float)FULLSIZE.x, (float)FULLSIZE.y);
+    glUniform2f(m_borderShader.fullSizeUntransformed, (float)data.box.width, (float)data.box.height);
+    glUniform1f(m_borderShader.radius, data.rounding);
+    glUniform1f(m_borderShader.radiusOuter, data.rounding);
+    glUniform1f(m_borderShader.thick, data.thick);
+
+    glVertexAttribPointer(m_borderShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    glVertexAttribPointer(m_borderShader.texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+
+    glEnableVertexAttribArray(m_borderShader.posAttrib);
+    glEnableVertexAttribArray(m_borderShader.texAttrib);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glDisableVertexAttribArray(m_borderShader.posAttrib);
+    glDisableVertexAttribArray(m_borderShader.texAttrib);
 }

@@ -23,6 +23,7 @@ namespace Hyprtoolkit {
         virtual void                 renderRectangle(const SRectangleRenderData& data);
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data);
         virtual void                 renderTexture(const STextureRenderData& data);
+        virtual void                 renderBorder(const SBorderRenderData& data);
 
       private:
         CBox                        logicalToGL(const CBox& box);
@@ -36,6 +37,7 @@ namespace Hyprtoolkit {
 
         CShader                     m_rectShader;
         CShader                     m_texShader;
+        CShader                     m_borderShader;
 
         Mat3x3                      m_projMatrix = Mat3x3::identity();
         Mat3x3                      m_projection;
