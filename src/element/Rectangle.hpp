@@ -9,5 +9,6 @@ namespace Hyprtoolkit {
         SRectangleData         data;
 
         PHLANIMVAR<CHyprColor> color;
+        PHLANIMVAR<CHyprColor> borderColor;
     };
 }

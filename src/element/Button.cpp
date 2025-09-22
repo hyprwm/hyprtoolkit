@@ -45,14 +45,16 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     addChild(m_impl->label);
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
-        auto bg  = m_impl->background->dataCopy();
-        bg.color = g_palette->m_colors.base.brighten(0.2F);
+        auto bg        = m_impl->background->dataCopy();
+        bg.color       = g_palette->m_colors.base.brighten(0.11F);
+        bg.borderColor = g_palette->m_colors.accent;
         m_impl->background->replaceData(bg);
     });
 
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
-        auto bg  = m_impl->background->dataCopy();
-        bg.color = g_palette->m_colors.base;
+        auto bg        = m_impl->background->dataCopy();
+        bg.color       = g_palette->m_colors.base;
+        bg.borderColor = g_palette->m_colors.alternateBase;
         m_impl->background->replaceData(bg);
     });
 
