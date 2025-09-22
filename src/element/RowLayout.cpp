@@ -23,9 +23,10 @@ void CRowLayoutElement::paint() {
 }
 
 // FIXME: de-dup with columnlayout?
-void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
-    impl->position = box;
+void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
+    IElement::reposition(sbox);
 
+    const auto& box = impl->position;
     const auto C = impl->children;
 
     // position children in this layout.
@@ -87,8 +88,11 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         // can fit: use preferred
         widths.at(i)                   = cSize.x;
         child->impl->failedPositioning = false;
-        usedX += cSize.x;
+        usedX += cSize.x + m_data.gap;
     }
+
+    if (!C.empty())
+        usedX -= m_data.gap;
 
     // check if any element grows and grow if applicable
     if (usedX < MAX_X) {
@@ -129,7 +133,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 
         g_positioner->position(child, childBox);
 
-        currentX += childBox.w;
+        currentX += childBox.w + m_data.gap;
     }
 }
 

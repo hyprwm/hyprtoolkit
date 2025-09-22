@@ -68,6 +68,10 @@ void CBackend::setLogFn(LogFn&& fn) {
     m_logFn = std::move(fn);
 }
 
+SP<CPalette> CBackend::getPalette() {
+    return g_palette;
+}
+
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
     if (!g_waylandPlatform) {
         g_waylandPlatform = makeUnique<CWaylandPlatform>();

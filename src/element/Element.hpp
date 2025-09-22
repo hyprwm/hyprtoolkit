@@ -8,6 +8,8 @@
 #include "../helpers/Memory.hpp"
 #include "../core/Input.hpp"
 
+#include <hyprutils/math/Box.hpp>
+
 namespace Hyprtoolkit {
     class IToolkitWindow;
 
@@ -20,7 +22,8 @@ namespace Hyprtoolkit {
 
         IElement::ePositionMode                                  positionMode = IElement::HT_POSITION_AUTO;
         Hyprutils::Math::Vector2D                                absoluteOffset;
-        bool                                                     grow = false;
+        bool                                                     grow   = false;
+        float                                                    margin = 0;
 
         WP<IElement>                                             parent;
 
@@ -38,6 +41,7 @@ namespace Hyprtoolkit {
         void breadthfirst(const std::function<void(SP<IElement>)>& fn);
         void setWindow(SP<IToolkitWindow> w);
         void damageEntire();
+        void setPosition(const Hyprutils::Math::CBox& box);
     };
 
 }

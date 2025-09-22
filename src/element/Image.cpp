@@ -65,7 +65,7 @@ void CImageElement::renderTex() {
 }
 
 void CImageElement::reposition(const Hyprutils::Math::CBox& box) {
-    impl->position = box;
+    IElement::reposition(box);
 
     const auto C = impl->children;
 

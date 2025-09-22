@@ -120,11 +120,11 @@ add_custom_target(tests)
 
 add_executable(simpleWindow "tests/SimpleWindow.cpp")
 target_link_libraries(simpleWindow PRIVATE PkgConfig::deps hyprtoolkit)
-add_test(
-  NAME "simpleWindow"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests
-  COMMAND simpleWindow "simpleWindow")
 add_dependencies(tests simpleWindow)
+
+add_executable(dialog "tests/Dialog.cpp")
+target_link_libraries(dialog PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests dialog)
 
 # Installation
 install(TARGETS hyprtoolkit)

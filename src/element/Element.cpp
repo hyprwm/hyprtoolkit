@@ -1,9 +1,12 @@
 #include "Element.hpp"
 
+#include <hyprutils/math/Box.hpp>
+
 #include "../helpers/Memory.hpp"
 #include "../window/ToolkitWindow.hpp"
 
 using namespace Hyprtoolkit;
+using namespace Hyprutils::Math;
 
 IElement::IElement() {
     impl = UP<SElementInternalData>(new SElementInternalData());
@@ -57,6 +60,19 @@ bool IElement::acceptsMouseInput() {
 
 ePointerShape IElement::pointerShape() {
     return HT_POINTER_ARROW;
+}
+
+void IElement::setMargin(float thick) {
+    impl->margin = thick;
+}
+
+void IElement::reposition(const Hyprutils::Math::CBox& box) {
+    impl->setPosition(box);
+}
+
+void SElementInternalData::setPosition(const CBox& box) {
+    position = box;
+    position.expand(-margin);
 }
 
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {

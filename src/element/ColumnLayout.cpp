@@ -23,10 +23,12 @@ void CColumnLayoutElement::paint() {
 }
 
 // FIXME: de-dup with rowlayout?
-void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
-    impl->position = box;
+void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox) {
+    IElement::reposition(sbox);
 
-    const auto C = impl->children;
+    const auto& box = impl->position;
+
+    const auto  C = impl->children;
 
     // position children in this layout.
 
@@ -87,8 +89,11 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
         // can fit: use preferred
         heights.at(i)                  = cSize.y;
         child->impl->failedPositioning = false;
-        usedY += cSize.y;
+        usedY += cSize.y + m_data.gap;
     }
+
+    if (!C.empty())
+        usedY -= m_data.gap;
 
     // check if any element grows and grow if applicable
     if (usedY < MAX_Y) {
@@ -129,7 +134,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& box) {
 
         g_positioner->position(child, childBox);
 
-        currentY += childBox.h;
+        currentY += childBox.h + m_data.gap;
     }
 }
 

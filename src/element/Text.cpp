@@ -62,7 +62,8 @@ void CTextElement::paint() {
 }
 
 void CTextElement::reposition(const Hyprutils::Math::CBox& box) {
-    impl->position   = box;
+    IElement::reposition(box);
+
     impl->position.w = unscale().x;
     impl->position.h = unscale().y;
 

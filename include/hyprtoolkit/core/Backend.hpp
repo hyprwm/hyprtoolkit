@@ -8,6 +8,7 @@
 #include <string>
 
 #include "LogTypes.hpp"
+#include "../palette/Palette.hpp"
 #include "../window/WindowTypes.hpp"
 
 namespace Hyprtoolkit {
@@ -61,6 +62,9 @@ namespace Hyprtoolkit {
             Enter the loop.
         */
         void enterLoop();
+
+
+        Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
 
       private:
         CBackend();

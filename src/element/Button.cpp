@@ -77,7 +77,7 @@ void CButtonElement::paint() {
 }
 
 void CButtonElement::reposition(const Hyprutils::Math::CBox& box) {
-    impl->position = box;
+    IElement::reposition(box);
 
     g_positioner->position(m_impl->background, impl->position);
 

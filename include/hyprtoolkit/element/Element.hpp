@@ -25,14 +25,15 @@ namespace Hyprtoolkit {
 
         virtual ~IElement() = default;
 
-        virtual void                      paint()                                      = 0;
-        virtual void                      reposition(const Hyprutils::Math::CBox& box) = 0;
-        virtual Hyprutils::Math::Vector2D size()                                       = 0;
+        virtual void                      paint() = 0;
+        virtual Hyprutils::Math::Vector2D size()  = 0;
+        virtual void                      reposition(const Hyprutils::Math::CBox& box);
 
         virtual void                      setPositionMode(ePositionMode mode);
         virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
         virtual void                      addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
         virtual void                      clearChildren();
+        virtual void                      setMargin(float thick);
 
         /* Sizes for auto positioning in layouts */
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
