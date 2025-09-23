@@ -44,8 +44,20 @@ bool CWaylandBuffer::good() {
 }
 
 CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData(data) {
+    m_rootElement = CRectangleElement::create();
+}
 
-    // m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_backend->m_aqBackend->getImplementations().at(0));
+CWaylandWindow::~CWaylandWindow() {
+    close();
+
+    std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
+}
+
+void CWaylandWindow::open() {
+    if (m_open)
+        return;
+
+    m_open = true;
 
     m_waylandState.surface = makeShared<CCWlSurface>(g_waylandPlatform->m_waylandState.compositor->sendCreateSurface());
 
@@ -114,10 +126,10 @@ CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData
     m_waylandState.xdgToplevel->sendSetTitle(m_creationData.title.c_str());
     m_waylandState.xdgToplevel->sendSetAppId(m_creationData.class_.c_str());
 
-    if (data.minSize)
-        m_waylandState.xdgToplevel->sendSetMinSize(data.minSize->x, data.minSize->y);
-    if (data.maxSize)
-        m_waylandState.xdgToplevel->sendSetMaxSize(data.maxSize->x, data.maxSize->y);
+    if (m_creationData.minSize)
+        m_waylandState.xdgToplevel->sendSetMinSize(m_creationData.minSize->x, m_creationData.minSize->y);
+    if (m_creationData.maxSize)
+        m_waylandState.xdgToplevel->sendSetMaxSize(m_creationData.maxSize->x, m_creationData.maxSize->y);
 
     auto inputRegion = makeShared<CCWlRegion>(g_waylandPlatform->m_waylandState.compositor->sendCreateRegion());
     inputRegion->sendAdd(0, 0, INT32_MAX, INT32_MAX);
@@ -127,19 +139,14 @@ CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData
     m_waylandState.surface->sendCommit();
 
     inputRegion->sendDestroy();
-
-    m_rootElement = CRectangleElement::create();
 }
 
-CWaylandWindow::~CWaylandWindow() {
-    if (m_waylandState.eglSurface)
-        eglDestroySurface(g_pEGL->eglDisplay, m_waylandState.eglSurface);
+void CWaylandWindow::close() {
+    if (!m_open)
+        return;
 
-    if (m_waylandState.eglWindow)
-        wl_egl_window_destroy(m_waylandState.eglWindow);
+    m_open = false;
 
-    m_waylandState.surface->sendAttach(nullptr, 0, 0);
-    m_waylandState.surface->sendCommit();
     m_waylandState.frameCallback.reset();
 
     if (m_waylandState.xdgToplevel)
@@ -149,7 +156,13 @@ CWaylandWindow::~CWaylandWindow() {
     if (m_waylandState.surface)
         m_waylandState.surface->sendDestroy();
 
-    std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
+    if (m_waylandState.eglSurface)
+        eglDestroySurface(g_pEGL->eglDisplay, m_waylandState.eglSurface);
+
+    if (m_waylandState.eglWindow)
+        wl_egl_window_destroy(m_waylandState.eglWindow);
+
+    m_waylandState = {};
 }
 
 void CWaylandWindow::onScaleUpdate() {

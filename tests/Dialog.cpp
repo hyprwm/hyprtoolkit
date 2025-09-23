@@ -53,12 +53,9 @@ int                 main(int argc, char** argv, char** envp) {
     });
 
     auto button1 = CButtonElement::create(SButtonData{
-                        .label = "Exit",
-                        .onMainClick =
-            [](SP<CButtonElement> el) {
-                ; // TODO:
-            },
-                        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+                        .label       = "Exit",
+                        .onMainClick = [w = WP<IWindow>{window}](SP<CButtonElement> el) { w->close(); },
+                        .size        = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
     });
 
     auto button2 = CButtonElement::create(SButtonData{
@@ -84,6 +81,8 @@ int                 main(int argc, char** argv, char** envp) {
     layout2->addChild(button1);
 
     layout->addChild(layout2);
+
+    window->open();
 
     backend->enterLoop();
 

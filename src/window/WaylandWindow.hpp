@@ -46,9 +46,13 @@ namespace Hyprtoolkit {
         virtual float                     scale();
         virtual void                      render();
         virtual void                      setCursor(ePointerShape shape);
+        virtual void                      close();
+        virtual void                      open();
 
       private:
         float m_fractionalScale = 1.0;
+
+        bool  m_open = false;
 
         struct {
             SP<CCWlSurface>   surface;

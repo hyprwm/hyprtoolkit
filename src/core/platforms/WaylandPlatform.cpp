@@ -128,7 +128,7 @@ bool CWaylandPlatform::dispatchEvents() {
 
 SP<CWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
     for (const auto& w : m_windows) {
-        if (w->m_waylandState.surface->resource() == proxy)
+        if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
             return w.lock();
     }
     return nullptr;

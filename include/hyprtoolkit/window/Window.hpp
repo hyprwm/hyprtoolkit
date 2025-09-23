@@ -13,6 +13,8 @@ namespace Hyprtoolkit {
 
         virtual Hyprutils::Math::Vector2D pixelSize() = 0;
         virtual float                     scale()     = 0;
+        virtual void                      close()     = 0;
+        virtual void                      open()      = 0;
 
         struct {
             Hyprutils::Signal::CSignalT<>                          opened;
