@@ -30,6 +30,7 @@ pkg_check_modules(
   wayland-egl
   egl
   hyprutils>=0.8.0
+  hyprlang>=0.6.0
   pixman-1
   libdrm
   gbm

@@ -11,6 +11,7 @@
 #include "../Macros.hpp"
 #include "../helpers/Timer.hpp"
 #include "../element/Element.hpp"
+#include "../palette/ConfigManager.hpp"
 
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -50,6 +51,8 @@ SP<CBackend> CBackend::create() {
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
     g_logger  = SP<CBackendLogger>(new CBackendLogger());
+    g_config  = makeShared<CConfigManager>();
+    g_config->parse();
     g_palette = CPalette::palette();
     if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");

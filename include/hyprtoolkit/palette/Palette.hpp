@@ -14,12 +14,8 @@ namespace Hyprtoolkit {
             otherwise */
         static Hyprutils::Memory::CSharedPointer<CPalette> palette();
 
-        /* Default fallback palette */
-        static Hyprutils::Memory::CSharedPointer<CPalette> defaultPalette();
         /* Empty palette with just black */
         static Hyprutils::Memory::CSharedPointer<CPalette> emptyPalette();
-        /* Config palette if exists */
-        static Hyprutils::Memory::CSharedPointer<CPalette> configPalette();
 
         struct {
             CHyprColor background;

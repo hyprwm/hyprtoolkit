@@ -9,6 +9,7 @@
 namespace Hyprtoolkit {
 
     class CPalette;
+    class CConfigManager;
 
     class CBackendLogger {
       public:
@@ -39,4 +40,5 @@ namespace Hyprtoolkit {
     inline Hyprutils::Memory::CSharedPointer<Hyprtoolkit::CBackendLogger>          g_logger;
     inline Hyprutils::Memory::CSharedPointer<Hyprgraphics::CAsyncResourceGatherer> g_asyncResourceGatherer;
     inline Hyprutils::Memory::CSharedPointer<CPalette>                             g_palette;
+    inline Hyprutils::Memory::CSharedPointer<CConfigManager>                       g_config;
 }
