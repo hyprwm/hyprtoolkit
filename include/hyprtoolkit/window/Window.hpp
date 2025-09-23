@@ -17,9 +17,11 @@ namespace Hyprtoolkit {
         virtual void                      open()      = 0;
 
         struct {
-            Hyprutils::Signal::CSignalT<>                          opened;
-            Hyprutils::Signal::CSignalT<>                          closed;
+            // coordinates here are logical, meaning pixel size is this * scale()
             Hyprutils::Signal::CSignalT<Hyprutils::Math::Vector2D> resized;
+
+            // user requested a close.
+            Hyprutils::Signal::CSignalT<> closeRequest;
         } m_events;
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;

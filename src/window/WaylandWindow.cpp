@@ -105,7 +105,11 @@ void CWaylandWindow::open() {
             return;
 
         configure({w, h}, m_waylandState.serial);
+
+        m_events.resized.emit(m_waylandState.logicalSize);
     });
+
+    m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { m_events.closeRequest.emit(); });
 
     m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
 
@@ -120,8 +124,6 @@ void CWaylandWindow::open() {
     });
 
     m_waylandState.viewport = makeShared<CCWpViewport>(g_waylandPlatform->m_waylandState.viewporter->sendGetViewport(m_waylandState.surface->resource()));
-
-    m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { m_events.closed.emit(); });
 
     m_waylandState.xdgToplevel->sendSetTitle(m_creationData.title.c_str());
     m_waylandState.xdgToplevel->sendSetAppId(m_creationData.class_.c_str());

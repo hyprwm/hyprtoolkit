@@ -82,6 +82,10 @@ int                 main(int argc, char** argv, char** envp) {
 
     layout->addChild(layout2);
 
+    window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
+        w->close();
+    });
+
     window->open();
 
     backend->enterLoop();
