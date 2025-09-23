@@ -36,7 +36,7 @@ int                 main(int argc, char** argv, char** envp) {
     });
 
     window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
-                        .color = backend->getPalette()->m_colors.background,
+                        .color = [] { return backend->getPalette()->m_colors.background; },
     }));
 
     auto layout = CColumnLayoutElement::create();
@@ -47,11 +47,11 @@ int                 main(int argc, char** argv, char** envp) {
     auto title = CTextElement::create(STextData{
                         .text     = "Hello World",
                         .fontSize = CFontSize{CFontSize::HT_FONT_H2},
-                        .color    = backend->getPalette()->m_colors.text,
+                        .color    = [] { return backend->getPalette()->m_colors.text; },
     });
 
     auto hr = CRectangleElement::create(SRectangleData{
-                        .color = CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)},
+                        .color = [] { return CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)}; },
                         .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 9.F}},
     });
 
@@ -59,7 +59,7 @@ int                 main(int argc, char** argv, char** envp) {
 
     auto content = CTextElement::create(STextData{
                         .text  = "This is an example dialog. This first line is long on purpose, so that we overflow.\n\nWoo!",
-                        .color = backend->getPalette()->m_colors.text,
+                        .color = [] { return backend->getPalette()->m_colors.text; },
     });
 
     auto button1 = CButtonElement::create(SButtonData{

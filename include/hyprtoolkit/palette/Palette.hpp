@@ -37,5 +37,9 @@ namespace Hyprtoolkit {
 
       private:
         CPalette() = default;
+
+        bool m_isConfig = false;
+
+        friend class CBackend;
     };
 }

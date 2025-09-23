@@ -69,12 +69,14 @@ namespace Hyprtoolkit {
         CBackend();
 
         void                                                    terminate();
+        void                                                    reloadTheme();
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
         LogFn                                                   m_logFn;
 
-        bool                                                    m_terminate = false;
+        bool                                                    m_terminate         = false;
+        bool                                                    m_needsConfigReload = false;
 
         struct {
             std::mutex              timersMutex;

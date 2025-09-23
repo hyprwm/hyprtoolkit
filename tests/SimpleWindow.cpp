@@ -28,7 +28,7 @@ static void         addTimer(SP<CRectangleElement> rect) {
         std::chrono::seconds(1),
         [rect](Hyprutils::Memory::CAtomicSharedPointer<CTimer> timer, void* data) {
             auto rectData  = rect->dataCopy();
-            rectData.color = CHyprColor{rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, 1.F};
+            rectData.color = [] { return CHyprColor{rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, 1.F}; };
             rect->replaceData(rectData);
 
             addTimer(rect);
@@ -47,7 +47,7 @@ int main(int argc, char** argv, char** envp) {
     });
 
     window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
-        .color = CHyprColor{0.1F, 0.1F, 0.1F},
+        .color = [] { return CHyprColor{0.1F, 0.1F, 0.1F}; },
     }));
 
     auto layout = CRowLayoutElement::create();
@@ -55,13 +55,13 @@ int main(int argc, char** argv, char** envp) {
     window->m_rootElement->addChild(layout);
 
     auto rect3 = CRectangleElement::create(SRectangleData{
-        .color    = CHyprColor{0.2F, 0.4F, 0.4F},
+        .color    = [] { return CHyprColor{0.2F, 0.4F, 0.4F}; },
         .rounding = 10,
         .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150, 150}},
     });
 
     auto rect4 = CRectangleElement::create(SRectangleData{
-        .color    = CHyprColor{0.4F, 0.2F, 0.4F},
+        .color    = [] { return CHyprColor{0.4F, 0.2F, 0.4F}; },
         .rounding = 10,
         .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}},
     });
@@ -75,7 +75,7 @@ int main(int argc, char** argv, char** envp) {
 
     auto text = CTextElement::create(STextData{
         .text  = "world is a fuck",
-        .color = CHyprColor{0.4F, 0.4F, 0.4F},
+        .color = [] { return CHyprColor{0.4F, 0.4F, 0.4F}; },
     });
 
     auto button = CButtonElement::create(SButtonData{

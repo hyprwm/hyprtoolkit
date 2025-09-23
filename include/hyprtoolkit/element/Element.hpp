@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <optional>
+#include <functional>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/WeakPtr.hpp>
@@ -10,10 +11,13 @@
 #include <hyprutils/math/Box.hpp>
 
 #include "../types/PointerShape.hpp"
+#include "../palette/Color.hpp"
 
 namespace Hyprtoolkit {
 
     struct SElementInternalData;
+
+    using colorFn = std::function<CHyprColor()>;
 
     class IElement {
       public:
@@ -43,6 +47,8 @@ namespace Hyprtoolkit {
 
         virtual bool                                     acceptsMouseInput();
         virtual ePointerShape                            pointerShape();
+
+        virtual void                                     recheckColor();
 
         //
 

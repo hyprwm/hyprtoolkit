@@ -19,7 +19,7 @@ namespace Hyprtoolkit {
     struct STextData {
         std::string                              text;
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
-        CHyprColor                               color = CHyprColor{1.F, 1.F, 1.F, 1.F};
+        colorFn                                  color = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
         CDynamicSize                             size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
@@ -43,6 +43,8 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
+
+        virtual void                                     recheckColor();
 
         void                                             renderTex();
         Hyprutils::Math::Vector2D                        unscale();

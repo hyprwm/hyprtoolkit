@@ -17,11 +17,11 @@ SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
 CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_impl(makeUnique<SRectangleImpl>()) {
     m_impl->data = data;
 
-    g_animationManager->createAnimation(data.color, m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
+    g_animationManager->createAnimation(data.color(), m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
     m_impl->color->setUpdateCallback([this](auto) { impl->damageEntire(); });
     m_impl->color->setCallbackOnBegin([this](auto) { impl->damageEntire(); }, false);
 
-    g_animationManager->createAnimation(data.borderColor, m_impl->borderColor, g_animationManager->m_animationTree.getConfig("fast"));
+    g_animationManager->createAnimation(data.borderColor(), m_impl->borderColor, g_animationManager->m_animationTree.getConfig("fast"));
     m_impl->borderColor->setUpdateCallback([this](auto) {
         if (m_impl->data.borderThickness)
             impl->damageEntire();
@@ -67,10 +67,15 @@ SRectangleData CRectangleElement::dataCopy() {
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
     m_impl->data         = data;
-    *m_impl->color       = data.color;
-    *m_impl->borderColor = data.borderColor;
+    *m_impl->color       = data.color();
+    *m_impl->borderColor = data.borderColor();
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
+}
+
+void CRectangleElement::recheckColor() {
+    *m_impl->color       = m_impl->data.color();
+    *m_impl->borderColor = m_impl->data.borderColor();
 }
 
 Hyprutils::Math::Vector2D CRectangleElement::size() {

@@ -11,9 +11,9 @@ namespace Hyprtoolkit {
     struct SRectangleImpl;
 
     struct SRectangleData {
-        CHyprColor   color           = CHyprColor{1.F, 1.F, 1.F, 1.F};
+        colorFn      color           = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
         int          rounding        = 0;
-        CHyprColor   borderColor     = CHyprColor{1.F, 1.F, 1.F, 1.F};
+        colorFn      borderColor     = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
         int          borderThickness = 0;
         CDynamicSize size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
     };
@@ -35,6 +35,8 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D>  preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>  minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>  maximumSize(const Hyprutils::Math::Vector2D& parent);
+
+        virtual void                                      recheckColor();
 
         Hyprutils::Memory::CUniquePointer<SRectangleImpl> m_impl;
     };

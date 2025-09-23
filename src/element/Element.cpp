@@ -70,6 +70,10 @@ void IElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Mat
     impl->setPosition(box);
 }
 
+void IElement::recheckColor() {
+    ;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     position.expand(-margin);

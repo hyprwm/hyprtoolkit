@@ -96,11 +96,13 @@ void CTextElement::renderTex() {
     if (maxSize == Vector2D{0, 0})
         maxSize = std::nullopt;
 
+    auto col = m_data.color();
+
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
         .text = m_data.text,
         // .font
         .fontSize = sc<size_t>(m_impl->lastFontSizeUnscaled * m_impl->lastScale),
-        .color    = CColor{CColor::SSRGB{.r = m_data.color.r, .g = m_data.color.g, .b = m_data.color.b}},
+        .color    = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
         // .align
         .maxSize = maxSize,
     });
@@ -129,6 +131,10 @@ void CTextElement::renderTex() {
                 m_data.callback();
         });
     });
+}
+
+void CTextElement::recheckColor() {
+    m_impl->needsTexRefresh = true;
 }
 
 Hyprutils::Math::Vector2D CTextElement::unscale() {

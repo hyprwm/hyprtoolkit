@@ -8,7 +8,9 @@
 using namespace Hyprtoolkit;
 
 SP<CPalette> CPalette::palette() {
-    return g_config->getPalette();
+    auto x        = g_config->getPalette();
+    x->m_isConfig = true;
+    return x;
 }
 
 SP<CPalette> CPalette::emptyPalette() {

@@ -116,17 +116,44 @@ void CBackend::terminate() {
     }
 }
 
+static void reloadRecurse(SP<IElement> el) {
+    for (const auto& e : el->impl->children) {
+        if (!e)
+            continue;
+
+        e->recheckColor();
+
+        reloadRecurse(e);
+    }
+}
+
+void CBackend::reloadTheme() {
+    if (g_palette->m_isConfig)
+        g_palette = CPalette::palette();
+
+    for (const auto& w : g_waylandPlatform->m_windows) {
+        if (!w)
+            continue;
+
+        reloadRecurse(w->m_rootElement);
+    }
+}
+
 void CBackend::enterLoop() {
     int exitfd[2];
     pipe(exitfd);
 
-    pollfd pollfds[2];
+    pollfd pollfds[3];
     pollfds[0] = {
         .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
         .events = POLLIN,
     };
     pollfds[1] = {
         .fd     = exitfd[0],
+        .events = POLLIN,
+    };
+    pollfds[2] = {
+        .fd     = g_config->m_inotifyFd.get(),
         .events = POLLIN,
     };
 
@@ -136,7 +163,7 @@ void CBackend::enterLoop() {
 
             int  events = 0;
             if (preparedToRead) {
-                events = poll(pollfds, 2, 5000);
+                events = poll(pollfds, 3, 5000);
 
                 if (m_terminate)
                     return;
@@ -155,7 +182,9 @@ void CBackend::enterLoop() {
                 m_sLoopState.wlDispatched = false;
             }
 
-            if (events > 0 || !preparedToRead) {
+            m_needsConfigReload = pollfds[2].revents & POLLIN;
+
+            if (events > 0 || !preparedToRead || m_needsConfigReload) {
                 std::unique_lock lk(m_sLoopState.eventLoopMutex);
                 m_sLoopState.event = true;
                 m_sLoopState.loopCV.notify_all();
@@ -251,6 +280,12 @@ void CBackend::enterLoop() {
 
         for (const auto& i : idlesCpy) {
             (*i)();
+        }
+
+        if (m_needsConfigReload) {
+            m_needsConfigReload = false;
+            g_config->onInotifyEvent();
+            reloadTheme();
         }
 
         passed.clear();
