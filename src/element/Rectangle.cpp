@@ -66,8 +66,8 @@ SRectangleData CRectangleElement::dataCopy() {
 }
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
-    m_impl->data   = data;
-    *m_impl->color = data.color;
+    m_impl->data         = data;
+    *m_impl->color       = data.color;
     *m_impl->borderColor = data.borderColor;
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

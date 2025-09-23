@@ -12,11 +12,14 @@
 
 namespace Hyprtoolkit {
     class IToolkitWindow;
+    struct SPositionerData;
 
     struct SElementInternalData {
         Hyprutils::Memory::CWeakPointer<IElement>                self;
         Hyprutils::Memory::CWeakPointer<IToolkitWindow>          window;
         Hyprutils::Math::CBox                                    position;
+
+        UP<SPositionerData>                                      positionerData;
 
         std::vector<Hyprutils::Memory::CSharedPointer<IElement>> children;
 

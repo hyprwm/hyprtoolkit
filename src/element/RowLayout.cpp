@@ -27,7 +27,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
     IElement::reposition(sbox);
 
     const auto& box = impl->position;
-    const auto C = impl->children;
+    const auto  C   = impl->children;
 
     // position children in this layout.
 

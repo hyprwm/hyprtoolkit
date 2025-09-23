@@ -72,8 +72,7 @@ void IElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Mat
 
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
-    // FIXME: this shrinks every recalc idk why
-    //position.expand(-margin);
+    position.expand(-margin);
 }
 
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
