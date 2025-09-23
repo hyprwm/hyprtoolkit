@@ -53,9 +53,13 @@ int                 main(int argc, char** argv, char** envp) {
     });
 
     auto button1 = CButtonElement::create(SButtonData{
-                        .label       = "Exit",
-                        .onMainClick = [w = WP<IWindow>{window}](SP<CButtonElement> el) { w->close(); },
-                        .size        = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+                        .label = "Exit",
+                        .onMainClick =
+            [w = WP<IWindow>{window}](SP<CButtonElement> el) {
+                w->close();
+                backend->destroy();
+            },
+                        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
     });
 
     auto button2 = CButtonElement::create(SButtonData{
@@ -84,6 +88,7 @@ int                 main(int argc, char** argv, char** envp) {
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();
+        backend->destroy();
     });
 
     window->open();

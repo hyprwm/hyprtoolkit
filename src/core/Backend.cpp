@@ -60,8 +60,8 @@ SP<CBackend> CBackend::create() {
 };
 
 void CBackend::destroy() {
-    g_backend.reset();
-    g_logger.reset();
+
+    terminate();
 }
 
 void CBackend::setLogFn(LogFn&& fn) {
@@ -103,10 +103,27 @@ void CBackend::addIdle(const std::function<void()>& fn) {
     m_sLoopState.idleCV.notify_all();
 }
 
+void CBackend::terminate() {
+    m_terminate = true;
+
+    if (m_sLoopState.eventLoopMutex.try_lock()) {
+        m_sLoopState.event = true;
+        m_sLoopState.loopCV.notify_all();
+        m_sLoopState.eventLoopMutex.unlock();
+    }
+}
+
 void CBackend::enterLoop() {
-    pollfd pollfds[1];
+    int exitfd[2];
+    pipe(exitfd);
+
+    pollfd pollfds[2];
     pollfds[0] = {
         .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
+        .events = POLLIN,
+    };
+    pollfds[1] = {
+        .fd     = exitfd[0],
         .events = POLLIN,
     };
 
@@ -116,7 +133,10 @@ void CBackend::enterLoop() {
 
             int  events = 0;
             if (preparedToRead) {
-                events = poll(pollfds, 1, 5000);
+                events = poll(pollfds, 2, 5000);
+
+                if (m_terminate)
+                    return;
 
                 if (events < 0) {
                     RASSERT(errno == EINTR, "[core] Polling fds failed with {}", errno);
@@ -232,4 +252,33 @@ void CBackend::enterLoop() {
 
         passed.clear();
     }
+
+    g_renderer.reset();
+    g_pEGL.reset();
+
+    g_waylandPlatform.reset();
+
+    g_asyncResourceGatherer.reset();
+    g_animationManager.reset();
+
+    g_palette.reset();
+    g_backend.reset();
+    g_logger.reset();
+
+    m_sLoopState.idleEvent = true;
+    m_sLoopState.idleCV.notify_all();
+
+    m_sLoopState.timerEvent = true;
+    m_sLoopState.timerCV.notify_all();
+
+    write(exitfd[1], "hello", 5);
+
+    if (timersThr.joinable())
+        timersThr.join();
+
+    if (idleThr.joinable())
+        idleThr.join();
+
+    if (pollThr.joinable())
+        pollThr.join();
 }

@@ -50,7 +50,8 @@ CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData
 CWaylandWindow::~CWaylandWindow() {
     close();
 
-    std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
+    if (g_waylandPlatform)
+        std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
 }
 
 void CWaylandWindow::open() {

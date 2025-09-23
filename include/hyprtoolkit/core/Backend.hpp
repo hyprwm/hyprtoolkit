@@ -61,13 +61,14 @@ namespace Hyprtoolkit {
         /*
             Enter the loop.
         */
-        void enterLoop();
-
+        void                                        enterLoop();
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
 
       private:
         CBackend();
+
+        void                                                    terminate();
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
