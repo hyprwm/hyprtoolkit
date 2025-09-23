@@ -54,8 +54,12 @@ void CTextElement::paint() {
     if (!textureToUse)
         return; // ???
 
+    CBox renderBox = impl->position;
+    renderBox.w    = unscale().x;
+    renderBox.h    = unscale().y;
+
     g_renderer->renderTexture({
-        .box      = impl->position,
+        .box      = renderBox,
         .texture  = textureToUse,
         .a        = 1.F,
         .rounding = 0,
