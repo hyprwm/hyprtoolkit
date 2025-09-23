@@ -3,6 +3,7 @@
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
 #include "../palette/Color.hpp"
+#include "../types/FontSizeType.hpp"
 
 #include <hyprgraphics/resource/resources/TextResource.hpp>
 
@@ -17,7 +18,7 @@ namespace Hyprtoolkit {
 
     struct STextData {
         std::string                              text;
-        std::optional<size_t>                    fontSize;
+        CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
         CHyprColor                               color = CHyprColor{1.F, 1.F, 1.F, 1.F};
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;

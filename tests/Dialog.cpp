@@ -29,6 +29,8 @@ int                 main(int argc, char** argv, char** envp) {
     //
     auto window = backend->openWindow(SWindowCreationData{
                         .preferredSize = Vector2D{480, 180},
+                        .minSize       = Vector2D{480, 180},
+                        .maxSize       = Vector2D{480, 180},
                         .title         = "Dialog",
                         .class_        = "hyprtoolkit-dialog",
     });
@@ -43,9 +45,17 @@ int                 main(int argc, char** argv, char** envp) {
     window->m_rootElement->addChild(layout);
 
     auto title = CTextElement::create(STextData{
-                        .text  = "Hello World",
-                        .color = backend->getPalette()->m_colors.text,
+                        .text     = "Hello World",
+                        .fontSize = CFontSize{CFontSize::HT_FONT_H2},
+                        .color    = backend->getPalette()->m_colors.text,
     });
+
+    auto hr = CRectangleElement::create(SRectangleData{
+                        .color = CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)},
+                        .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 9.F}},
+    });
+
+    hr->setMargin(4);
 
     auto content = CTextElement::create(STextData{
                         .text  = "This is an example dialog. This first line is long on purpose, so that we overflow.\n\nWoo!",
@@ -77,6 +87,7 @@ int                 main(int argc, char** argv, char** envp) {
     null2->setGrow(true);
 
     layout->addChild(title);
+    layout->addChild(hr);
     layout->addChild(content);
     layout->addChild(null1);
 

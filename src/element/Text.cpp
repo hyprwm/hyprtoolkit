@@ -21,7 +21,7 @@ SP<CTextElement> CTextElement::create(const STextData& data) {
 }
 
 CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data), m_impl(makeUnique<STextImpl>()) {
-    m_impl->lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
+    m_impl->lastFontSizeUnscaled = m_data.fontSize.ptSize();
 }
 
 STextData CTextElement::dataCopy() {
@@ -30,7 +30,7 @@ STextData CTextElement::dataCopy() {
 
 void CTextElement::replaceData(const STextData& data) {
     m_data                       = data;
-    m_impl->lastFontSizeUnscaled = m_data.fontSize.value_or(g_palette->m_vars.fontSize);
+    m_impl->lastFontSizeUnscaled = m_data.fontSize.ptSize();
     renderTex();
 }
 

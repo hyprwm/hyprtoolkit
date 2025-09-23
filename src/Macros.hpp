@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <csignal>
+#include <utility>
 
 #include "./helpers/Env.hpp"
 
@@ -23,3 +24,13 @@
     }
 
 #define ASSERT(expr) RASSERT(expr, "?")
+
+#ifndef HYPRTOOLKIT_DEBUG
+
+#define UNREACHABLE() std::unreachable();
+
+#else
+
+#define UNREACHABLE() RASSERT(false, "Reached an unreachable block");
+
+#endif
