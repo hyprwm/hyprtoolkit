@@ -277,8 +277,15 @@ void CBackend::enterLoop() {
         m_idles.clear();
         m_sLoopState.idlesMutex.unlock();
 
-        for (const auto& i : idlesCpy) {
-            (*i)();
+        while (!idlesCpy.empty()) {
+            for (const auto& i : idlesCpy) {
+                (*i)();
+            }
+
+            m_sLoopState.idlesMutex.lock();
+            idlesCpy = m_idles;
+            m_idles.clear();
+            m_sLoopState.idlesMutex.unlock();
         }
 
         if (m_needsConfigReload) {
