@@ -8,6 +8,7 @@
 #include <hyprtoolkit/element/Button.hpp>
 #include <hyprtoolkit/element/Null.hpp>
 #include <hyprtoolkit/element/Checkbox.hpp>
+#include <hyprtoolkit/element/Spinbox.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -41,11 +42,12 @@ int                 main(int argc, char** argv, char** envp) {
     }));
 
     auto layout = CColumnLayoutElement::create(SColumnLayoutData{
-                        .size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+                        .size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}},
                         .gap  = 3,
 
     });
     layout->setMargin(3);
+    layout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
 
     window->m_rootElement->addChild(layout);
 
@@ -78,6 +80,15 @@ int                 main(int argc, char** argv, char** envp) {
                         .label     = "Wide checkbox",
                         .onToggled = [](SP<CCheckboxElement> el, bool state) { std::println("Toggled wide to {}", state); },
                         .size      = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+                        .fill      = true,
+    });
+
+    auto spinbox = CSpinboxElement::create(SSpinboxData{
+                        .label     = "Spinbox",
+                        .items     = {"Hello", "World", "Amongus"},
+                        .onChanged = [](SP<CSpinboxElement> el, size_t idx) { std::println("Toggled spin to {}", idx); },
+                        .size      = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+                        .fill      = true,
     });
 
     auto null1 = CNullElement::create({});
@@ -89,6 +100,7 @@ int                 main(int argc, char** argv, char** envp) {
     layout->addChild(button1);
     layout->addChild(checkbox);
     layout->addChild(checkbox2);
+    layout->addChild(spinbox);
     layout->addChild(null1);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {

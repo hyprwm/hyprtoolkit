@@ -16,6 +16,9 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
 
     initElementIfNeeded(element);
 
+    // damage old box
+    element->impl->window->damage(element->impl->positionerData->baseBox);
+
     element->impl->positionerData->baseBox = box;
     element->reposition(box, maxSize);
 

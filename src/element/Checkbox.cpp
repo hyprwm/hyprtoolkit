@@ -35,7 +35,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
     m_impl->data = data;
 
     m_impl->layout = CRowLayoutElement::create(SRowLayoutData{
-        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+        .size = {data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
         .gap  = 3,
     });
 
@@ -46,6 +46,8 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
         .borderThickness = 1,
         .size            = CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {14.F, 14.F}},
     });
+
+    m_impl->background->setPositionMode(HT_POSITION_CENTER);
 
     m_impl->foreground = CRectangleElement::create(SRectangleData{
         .color    = m_impl->getFgColor(),
@@ -123,11 +125,7 @@ void CCheckboxElement::paint() {
 void CCheckboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    const auto C = impl->children;
-
-    for (const auto& c : C) {
-        g_positioner->position(c, impl->position);
-    }
+    g_positioner->positionChildren(impl->self.lock());
 }
 
 SCheckboxData CCheckboxElement::dataCopy() {
@@ -153,15 +151,13 @@ Hyprutils::Math::Vector2D CCheckboxElement::size() {
     return impl->position.size();
 }
 
-constexpr double        BUTTON_PAD = 5;
-
 std::optional<Vector2D> CCheckboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
     auto s = m_impl->data.size.calculate(parent);
 
     if (s.x != -1 && s.y != -1)
         return s;
 
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
+    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
 
     if (s.x == -1)
         s.x = CALC.x;
@@ -176,7 +172,7 @@ std::optional<Vector2D> CCheckboxElement::minimumSize(const Hyprutils::Math::Vec
     if (s.x != -1 && s.y != -1)
         return s;
 
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
+    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
 
     if (s.x == -1)
         s.x = CALC.x;
@@ -191,7 +187,7 @@ std::optional<Vector2D> CCheckboxElement::maximumSize(const Hyprutils::Math::Vec
     if (s.x != -1 && s.y != -1)
         return s;
 
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
+    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
 
     if (s.x == -1)
         s.x = CALC.x;

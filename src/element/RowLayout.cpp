@@ -1,4 +1,5 @@
 #include <hyprtoolkit/element/RowLayout.hpp>
+#include <cmath>
 
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
@@ -31,8 +32,8 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
 
     // position children in this layout.
 
-    size_t              usedX = 0;
-    const size_t        MAX_X = (uint64_t)impl->position.size().x;
+    float               usedX = 0;
+    const float         MAX_X = (uint64_t)impl->position.size().x;
 
     size_t              i = 0;
 
@@ -42,9 +43,9 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
     for (i = 0; i < C.size(); ++i) {
         const auto& child = C.at(i);
 
-        if (MAX_X <= usedX) {
+        if (MAX_X < usedX) {
             // no more space
-            child->impl->failedPositioning = true;
+            child->impl->setFailedPositioning(true);
             continue;
         }
 
@@ -52,19 +53,19 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         if (cSize == Vector2D{-1, -1})
             cSize = {1.F, box.h};
 
-        if (usedX + cSize.x > MAX_X) {
+        if (usedX + cSize.x > MAX_X + 2 /* FIXME: WHERE THE FUCK IS THIS LOST??? */) {
             // we exceeded our available space.
             if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
-                child->impl->failedPositioning = true;
+                child->impl->setFailedPositioning(true);
                 continue;
             }
 
             cSize = *child->minimumSize(box.size());
 
-            if (usedX + cSize.x > MAX_X) {
+            if (usedX + cSize.x > MAX_X + 1) {
                 // doesn't fit: disable and expand the last if possible
-                child->impl->failedPositioning = true;
+                child->impl->setFailedPositioning(true);
                 if (i != 0) {
                     // try to expand last child
                     const auto& lastChild = C.at(i - 1);
@@ -83,8 +84,8 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         }
 
         // can fit: use preferred
-        widths.at(i)                   = cSize.x;
-        child->impl->failedPositioning = false;
+        widths.at(i) = cSize.x;
+        child->impl->setFailedPositioning(false);
         usedX += cSize.x + m_data.gap;
     }
 
@@ -154,9 +155,18 @@ std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::preferredSize(const 
 
     Vector2D max;
     for (const auto& child : impl->children) {
-        max.x += childSize(child).x;
+        max.x += childSize(child).x + m_data.gap;
         max.y = std::max(max.y, childSize(child).y);
     }
+
+    if (!impl->children.empty())
+        max.x -= m_data.gap;
+
+    max.x += impl->margin * 2;
+    max.y += impl->margin * 2;
+
+    max.x = std::ceil(max.x);
+    max.y = std::ceil(max.y);
 
     if (calc.x == -1)
         calc.x = max.x;

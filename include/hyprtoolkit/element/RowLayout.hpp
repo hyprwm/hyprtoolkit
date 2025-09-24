@@ -27,6 +27,10 @@ namespace Hyprtoolkit {
 
         SRowLayoutData                                   m_data;
 
+        Hyprutils::Math::Vector2D                        m_lastSize;
+
         friend class CCheckboxElement;
+        friend class CSpinboxElement;
+        friend class CSpinboxSpinner;
     };
 };

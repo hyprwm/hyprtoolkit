@@ -25,8 +25,8 @@ namespace Hyprtoolkit {
 
         IElement::ePositionMode                                  positionMode = IElement::HT_POSITION_AUTO;
         Hyprutils::Math::Vector2D                                absoluteOffset;
-        bool                                                     growV   = false;
-        bool                                                     growH   = false;
+        bool                                                     growV  = false;
+        bool                                                     growH  = false;
         float                                                    margin = 0;
 
         WP<IElement>                                             parent;
@@ -46,6 +46,7 @@ namespace Hyprtoolkit {
         void setWindow(SP<IToolkitWindow> w);
         void damageEntire();
         void setPosition(const Hyprutils::Math::CBox& box);
+        void setFailedPositioning(bool set);
     };
 
 }

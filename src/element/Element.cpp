@@ -120,3 +120,7 @@ void SElementInternalData::damageEntire() {
         return;
     window->damage(position.copy().expand(2));
 }
+
+void SElementInternalData::setFailedPositioning(bool set) {
+    breadthfirst([set](SP<IElement> e) { e->impl->failedPositioning = set; });
+}

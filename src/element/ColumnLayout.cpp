@@ -1,4 +1,5 @@
 #include <hyprtoolkit/element/ColumnLayout.hpp>
+#include <cmath>
 
 #include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
@@ -45,7 +46,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
 
         if (MAX_Y <= usedY) {
             // no more space
-            child->impl->failedPositioning = true;
+            child->impl->setFailedPositioning(true);
             continue;
         }
 
@@ -53,11 +54,11 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
         if (cSize == Vector2D{-1, -1})
             cSize = {box.w, 1.F};
 
-        if (usedY + cSize.y > MAX_Y) {
+        if (usedY + cSize.y > MAX_Y + 2 /* FIXME: WHERE THE FUCK IS THIS LOST??? */) {
             // we exceeded our available space.
             if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
-                child->impl->failedPositioning = true;
+                child->impl->setFailedPositioning(true);
                 continue;
             }
 
@@ -65,7 +66,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
 
             if (usedY + cSize.y > MAX_Y) {
                 // doesn't fit: disable and expand the last if possible
-                child->impl->failedPositioning = true;
+                child->impl->setFailedPositioning(true);
                 if (i != 0) {
                     // try to expand last child
                     const auto& lastChild = C.at(i - 1);
@@ -84,8 +85,8 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
         }
 
         // can fit: use preferred
-        heights.at(i)                  = cSize.y;
-        child->impl->failedPositioning = false;
+        heights.at(i) = cSize.y;
+        child->impl->setFailedPositioning(false);
         usedY += cSize.y + m_data.gap;
     }
 
@@ -156,8 +157,17 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
     Vector2D max;
     for (const auto& child : impl->children) {
         max.x = std::max(childSize(child).x, max.x);
-        max.y += childSize(child).y;
+        max.y += childSize(child).y + m_data.gap;
     }
+
+    if (!impl->children.empty())
+        max.y -= m_data.gap;
+
+    max.x += impl->margin * 2;
+    max.y += impl->margin * 2;
+
+    max.x = std::ceil(max.x);
+    max.y = std::ceil(max.y);
 
     if (calc.x == -1)
         calc.x = max.x;

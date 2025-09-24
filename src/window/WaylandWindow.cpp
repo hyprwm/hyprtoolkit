@@ -235,7 +235,7 @@ void CWaylandWindow::render() {
         m_lastFrame = std::chrono::steady_clock::now();
     }
 
-    m_needsFrame = g_animationManager->shouldTickForNext();
+    m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
 }
 
 void CWaylandWindow::onCallback() {
