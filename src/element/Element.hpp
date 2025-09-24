@@ -25,7 +25,8 @@ namespace Hyprtoolkit {
 
         IElement::ePositionMode                                  positionMode = IElement::HT_POSITION_AUTO;
         Hyprutils::Math::Vector2D                                absoluteOffset;
-        bool                                                     grow   = false;
+        bool                                                     growV   = false;
+        bool                                                     growH   = false;
         float                                                    margin = 0;
 
         WP<IElement>                                             parent;

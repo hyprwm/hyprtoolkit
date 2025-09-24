@@ -10,26 +10,29 @@
 
 namespace Hyprtoolkit {
 
-    struct SButtonImpl;
-    class CButtonElement;
+    struct SCheckboxImpl;
+    class CCheckboxElement;
 
-    struct SButtonData {
-        std::string                                                            label = "Click me";
-        std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onMainClick;
-        std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onRightClick;
-        CDynamicSize size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}};
+    struct SCheckboxData {
+        std::string                                                                    label   = "Checkbox";
+        bool                                                                           toggled = false;
+        std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)> onToggled;
+        CDynamicSize size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
     };
 
-    class CButtonElement : public IElement {
+    class CCheckboxElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CButtonElement> create(const SButtonData& data = {});
-        virtual ~CButtonElement() = default;
+        static Hyprutils::Memory::CSharedPointer<CCheckboxElement> create(const SCheckboxData& data = {});
+        virtual ~CCheckboxElement() = default;
 
-        SButtonData dataCopy();
-        void        replaceData(const SButtonData& data);
+        SCheckboxData dataCopy();
+        void          replaceData(const SCheckboxData& data);
+
+        bool          state();
+        void          setState(bool state);
 
       private:
-        CButtonElement(const SButtonData& data);
+        CCheckboxElement(const SCheckboxData& data);
 
         virtual void                                     paint();
         virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
@@ -40,6 +43,6 @@ namespace Hyprtoolkit {
         virtual bool                                     acceptsMouseInput();
         virtual ePointerShape                            pointerShape();
 
-        Hyprutils::Memory::CUniquePointer<SButtonImpl>   m_impl;
+        Hyprutils::Memory::CUniquePointer<SCheckboxImpl> m_impl;
     };
 };

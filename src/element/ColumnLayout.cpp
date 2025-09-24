@@ -50,11 +50,8 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
         }
 
         Vector2D cSize = childSize(child);
-        if (cSize == Vector2D{-1, -1}) {
-            g_logger->log(HT_LOG_ERROR, "child {:x} of ColumnLayout has no preferred or minimum size: positioning will fail", (uintptr_t)child.get());
-            child->impl->failedPositioning = true;
-            continue;
-        }
+        if (cSize == Vector2D{-1, -1})
+            cSize = {box.w, 1.F};
 
         if (usedY + cSize.y > MAX_Y) {
             // we exceeded our available space.
@@ -100,7 +97,7 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
         for (i = 0; i < C.size(); ++i) {
             const auto& child = C.at(i);
 
-            if (!child->impl->grow)
+            if (!child->impl->growV)
                 continue;
 
             heights.at(i) += MAX_Y - usedY;

@@ -22,7 +22,7 @@ namespace Hyprtoolkit {
         colorFn                                  color = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
-        CDynamicSize                             size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
+        CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
         std::function<void()>                    callback;                                                                 // called after resource is loaded
     };
 

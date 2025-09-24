@@ -7,6 +7,7 @@
 #include <hyprtoolkit/element/Image.hpp>
 #include <hyprtoolkit/element/Button.hpp>
 #include <hyprtoolkit/element/Null.hpp>
+#include <hyprtoolkit/element/Checkbox.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -28,24 +29,28 @@ int                 main(int argc, char** argv, char** envp) {
 
     //
     auto window = backend->openWindow(SWindowCreationData{
-                        .preferredSize = Vector2D{480, 180},
-                        .minSize       = Vector2D{480, 180},
-                        .maxSize       = Vector2D{480, 180},
-                        .title         = "Dialog",
-                        .class_        = "hyprtoolkit-dialog",
+                        .preferredSize = Vector2D{480, 480},
+                        .minSize       = Vector2D{480, 480},
+                        .maxSize       = Vector2D{1280, 720},
+                        .title         = "Controls",
+                        .class_        = "hyprtoolkit-controls",
     });
 
     window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
                         .color = [] { return backend->getPalette()->m_colors.background; },
     }));
 
-    auto layout = CColumnLayoutElement::create(SColumnLayoutData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}}});
+    auto layout = CColumnLayoutElement::create(SColumnLayoutData{
+                        .size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+                        .gap  = 3,
+
+    });
     layout->setMargin(3);
 
     window->m_rootElement->addChild(layout);
 
     auto title = CTextElement::create(STextData{
-                        .text     = "Hello World",
+                        .text     = "Controls",
                         .fontSize = CFontSize{CFontSize::HT_FONT_H2},
                         .color    = [] { return backend->getPalette()->m_colors.text; },
     });
@@ -57,45 +62,34 @@ int                 main(int argc, char** argv, char** envp) {
 
     hr->setMargin(4);
 
-    auto content = CTextElement::create(STextData{
-                        .text  = "This is an example dialog. This first line is long on purpose, so that we overflow.\n\nWoo!",
-                        .color = [] { return backend->getPalette()->m_colors.text; },
-    });
-
     auto button1 = CButtonElement::create(SButtonData{
-                        .label = "Exit",
-                        .onMainClick =
-            [w = WP<IWindow>{window}](SP<CButtonElement> el) {
-                w->close();
-                backend->destroy();
-            },
-                        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-    });
-
-    auto button2 = CButtonElement::create(SButtonData{
-                        .label       = "Do something",
-                        .onMainClick = [](SP<CButtonElement> el) { std::println("Did something!"); },
+                        .label       = "Button",
+                        .onMainClick = [](SP<CButtonElement> el) { std::println("Hello world!"); },
                         .size        = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
     });
 
-    auto null1 = CNullElement::create({});
-    auto null2 = CNullElement::create({});
+    auto checkbox = CCheckboxElement::create(SCheckboxData{
+                        .label     = "Checkbox",
+                        .onToggled = [](SP<CCheckboxElement> el, bool state) { std::println("Toggled to {}", state); },
+                        .size      = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+    });
 
-    auto layout2 = CRowLayoutElement::create({.gap = 3});
+    auto checkbox2 = CCheckboxElement::create(SCheckboxData{
+                        .label     = "Wide checkbox",
+                        .onToggled = [](SP<CCheckboxElement> el, bool state) { std::println("Toggled wide to {}", state); },
+                        .size      = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
+    });
+
+    auto null1 = CNullElement::create({});
 
     null1->setGrow(true);
-    null2->setGrow(true);
 
     layout->addChild(title);
     layout->addChild(hr);
-    layout->addChild(content);
+    layout->addChild(button1);
+    layout->addChild(checkbox);
+    layout->addChild(checkbox2);
     layout->addChild(null1);
-
-    layout2->addChild(null2);
-    layout2->addChild(button2);
-    layout2->addChild(button1);
-
-    layout->addChild(layout2);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

@@ -74,11 +74,7 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
         m_impl->lastMaxSize     = maxSize;
     }
 
-    const auto C = impl->children;
-
-    for (const auto& c : C) {
-        g_positioner->position(c, impl->position);
-    }
+    g_positioner->positionChildren(impl->self.lock());
 }
 
 void CTextElement::renderTex() {

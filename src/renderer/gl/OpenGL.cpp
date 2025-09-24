@@ -660,9 +660,33 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    window->m_rootElement->impl->breadthfirst([](SP<IElement> el) {
-        if (!el->impl->failedPositioning)
+    static const auto DEBUG_LAYOUT = Env::envEnabled("HT_DEBUG_LAYOUT");
+    CHyprColor        DEBUG_COLOR  = {Hyprgraphics::CColor::SHSL{.h = 0.0F, .s = 0.7F, .l = 0.5F}, 0.8F};
+
+    window->m_rootElement->impl->breadthfirst([this, &DEBUG_COLOR](SP<IElement> el) {
+        if (!el->impl->failedPositioning) {
             el->paint();
+
+            if (DEBUG_LAYOUT) {
+                auto BOX = el->impl->position.copy();
+                if (BOX.w == 0)
+                    BOX.w = 1;
+                if (BOX.h == 0)
+                    BOX.h = 1;
+
+                renderBorder(SBorderRenderData{
+                    .box   = BOX,
+                    .color = DEBUG_COLOR,
+                    .thick = 1,
+                });
+
+                auto hsl = DEBUG_COLOR.asHSL();
+                hsl.h += 0.05F;
+                if (hsl.h > 1.F)
+                    hsl.h -= 1.F;
+                DEBUG_COLOR = CHyprColor{hsl, 0.8F};
+            }
+        }
     });
 
     glDisable(GL_BLEND);

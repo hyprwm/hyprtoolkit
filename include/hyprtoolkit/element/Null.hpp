@@ -8,7 +8,7 @@
 
 namespace Hyprtoolkit {
     struct SNullData {
-        CDynamicSize size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
+        CDynamicSize size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}};
     };
 
     class CNullElement : public IElement {

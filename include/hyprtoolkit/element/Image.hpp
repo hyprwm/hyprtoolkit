@@ -14,7 +14,7 @@ namespace Hyprtoolkit {
         std::string  path;
         float        a        = 1.F;
         int          rounding = 0;
-        CDynamicSize size{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {}}; // 0,0 means no size, automatic, fits parent
+        CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
 
     class CImageElement : public IElement {

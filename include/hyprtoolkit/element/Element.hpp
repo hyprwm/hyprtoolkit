@@ -44,6 +44,7 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual void                                     setGrow(bool grow);
+        virtual void                                     setGrow(bool growH, bool growV);
 
         virtual bool                                     acceptsMouseInput();
         virtual ePointerShape                            pointerShape();

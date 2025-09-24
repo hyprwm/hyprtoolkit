@@ -16,17 +16,36 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
 
     initElementIfNeeded(element);
 
-    CBox newBox = box.copy();
+    element->impl->positionerData->baseBox = box;
+    element->reposition(box, maxSize);
 
-    if (element->impl->positionMode == IElement::HT_POSITION_ABSOLUTE)
-        newBox.translate(element->impl->absoluteOffset);
-    else if (element->impl->positionMode == IElement::HT_POSITION_CENTER)
-        newBox.translate((box.size() - element->size()) / 2.F);
+    element->impl->window->damage(box);
+}
 
-    element->impl->positionerData->baseBox = newBox;
-    element->reposition(newBox, maxSize);
+void CPositioner::positionChildren(SP<IElement> element) {
+    const auto C   = element->impl->children;
+    const auto BOX = element->impl->position;
 
-    element->impl->window->damage(newBox);
+    // position children according to how they wanna be positioned
+
+    for (const auto& c : C) {
+        auto itemSize = c->preferredSize(BOX.size());
+
+        if (!itemSize) {
+            // no size to base off of, just position
+            position(c, BOX);
+            continue;
+        }
+
+        // it has a size, let's see what it wants.
+        CBox itemBox = {BOX.pos(), *itemSize};
+        if (c->impl->positionMode == IElement::HT_POSITION_ABSOLUTE)
+            itemBox.translate(c->impl->absoluteOffset);
+        else if (c->impl->positionMode == IElement::HT_POSITION_CENTER)
+            itemBox.translate((BOX.size() - itemBox.size()) / 2.F);
+
+        position(c, itemBox);
+    }
 }
 
 void CPositioner::repositionNeeded(SP<IElement> element) {

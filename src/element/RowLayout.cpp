@@ -49,11 +49,8 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         }
 
         Vector2D cSize = childSize(child);
-        if (cSize == Vector2D{-1, -1}) {
-            g_logger->log(HT_LOG_ERROR, "child {:x} of RowLayout has no preferred or minimum size: positioning will fail", (uintptr_t)child.get());
-            child->impl->failedPositioning = true;
-            continue;
-        }
+        if (cSize == Vector2D{-1, -1})
+            cSize = {1.F, box.h};
 
         if (usedX + cSize.x > MAX_X) {
             // we exceeded our available space.
@@ -99,7 +96,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         for (i = 0; i < C.size(); ++i) {
             const auto& child = C.at(i);
 
-            if (!child->impl->grow)
+            if (!child->impl->growH)
                 continue;
 
             widths.at(i) += MAX_X - usedX;

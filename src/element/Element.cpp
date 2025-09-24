@@ -33,7 +33,13 @@ std::optional<Hyprutils::Math::Vector2D> IElement::maximumSize(const Hyprutils::
 }
 
 void IElement::setGrow(bool grow) {
-    impl->grow = grow;
+    impl->growH = grow;
+    impl->growV = grow;
+}
+
+void IElement::setGrow(bool growH, bool growV) {
+    impl->growH = growH;
+    impl->growV = growV;
 }
 
 void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {

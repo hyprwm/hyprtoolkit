@@ -26,5 +26,7 @@ namespace Hyprtoolkit {
         Hyprutils::Math::Vector2D                        childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
 
         SRowLayoutData                                   m_data;
+
+        friend class CCheckboxElement;
     };
 };

@@ -54,11 +54,7 @@ void CRectangleElement::paint() {
 void CRectangleElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    const auto C = impl->children;
-
-    for (const auto& c : C) {
-        g_positioner->position(c, impl->position);
-    }
+    g_positioner->positionChildren(impl->self.lock());
 }
 
 SRectangleData CRectangleElement::dataCopy() {
