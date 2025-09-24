@@ -23,22 +23,23 @@ namespace Hyprtoolkit {
     class CGLTexture : public IRendererTexture {
       public:
         CGLTexture(ASP<Hyprgraphics::IAsyncResource>);
+        CGLTexture();
         virtual ~CGLTexture();
 
-        virtual size_t            id();
-        virtual eTextureType      type();
-        virtual void              destroy();
+        virtual size_t                    id();
+        virtual eTextureType              type();
+        virtual void                      destroy();
 
-        eGLTextureType            m_type      = TEXTURE_RGBA;
-        GLenum                    m_target    = GL_TEXTURE_2D;
-        bool                      m_allocated = false;
-        GLuint                    m_texID     = 0;
-        Hyprutils::Math::Vector2D m_size      = {};
+        eGLTextureType                    m_type      = TEXTURE_RGBA;
+        GLenum                            m_target    = GL_TEXTURE_2D;
+        bool                              m_allocated = false;
+        GLuint                            m_texID     = 0;
+        Hyprutils::Math::Vector2D         m_size      = {};
 
-      private:
         ASP<Hyprgraphics::IAsyncResource> m_resource;
 
         void                              upload();
         void                              allocate();
+        void                              bind();
     };
 };

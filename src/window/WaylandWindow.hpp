@@ -16,9 +16,6 @@
 #include <fractional-scale-v1.hpp>
 #include <viewporter.hpp>
 
-#include <wayland-egl.h>
-#include "../core/renderPlatforms/Egl.hpp"
-
 #include <chrono>
 
 namespace Hyprtoolkit {
@@ -55,23 +52,21 @@ namespace Hyprtoolkit {
         bool  m_open = false;
 
         struct {
-            SP<CCWlSurface>   surface;
-            SP<CCXdgSurface>  xdgSurface;
-            SP<CCXdgToplevel> xdgToplevel;
-            SP<CCWlCallback>  frameCallback;
+            SP<CCWlSurface>                   surface;
+            SP<CCXdgSurface>                  xdgSurface;
+            SP<CCXdgToplevel>                 xdgToplevel;
+            SP<CCWlCallback>                  frameCallback;
 
-            // FIXME: consider using more raw GLES3.2 for this, instead of wl_egl.
-            // std::array<SP<CWaylandBuffer>, 2> wlBuffers;
-            // SP<Aquamarine::CSwapchain>        swapchain;
+            std::array<SP<CWaylandBuffer>, 2> wlBuffers;
+            SP<Aquamarine::CSwapchain>        swapchain;
+            size_t                            bufIdx = 0;
 
-            wl_egl_window*            eglWindow = nullptr;
-            Hyprutils::Math::Vector2D size;
-            Hyprutils::Math::Vector2D logicalSize;
-            float                     appliedScale;
-            EGLSurface                eglSurface = nullptr;
-            SP<CCWpFractionalScaleV1> fractional = nullptr;
-            SP<CCWpViewport>          viewport   = nullptr;
-            uint32_t                  serial     = 0;
+            Hyprutils::Math::Vector2D         size;
+            Hyprutils::Math::Vector2D         logicalSize;
+            float                             appliedScale;
+            SP<CCWpFractionalScaleV1>         fractional = nullptr;
+            SP<CCWpViewport>                  viewport   = nullptr;
+            uint32_t                          serial     = 0;
         } m_waylandState;
 
         std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();

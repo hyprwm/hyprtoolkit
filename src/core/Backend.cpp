@@ -5,7 +5,6 @@
 #include "AnimationManager.hpp"
 
 #include "./platforms/WaylandPlatform.hpp"
-#include "./renderPlatforms/Egl.hpp"
 #include "../renderer/gl/OpenGL.hpp"
 #include "../window/WaylandWindow.hpp"
 #include "../Macros.hpp"
@@ -80,8 +79,8 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
         g_waylandPlatform = makeUnique<CWaylandPlatform>();
         if (!g_waylandPlatform->attempt())
             return nullptr;
-        g_pEGL     = makeUnique<CEGL>(g_waylandPlatform->m_waylandState.display);
-        g_renderer = makeUnique<COpenGLRenderer>();
+        g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
+        g_renderer = g_openGL;
     }
 
     auto w                         = makeShared<CWaylandWindow>(data);
@@ -292,7 +291,7 @@ void CBackend::enterLoop() {
     }
 
     g_renderer.reset();
-    g_pEGL.reset();
+    g_openGL.reset();
 
     g_waylandPlatform.reset();
 

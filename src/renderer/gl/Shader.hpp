@@ -29,6 +29,7 @@ class CShader {
     GLint   fullSizeUntransformed = -1;
     GLint   radius                = -1;
     GLint   radiusOuter           = -1;
+    GLint   roundingPower         = -1;
 
     GLint   thick = -1;
 

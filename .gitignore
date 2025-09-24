@@ -24,3 +24,6 @@ build/
 
 protocols/*.cpp
 protocols/*.hpp
+
+*.inc
+src/renderer/gl/shaders/Shaders.hpp

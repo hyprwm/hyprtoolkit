@@ -159,12 +159,6 @@ void CWaylandWindow::close() {
     if (m_waylandState.surface)
         m_waylandState.surface->sendDestroy();
 
-    if (m_waylandState.eglSurface)
-        eglDestroySurface(g_pEGL->eglDisplay, m_waylandState.eglSurface);
-
-    if (m_waylandState.eglWindow)
-        wl_egl_window_destroy(m_waylandState.eglWindow);
-
     m_waylandState = {};
 }
 
@@ -186,52 +180,38 @@ void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
 
     m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
 
-    if (!m_waylandState.eglWindow) {
-        m_waylandState.eglWindow = wl_egl_window_create((wl_surface*)m_waylandState.surface->resource(), m_waylandState.size.x, m_waylandState.size.y);
-        RASSERT(m_waylandState.eglWindow, "Couldn't create eglWindow");
-    } else
-        wl_egl_window_resize(m_waylandState.eglWindow, m_waylandState.size.x, m_waylandState.size.y, 0, 0);
-
-    if (!m_waylandState.eglSurface) {
-        m_waylandState.eglSurface = g_pEGL->eglCreatePlatformWindowSurfaceEXT(g_pEGL->eglDisplay, g_pEGL->eglConfig, m_waylandState.eglWindow, nullptr);
-        RASSERT(m_waylandState.eglSurface, "Couldn't create eglSurface");
-    }
-
-    // m_waylandState.surface->sendAttach(m_waylandState.wlBuffers[0]->m_waylandState.buffer.get(), 0, 0);
-    // m_waylandState.surface->sendCommit();
-
     render();
 }
 
 void CWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     m_damageRing.setSize(pixelSize);
 
-    // m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
-    //     .length = 2,
-    //     .size   = pixelSize,
-    //     .format = g_waylandPlatform->m_dmabufFormats.at(0).drmFormat,
-    // });
+    if (!m_waylandState.swapchain)
+        m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_backend->m_aqBackend->getImplementations().at(0));
 
-    // for (size_t i = 0; i < m_waylandState.wlBuffers.size(); ++i) {
-    //     if (!m_waylandState.wlBuffers.at(i))
-    //         m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(m_waylandState.swapchain->next(nullptr));
-    // }
+    m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
+        .length = 2,
+        .size   = pixelSize,
+        .format = g_waylandPlatform->m_dmabufFormats.at(0).drmFormat,
+    });
+
+    for (size_t i = 0; i < m_waylandState.wlBuffers.size(); ++i) {
+        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(m_waylandState.swapchain->next(nullptr));
+    }
 }
 
 void CWaylandWindow::render() {
     if (m_waylandState.frameCallback)
         return;
 
-    onPreRender();
+    auto currentBuffer    = m_waylandState.wlBuffers[m_waylandState.bufIdx];
+    m_waylandState.bufIdx = (m_waylandState.bufIdx + 1) % 2;
 
-    // FIXME: this is required because we use the stupid fucking eglSwapBuffers thing
-    damageEntire();
+    onPreRender();
 
     m_needsFrame = false;
 
-    g_pEGL->makeCurrent(m_waylandState.eglSurface);
-
-    g_renderer->beginRendering(m_self.lock());
+    g_renderer->beginRendering(m_self.lock(), currentBuffer->m_buffer.lock());
 
     m_waylandState.frameCallback = makeShared<CCWlCallback>(m_waylandState.surface->sendFrame());
     m_waylandState.frameCallback->setDone([this](CCWlCallback* r, uint32_t frameTime) { onCallback(); });
@@ -242,7 +222,10 @@ void CWaylandWindow::render() {
 
     g_renderer->endRendering();
 
-    eglSwapBuffers(g_pEGL->eglDisplay, m_waylandState.eglSurface);
+    m_waylandState.surface->sendAttach(currentBuffer->m_waylandState.buffer.get(), 0, 0);
+    m_waylandState.surface->sendCommit();
+
+    //
 
     // print frame time
     if (Env::isTrace()) {

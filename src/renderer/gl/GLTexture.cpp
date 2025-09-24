@@ -21,6 +21,10 @@ CGLTexture::CGLTexture(ASP<Hyprgraphics::IAsyncResource> resource) {
     });
 }
 
+CGLTexture::CGLTexture() {
+    ;
+}
+
 CGLTexture::~CGLTexture() {
     destroy();
 }
@@ -75,4 +79,8 @@ void CGLTexture::allocate() {
     if (!m_allocated)
         GLCALL(glGenTextures(1, &m_texID));
     m_allocated = true;
+}
+
+void CGLTexture::bind() {
+    GLCALL(glBindTexture(m_target, m_texID));
 }

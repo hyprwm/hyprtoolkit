@@ -4,6 +4,7 @@
 #include <hyprutils/math/Box.hpp>
 #include <hyprgraphics/color/Color.hpp>
 #include <hyprgraphics/resource/resources/AsyncResource.hpp>
+#include <aquamarine/buffer/Buffer.hpp>
 
 #include "../helpers/Memory.hpp"
 
@@ -43,13 +44,13 @@ namespace Hyprtoolkit {
             int        thick    = 0;
         };
 
-        virtual void                 beginRendering(SP<IToolkitWindow> window)         = 0;
-        virtual void                 endRendering()                                    = 0;
-        virtual void                 renderRectangle(const SRectangleRenderData& data) = 0;
-        virtual SP<IRendererTexture> uploadTexture(const STextureData& data)           = 0;
-        virtual void                 renderTexture(const STextureRenderData& data)     = 0;
-        virtual void                 renderBorder(const SBorderRenderData& data)       = 0;
+        virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) = 0;
+        virtual void                 endRendering()                                                         = 0;
+        virtual void                 renderRectangle(const SRectangleRenderData& data)                      = 0;
+        virtual SP<IRendererTexture> uploadTexture(const STextureData& data)                                = 0;
+        virtual void                 renderTexture(const STextureRenderData& data)                          = 0;
+        virtual void                 renderBorder(const SBorderRenderData& data)                            = 0;
     };
 
-    inline UP<IRenderer> g_renderer;
+    inline SP<IRenderer> g_renderer;
 }

@@ -112,5 +112,5 @@ void SElementInternalData::setWindow(SP<IToolkitWindow> w) {
 void SElementInternalData::damageEntire() {
     if (!window)
         return;
-    window->damage(position);
+    window->damage(position.copy().expand(2));
 }
