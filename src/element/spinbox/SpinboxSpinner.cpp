@@ -2,12 +2,12 @@
 
 #include <hyprtoolkit/palette/Palette.hpp>
 
-#include "../core/InternalBackend.hpp"
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../window/ToolkitWindow.hpp"
-#include "../core/AnimationManager.hpp"
-#include "Element.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../window/ToolkitWindow.hpp"
+#include "../../core/AnimationManager.hpp"
+#include "../Element.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -19,42 +19,40 @@ SP<CSpinboxSpinner> CSpinboxSpinner::create(SP<CSpinboxElement> data) {
 }
 
 CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_parent(data) {
-    m_layout = CRowLayoutElement::create(SRowLayoutData{
-        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-        .gap  = 3,
-    });
+
+    m_layout = CRowLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
     m_layout->setPositionMode(HT_POSITION_CENTER);
 
-    m_label = CTextElement::create(STextData{
-        .text     = m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem),
-        .color    = [] { return g_palette->m_colors.text; },
-        .callback = [this] { g_positioner->repositionNeeded(m_parent); },
-    });
+    m_label = CTextBuilder::begin()
+                  ->text(std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
+                  ->color([] { return g_palette->m_colors.text; })
+                  ->callback([this] { g_positioner->repositionNeeded(m_parent); })
+                  ->commence();
 
-    m_background = CRectangleElement::create(SRectangleData{
-        .color           = [] { return g_palette->m_colors.base; },
-        .rounding        = 6,
-        .borderColor     = [] { return g_palette->m_colors.alternateBase; },
-        .borderThickness = 1,
-        .size            = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
-    });
+    m_background = CRectangleBuilder::begin()
+                       ->color([] { return g_palette->m_colors.base; })
+                       ->rounding(4)
+                       ->borderColor([] { return g_palette->m_colors.alternateBase; })
+                       ->borderThickness(1)
+                       ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                       ->commence();
 
     m_background->setPositionMode(HT_POSITION_CENTER);
 
-    m_left = CTextElement::create(STextData{
-        .text     = "<",
-        .fontSize = CFontSize{CFontSize::HT_FONT_H3},
-        .color    = [] { return g_palette->m_colors.text; },
-        .callback = [this] { g_positioner->repositionNeeded(m_parent); },
-    });
+    m_left = CTextBuilder::begin()
+                 ->text("<")
+                 ->fontSize({CFontSize::HT_FONT_H3})
+                 ->color([] { return g_palette->m_colors.text; })
+                 ->callback([this] { g_positioner->repositionNeeded(m_parent); })
+                 ->commence();
 
-    m_right = CTextElement::create(STextData{
-        .text     = ">",
-        .fontSize = CFontSize{CFontSize::HT_FONT_H3},
-        .color    = [] { return g_palette->m_colors.text; },
-        .callback = [this] { g_positioner->repositionNeeded(m_parent); },
-    });
+    m_right = CTextBuilder::begin()
+                  ->text(">")
+                  ->fontSize({CFontSize::HT_FONT_H3})
+                  ->color([] { return g_palette->m_colors.text; })
+                  ->callback([this] { g_positioner->repositionNeeded(m_parent); })
+                  ->commence();
 
     m_layout->addChild(m_left);
     m_layout->addChild(m_label);

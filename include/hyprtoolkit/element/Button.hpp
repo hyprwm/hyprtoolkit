@@ -12,34 +12,53 @@ namespace Hyprtoolkit {
 
     struct SButtonImpl;
     class CButtonElement;
+    struct SButtonData;
 
-    struct SButtonData {
-        std::string                                                            label = "Click me";
-        std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onMainClick;
-        std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onRightClick;
-        CDynamicSize size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}};
+    class CButtonBuilder {
+      public:
+        ~CButtonBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CButtonBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        label(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onRightClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CButtonElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CButtonBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SButtonData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CButtonElement> m_element;
+
+        CButtonBuilder() = default;
+
+        friend class CButtonElement;
     };
 
     class CButtonElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CButtonElement> create(const SButtonData& data = {});
         virtual ~CButtonElement() = default;
 
-        SButtonData dataCopy();
-        void        replaceData(const SButtonData& data);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder> rebuild();
 
       private:
         CButtonElement(const SButtonData& data);
+        static Hyprutils::Memory::CSharedPointer<CButtonElement> create(const SButtonData& data);
 
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual bool                                     acceptsMouseInput();
-        virtual ePointerShape                            pointerShape();
+        void                                                     replaceData(const SButtonData& data);
 
-        Hyprutils::Memory::CUniquePointer<SButtonImpl>   m_impl;
+        virtual void                                             paint();
+        virtual void                                             reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
+        virtual Hyprutils::Math::Vector2D                        size();
+        virtual std::optional<Hyprutils::Math::Vector2D>         preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>         minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>         maximumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual bool                                             acceptsMouseInput();
+        virtual ePointerShape                                    pointerShape();
+
+        Hyprutils::Memory::CUniquePointer<SButtonImpl>           m_impl;
+
+        friend class CButtonBuilder;
     };
 };

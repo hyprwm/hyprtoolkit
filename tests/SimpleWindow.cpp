@@ -27,9 +27,7 @@ static void         addTimer(SP<CRectangleElement> rect) {
     backend->addTimer(
         std::chrono::seconds(1),
         [rect](Hyprutils::Memory::CAtomicSharedPointer<CTimer> timer, void* data) {
-            auto rectData  = rect->dataCopy();
-            rectData.color = [] { return CHyprColor{rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, 1.F}; };
-            rect->replaceData(rectData);
+            rect->rebuild()->color([] { return CHyprColor{rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, rand() % 1000 / 1000.F, 1.F}; })->commence();
 
             addTimer(rect);
         },
@@ -46,55 +44,39 @@ int main(int argc, char** argv, char** envp) {
         .class_        = "hyprtoolkit",
     });
 
-    window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
-        .color = [] { return CHyprColor{0.1F, 0.1F, 0.1F}; },
-    }));
+    window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return CHyprColor{0.1F, 0.1F, 0.1F}; })->commence());
 
-    auto layout = CRowLayoutElement::create();
+    auto layout = CRowLayoutBuilder::begin()->commence();
 
     window->m_rootElement->addChild(layout);
 
-    auto rect3 = CRectangleElement::create(SRectangleData{
-        .color    = [] { return CHyprColor{0.2F, 0.4F, 0.4F}; },
-        .rounding = 10,
-        .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150, 150}},
-    });
+    auto rect3 = CRectangleBuilder::begin() //
+                     ->color([] { return CHyprColor{0.2F, 0.4F, 0.4F}; })
+                     ->rounding(10)
+                     ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150, 150}})
+                     ->commence();
 
-    auto rect4 = CRectangleElement::create(SRectangleData{
-        .color    = [] { return CHyprColor{0.4F, 0.2F, 0.4F}; },
-        .rounding = 10,
-        .size     = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}},
-    });
+    auto rect4 = CRectangleBuilder::begin() //
+                     ->color([] { return CHyprColor{0.4F, 0.2F, 0.4F}; })
+                     ->rounding(10)
+                     ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}})
+                     ->commence();
 
-    auto layout2 = CColumnLayoutElement::create(SColumnLayoutData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}}});
+    auto layout2 = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5F, 1.F}})->commence();
 
-    auto image = CImageElement::create(SImageData{
-        .path = "/home/vaxry/Documents/born to C++.png",
-        .size = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {447, 447}},
-    });
+    auto image = CImageBuilder::begin() //
+                     ->path("/home/vaxry/Documents/born to C++.png")
+                     ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {447, 447}})
+                     ->commence();
 
-    auto text = CTextElement::create(STextData{
-        .text  = "world is a fuck",
-        .color = [] { return CHyprColor{0.4F, 0.4F, 0.4F}; },
-    });
+    auto text = CTextBuilder::begin()->text("world is a fuck")->color([] { return CHyprColor{0.4F, 0.4F, 0.4F}; })->commence();
 
-    auto button = CButtonElement::create(SButtonData{
-        .label = "Click me bitch",
-        .onMainClick =
-            [](SP<CButtonElement> el) {
-                auto data  = el->dataCopy();
-                data.label = std::format("Clicked {} times bitch", buttonClicks++);
-                el->replaceData(data);
-            },
-        .onRightClick =
-            [](SP<CButtonElement> el) {
-                auto data    = el->dataCopy();
-                data.label   = std::format("Reset bitch");
-                buttonClicks = 0;
-                el->replaceData(data);
-            },
-        .size = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-    });
+    auto button = CButtonBuilder::begin()
+                      ->label("Click me bitch")
+                      ->onMainClick([](SP<CButtonElement> el) { el->rebuild()->label(std::format("Clicked {} times bitch", buttonClicks++))->commence(); })
+                      ->onRightClick([](SP<CButtonElement> el) { el->rebuild()->label("Reset bitch")->commence(); })
+                      ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                      ->commence();
 
     text->setGrow(true);
     rect4->setGrow(true);

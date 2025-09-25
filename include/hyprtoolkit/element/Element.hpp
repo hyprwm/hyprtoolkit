@@ -33,11 +33,12 @@ namespace Hyprtoolkit {
         virtual Hyprutils::Math::Vector2D size()  = 0;
         virtual void                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
 
-        virtual void                      setPositionMode(ePositionMode mode);
-        virtual void                      setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
-        virtual void                      addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
-        virtual void                      clearChildren();
-        virtual void                      setMargin(float thick);
+        // TODO: move this to builders, this is clunky
+        virtual void setPositionMode(ePositionMode mode);
+        virtual void setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
+        virtual void addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void clearChildren();
+        virtual void setMargin(float thick);
 
         /* Sizes for auto positioning in layouts */
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);

@@ -2,14 +2,14 @@
 
 #include <hyprtoolkit/palette/Palette.hpp>
 
-#include "../core/InternalBackend.hpp"
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../window/ToolkitWindow.hpp"
-#include "../core/AnimationManager.hpp"
-#include "Element.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../window/ToolkitWindow.hpp"
+#include "../../core/AnimationManager.hpp"
+#include "../Element.hpp"
 
-#include "../Macros.hpp"
+#include "../../Macros.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -29,20 +29,18 @@ CSpinboxElement::CSpinboxElement(const SSpinboxData& data) : IElement(), m_impl(
 void CSpinboxElement::init() {
     RASSERT(!m_impl->data.items.empty(), "Spinbox can't be empty");
 
-    m_impl->layout = CRowLayoutElement::create(SRowLayoutData{
-        .size = {m_impl->data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-        .gap  = 3,
-    });
+    m_impl->layout =
+        CRowLayoutBuilder::begin()->gap(3)->size({m_impl->data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
-    m_impl->label = CTextElement::create(STextData{
-        .text  = m_impl->data.label,
-        .color = [] { return g_palette->m_colors.text; },
-        .size  = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-    });
+    m_impl->label = CTextBuilder::begin()
+                        ->text(std::string{m_impl->data.label})
+                        ->color([] { return g_palette->m_colors.text; })
+                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                        ->commence();
 
     m_impl->spinner = CSpinboxSpinner::create(m_impl->self.lock());
 
-    m_impl->spacer = CNullElement::create();
+    m_impl->spacer = CNullBuilder::begin()->commence();
     m_impl->spacer->setGrow(true, true);
 
     m_impl->layout->addChild(m_impl->label);
@@ -62,22 +60,21 @@ void CSpinboxElement::reposition(const Hyprutils::Math::CBox& box, const Hypruti
     g_positioner->positionChildren(impl->self.lock());
 }
 
-SSpinboxData CSpinboxElement::dataCopy() {
-    return m_impl->data;
-}
-
 void CSpinboxElement::replaceData(const SSpinboxData& data) {
     m_impl->data = data;
 
-    auto labelData = m_impl->label->dataCopy();
-
-    if (labelData.text != data.label) {
-        labelData.text = data.label;
-        m_impl->label->replaceData(labelData);
-    }
+    m_impl->label->rebuild()->text(std::string{data.label})->commence();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
+}
+
+SP<CSpinboxBuilder> CSpinboxElement::rebuild() {
+    auto p       = SP<CSpinboxBuilder>(new CSpinboxBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SSpinboxData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
 }
 
 size_t CSpinboxElement::current() {
@@ -87,9 +84,10 @@ size_t CSpinboxElement::current() {
 void CSpinboxElement::setCurrent(size_t current) {
     m_impl->data.currentItem = std::min(current, m_impl->data.items.size() - 1);
 
-    auto d = m_impl->spinner->m_label->dataCopy();
-    d.text = m_impl->data.items.at(m_impl->data.currentItem);
-    m_impl->spinner->m_label->replaceData(d);
+    m_impl->spinner->m_label
+        ->rebuild() //
+        ->text(std::string{m_impl->data.items.at(m_impl->data.currentItem)})
+        ->commence();
 }
 
 Hyprutils::Math::Vector2D CSpinboxElement::size() {

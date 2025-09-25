@@ -6,9 +6,18 @@
 #include <hyprtoolkit/element/Text.hpp>
 #include <hyprtoolkit/element/Null.hpp>
 
-#include "../helpers/Memory.hpp"
+#include "../../helpers/Memory.hpp"
 
 namespace Hyprtoolkit {
+    struct SSpinboxData {
+        std::string                                                                     label       = "Choose one";
+        std::vector<std::string>                                                        items       = {"Item A", "Item B"};
+        size_t                                                                          currentItem = 0;
+        std::function<void(Hyprutils::Memory::CSharedPointer<CSpinboxElement>, size_t)> onChanged;
+        CDynamicSize                                                                    size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
+        bool                                                                            fill = false;
+    };
+
     class CSpinboxSpinner : public IElement {
       public:
         static Hyprutils::Memory::CSharedPointer<CSpinboxSpinner> create(SP<CSpinboxElement> element);

@@ -37,61 +37,41 @@ int                 main(int argc, char** argv, char** envp) {
                         .class_        = "hyprtoolkit-controls",
     });
 
-    window->m_rootElement->addChild(CRectangleElement::create(SRectangleData{
-                        .color = [] { return backend->getPalette()->m_colors.background; },
-    }));
+    window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence());
 
-    auto layout = CColumnLayoutElement::create(SColumnLayoutData{
-                        .size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}},
-                        .gap  = 3,
+    auto layout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}})->commence();
 
-    });
     layout->setMargin(3);
     layout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
 
     window->m_rootElement->addChild(layout);
 
-    auto title = CTextElement::create(STextData{
-                        .text     = "Controls",
-                        .fontSize = CFontSize{CFontSize::HT_FONT_H2},
-                        .color    = [] { return backend->getPalette()->m_colors.text; },
-    });
+    auto title = CTextBuilder::begin() //
+                     ->text("Controls")
+                     ->fontSize({CFontSize::HT_FONT_H2})
+                     ->color([] { return backend->getPalette()->m_colors.text; })
+                     ->commence();
 
-    auto hr = CRectangleElement::create(SRectangleData{
-                        .color = [] { return CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)}; },
-                        .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 9.F}},
-    });
+    auto hr = CRectangleBuilder::begin() //
+                  ->color([] { return CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)}; })
+                  ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 9.F}})
+                  ->commence();
 
     hr->setMargin(4);
 
-    auto button1 = CButtonElement::create(SButtonData{
-                        .label       = "Button",
-                        .onMainClick = [](SP<CButtonElement> el) { std::println("Hello world!"); },
-                        .size        = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-    });
+    auto button1 = CButtonBuilder::begin()->label("Hello World")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
-    auto checkbox = CCheckboxElement::create(SCheckboxData{
-                        .label     = "Checkbox",
-                        .onToggled = [](SP<CCheckboxElement> el, bool state) { std::println("Toggled to {}", state); },
-                        .size      = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-    });
+    auto checkbox = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto checkbox2 = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
 
-    auto checkbox2 = CCheckboxElement::create(SCheckboxData{
-                        .label     = "Wide checkbox",
-                        .onToggled = [](SP<CCheckboxElement> el, bool state) { std::println("Toggled wide to {}", state); },
-                        .size      = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-                        .fill      = true,
-    });
+    auto spinbox = CSpinboxBuilder::begin()
+                       ->label("Spinbox")
+                       ->items({"Hello", "World", "Amongus"})
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->fill(true)
+                       ->commence();
 
-    auto spinbox = CSpinboxElement::create(SSpinboxData{
-                        .label     = "Spinbox",
-                        .items     = {"Hello", "World", "Amongus"},
-                        .onChanged = [](SP<CSpinboxElement> el, size_t idx) { std::println("Toggled spin to {}", idx); },
-                        .size      = {CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}},
-                        .fill      = true,
-    });
-
-    auto null1 = CNullElement::create({});
+    auto null1 = CNullBuilder::begin()->commence();
 
     null1->setGrow(true);
 

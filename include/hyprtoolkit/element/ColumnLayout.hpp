@@ -4,27 +4,53 @@
 #include "../types/SizeType.hpp"
 
 namespace Hyprtoolkit {
-    struct SColumnLayoutData {
-        CDynamicSize size = CDynamicSize(CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1});
-        size_t       gap  = 0;
+
+    struct SColumnLayoutData;
+    struct SColumnLayoutImpl;
+    class CColumnLayoutElement;
+
+    class CColumnLayoutBuilder {
+      public:
+        ~CColumnLayoutBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CColumnLayoutBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CColumnLayoutBuilder>        gap(size_t gap);
+        Hyprutils::Memory::CSharedPointer<CColumnLayoutBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CColumnLayoutElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CColumnLayoutBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SColumnLayoutData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CColumnLayoutElement> m_element;
+
+        CColumnLayoutBuilder() = default;
+
+        friend class CColumnLayoutElement;
     };
 
     class CColumnLayoutElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CColumnLayoutElement> create(const SColumnLayoutData& data = {});
         virtual ~CColumnLayoutElement() = default;
+
+        Hyprutils::Memory::CSharedPointer<CColumnLayoutBuilder> rebuild();
 
       private:
         CColumnLayoutElement(const SColumnLayoutData& data);
+        static Hyprutils::Memory::CSharedPointer<CColumnLayoutElement> create(const SColumnLayoutData& data);
 
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        void                                                           replaceData(const SColumnLayoutData& data);
 
-        Hyprutils::Math::Vector2D                        childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void                                                   paint();
+        virtual void                                                   reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
+        virtual Hyprutils::Math::Vector2D                              size();
+        virtual std::optional<Hyprutils::Math::Vector2D>               preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>               minimumSize(const Hyprutils::Math::Vector2D& parent);
 
-        SColumnLayoutData                                m_data;
+        Hyprutils::Math::Vector2D                                      childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
+
+        Hyprutils::Memory::CUniquePointer<SColumnLayoutImpl>           m_impl;
+
+        friend class CColumnLayoutBuilder;
     };
 };

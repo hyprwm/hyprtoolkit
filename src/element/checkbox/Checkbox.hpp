@@ -6,9 +6,17 @@
 #include <hyprtoolkit/element/Text.hpp>
 #include <hyprtoolkit/element/Null.hpp>
 
-#include "../helpers/Memory.hpp"
+#include "../../helpers/Memory.hpp"
 
 namespace Hyprtoolkit {
+    struct SCheckboxData {
+        std::string                                                                    label   = "Checkbox";
+        bool                                                                           toggled = false;
+        std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)> onToggled;
+        CDynamicSize                                                                   size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
+        bool                                                                           fill = false; // FIXME: better layouting needed...
+    };
+
     struct SCheckboxImpl {
         SCheckboxData               data;
 

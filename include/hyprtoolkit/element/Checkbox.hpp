@@ -11,39 +11,58 @@
 namespace Hyprtoolkit {
 
     struct SCheckboxImpl;
+    struct SCheckboxData;
     class CCheckboxElement;
 
-    struct SCheckboxData {
-        std::string                                                                    label   = "Checkbox";
-        bool                                                                           toggled = false;
-        std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)> onToggled;
-        CDynamicSize                                                                   size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
-        bool                                                                           fill = false; // FIXME: better layouting needed...
+    class CCheckboxBuilder {
+      public:
+        ~CCheckboxBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CCheckboxBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        label(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        onToggled(std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)>&&);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        toggled(bool);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        fill(bool);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CCheckboxElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CCheckboxBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SCheckboxData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CCheckboxElement> m_element;
+
+        CCheckboxBuilder() = default;
+
+        friend class CCheckboxElement;
     };
 
     class CCheckboxElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CCheckboxElement> create(const SCheckboxData& data = {});
         virtual ~CCheckboxElement() = default;
 
-        SCheckboxData dataCopy();
-        void          replaceData(const SCheckboxData& data);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder> rebuild();
 
-        bool          state();
-        void          setState(bool state);
+        bool                                                state();
+        void                                                setState(bool state);
 
       private:
         CCheckboxElement(const SCheckboxData& data);
+        static Hyprutils::Memory::CSharedPointer<CCheckboxElement> create(const SCheckboxData& data);
 
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual bool                                     acceptsMouseInput();
-        virtual ePointerShape                            pointerShape();
+        void                                                       replaceData(const SCheckboxData& data);
 
-        Hyprutils::Memory::CUniquePointer<SCheckboxImpl> m_impl;
+        virtual void                                               paint();
+        virtual void                                               reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
+        virtual Hyprutils::Math::Vector2D                          size();
+        virtual std::optional<Hyprutils::Math::Vector2D>           preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>           minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>           maximumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual bool                                               acceptsMouseInput();
+        virtual ePointerShape                                      pointerShape();
+
+        Hyprutils::Memory::CUniquePointer<SCheckboxImpl>           m_impl;
+
+        friend class CCheckboxBuilder;
     };
 };

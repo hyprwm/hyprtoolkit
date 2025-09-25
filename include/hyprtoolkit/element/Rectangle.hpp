@@ -9,25 +9,43 @@
 namespace Hyprtoolkit {
 
     struct SRectangleImpl;
+    struct SRectangleData;
+    class CRectangleElement;
 
-    struct SRectangleData {
-        colorFn      color           = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
-        int          rounding        = 0;
-        colorFn      borderColor     = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
-        int          borderThickness = 0;
-        CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+    class CRectangleBuilder {
+      public:
+        ~CRectangleBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CRectangleBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder>        color(colorFn&&);
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder>        borderColor(colorFn&&);
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder>        rounding(int);
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder>        borderThickness(int);
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CRectangleElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CRectangleBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SRectangleData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CRectangleElement> m_element;
+
+        CRectangleBuilder() = default;
+
+        friend class CRectangleElement;
     };
 
     class CRectangleElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data = {});
         virtual ~CRectangleElement() = default;
 
-        SRectangleData dataCopy();
-        void           replaceData(const SRectangleData& data);
+        Hyprutils::Memory::CSharedPointer<CRectangleBuilder> rebuild();
 
       private:
+        static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data);
         CRectangleElement(const SRectangleData& data);
+
+        void replaceData(const SRectangleData& data);
 
         virtual void                                      paint();
         virtual void                                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
@@ -39,5 +57,7 @@ namespace Hyprtoolkit {
         virtual void                                      recheckColor();
 
         Hyprutils::Memory::CUniquePointer<SRectangleImpl> m_impl;
+
+        friend class CRectangleBuilder;
     };
 };

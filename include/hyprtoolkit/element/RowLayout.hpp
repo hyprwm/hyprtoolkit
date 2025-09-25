@@ -4,33 +4,55 @@
 #include "../types/SizeType.hpp"
 
 namespace Hyprtoolkit {
-    struct SRowLayoutData {
-        CDynamicSize size = CDynamicSize(CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1});
-        size_t       gap  = 0;
+    struct SRowLayoutData;
+    struct SRowLayoutImpl;
+    class CRowLayoutElement;
+
+    class CRowLayoutBuilder {
+      public:
+        ~CRowLayoutBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CRowLayoutBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CRowLayoutBuilder>        gap(size_t gap);
+        Hyprutils::Memory::CSharedPointer<CRowLayoutBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CRowLayoutElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CRowLayoutBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SRowLayoutData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CRowLayoutElement> m_element;
+
+        CRowLayoutBuilder() = default;
+
+        friend class CRowLayoutElement;
     };
 
     class CRowLayoutElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CRowLayoutElement> create(const SRowLayoutData& data = {});
         virtual ~CRowLayoutElement() = default;
+
+        Hyprutils::Memory::CSharedPointer<CRowLayoutBuilder> rebuild();
 
       private:
         CRowLayoutElement(const SRowLayoutData& data);
+        static Hyprutils::Memory::CSharedPointer<CRowLayoutElement> create(const SRowLayoutData& data);
 
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        void                                                        replaceData(const SRowLayoutData& data);
 
-        Hyprutils::Math::Vector2D                        childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void                                                paint();
+        virtual void                                                reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
+        virtual Hyprutils::Math::Vector2D                           size();
+        virtual std::optional<Hyprutils::Math::Vector2D>            preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D>            minimumSize(const Hyprutils::Math::Vector2D& parent);
 
-        SRowLayoutData                                   m_data;
+        Hyprutils::Math::Vector2D                                   childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
 
-        Hyprutils::Math::Vector2D                        m_lastSize;
+        Hyprutils::Memory::CUniquePointer<SRowLayoutImpl>           m_impl;
 
         friend class CCheckboxElement;
         friend class CSpinboxElement;
         friend class CSpinboxSpinner;
+        friend class CRowLayoutBuilder;
     };
 };

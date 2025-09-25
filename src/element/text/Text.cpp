@@ -3,35 +3,46 @@
 #include <hyprtoolkit/palette/Palette.hpp>
 #include <hyprgraphics/color/Color.hpp>
 
-#include "../window/ToolkitWindow.hpp"
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../core/InternalBackend.hpp"
-#include "../helpers/Memory.hpp"
+#include "../../window/ToolkitWindow.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "../../helpers/Memory.hpp"
 
-#include "Element.hpp"
+#include "../Element.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
 SP<CTextElement> CTextElement::create(const STextData& data) {
-    auto p        = SP<CTextElement>(new CTextElement(data));
-    p->impl->self = p;
+    auto p          = SP<CTextElement>(new CTextElement(data));
+    p->impl->self   = p;
+    p->m_impl->self = p;
     return p;
 }
 
-CTextElement::CTextElement(const STextData& data) : IElement(), m_data(data), m_impl(makeUnique<STextImpl>()) {
-    m_impl->lastFontSizeUnscaled = m_data.fontSize.ptSize();
-}
-
-STextData CTextElement::dataCopy() {
-    return m_data;
+CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUnique<STextImpl>()) {
+    m_impl->data                 = data;
+    m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
 }
 
 void CTextElement::replaceData(const STextData& data) {
-    m_data                       = data;
-    m_impl->lastFontSizeUnscaled = m_data.fontSize.ptSize();
-    renderTex();
+    const bool TEXT_DIFFERENT = data.text != m_impl->data.text;
+
+    m_impl->data = data;
+
+    if (m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize() || TEXT_DIFFERENT) {
+        m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
+        renderTex();
+    }
+}
+
+SP<CTextBuilder> CTextElement::rebuild() {
+    auto p       = SP<CTextBuilder>(new CTextBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<STextData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
 }
 
 void CTextElement::paint() {
@@ -88,14 +99,14 @@ void CTextElement::renderTex() {
 
     m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
 
-    std::optional<Vector2D> maxSize = m_data.clampSize.value_or(m_impl->lastMaxSize);
+    std::optional<Vector2D> maxSize = m_impl->data.clampSize.value_or(m_impl->lastMaxSize);
     if (maxSize == Vector2D{0, 0})
         maxSize = std::nullopt;
 
-    auto col = m_data.color();
+    auto col = m_impl->data.color();
 
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-        .text = m_data.text,
+        .text = m_impl->data.text,
         // .font
         .fontSize = sc<size_t>(m_impl->lastFontSizeUnscaled * m_impl->lastScale),
         .color    = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
@@ -123,8 +134,8 @@ void CTextElement::renderTex() {
 
             m_impl->waitingForTex = false;
 
-            if (m_data.callback)
-                m_data.callback();
+            if (m_impl->data.callback)
+                m_impl->data.callback();
         });
     });
 }

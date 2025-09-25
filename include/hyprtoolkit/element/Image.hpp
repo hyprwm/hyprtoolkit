@@ -9,22 +9,45 @@
 namespace Hyprtoolkit {
 
     class IRendererTexture;
+    struct SImageImpl;
+    struct SImageData;
+    class CImageElement;
 
-    struct SImageData {
-        std::string  path;
-        float        a        = 1.F;
-        int          rounding = 0;
-        CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+    class CImageBuilder {
+      public:
+        ~CImageBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CImageBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        path(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        a(float);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        rounding(int);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CImageElement>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CImageBuilder> m_self;
+        Hyprutils::Memory::CUniquePointer<SImageData>  m_data;
+        Hyprutils::Memory::CWeakPointer<CImageElement> m_element;
+
+        CImageBuilder() = default;
+
+        friend class CImageElement;
     };
 
     class CImageElement : public IElement {
       public:
-        static Hyprutils::Memory::CSharedPointer<CImageElement> create(const SImageData& data = {});
         virtual ~CImageElement() = default;
 
-      private:
-        CImageElement(const SImageData& data = {});
+        Hyprutils::Memory::CSharedPointer<CImageBuilder> rebuild();
 
+      private:
+        CImageElement(const SImageData& data);
+        static Hyprutils::Memory::CSharedPointer<CImageElement> create(const SImageData& data);
+
+        void                                                    replaceData(const SImageData& data);
+
+        //
         virtual void                                                          paint();
         virtual void                                                          reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual Hyprutils::Math::Vector2D                                     size();
@@ -34,12 +57,14 @@ namespace Hyprtoolkit {
 
         void                                                                  renderTex();
 
-        SImageData                                                            m_data;
+        Hyprutils::Memory::CUniquePointer<SImageImpl>                         m_impl;
 
         Hyprutils::Memory::CSharedPointer<IRendererTexture>                   m_tex;
         Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CImageResource> m_resource;
         Hyprutils::Math::Vector2D                                             m_size;
 
         bool                                                                  m_waitingForTex = false;
+
+        friend class CImageBuilder;
     };
 };

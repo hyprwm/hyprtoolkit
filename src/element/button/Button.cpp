@@ -2,12 +2,12 @@
 
 #include <hyprtoolkit/palette/Palette.hpp>
 
-#include "../core/InternalBackend.hpp"
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../window/ToolkitWindow.hpp"
-#include "../core/AnimationManager.hpp"
-#include "Element.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../window/ToolkitWindow.hpp"
+#include "../../core/AnimationManager.hpp"
+#include "../Element.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -22,40 +22,41 @@ SP<CButtonElement> CButtonElement::create(const SButtonData& data) {
 CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(makeUnique<SButtonImpl>()) {
     m_impl->data = data;
 
-    m_impl->background = CRectangleElement::create(SRectangleData{
-        .color           = [] { return g_palette->m_colors.base; },
-        .rounding        = 5,
-        .borderColor     = [] { return g_palette->m_colors.alternateBase; },
-        .borderThickness = 1,
-        .size            = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
-    });
+    m_impl->background = CRectangleBuilder::begin()
+                             ->color([] { return g_palette->m_colors.base; })
+                             ->rounding(5)
+                             ->borderColor([] { return g_palette->m_colors.alternateBase; })
+                             ->borderThickness(1)
+                             ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                             ->commence();
 
-    m_impl->label = CTextElement::create(STextData{
-        .text  = data.label,
-        .color = [] { return g_palette->m_colors.text; },
-        .size  = CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
-        .callback =
-            [this] {
-                m_impl->labelChanged = true;
-                g_positioner->repositionNeeded(impl->self.lock());
-            },
-    });
+    m_impl->label = CTextBuilder::begin()
+                        ->text(std::string{data.label})
+                        ->color([] { return g_palette->m_colors.text; })
+                        ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                        ->callback([this] {
+                            m_impl->labelChanged = true;
+                            g_positioner->repositionNeeded(impl->self.lock());
+                        })
+                        ->commence();
 
     addChild(m_impl->background);
     addChild(m_impl->label);
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
-        auto bg        = m_impl->background->dataCopy();
-        bg.color       = [] { return g_palette->m_colors.base.brighten(0.11F); };
-        bg.borderColor = [] { return g_palette->m_colors.accent; };
-        m_impl->background->replaceData(bg);
+        m_impl->background
+            ->rebuild() //
+            ->color([] { return g_palette->m_colors.base.brighten(0.11F); })
+            ->borderColor([] { return g_palette->m_colors.accent; })
+            ->commence();
     });
 
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
-        auto bg        = m_impl->background->dataCopy();
-        bg.color       = [] { return g_palette->m_colors.base; };
-        bg.borderColor = [] { return g_palette->m_colors.alternateBase; };
-        m_impl->background->replaceData(bg);
+        m_impl->background
+            ->rebuild() //
+            ->color([] { return g_palette->m_colors.base; })
+            ->borderColor([] { return g_palette->m_colors.alternateBase; })
+            ->commence();
     });
 
     impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
@@ -102,20 +103,18 @@ void CButtonElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutil
         g_positioner->position(impl->parent.lock(), impl->parent->impl->position);
 }
 
-SButtonData CButtonElement::dataCopy() {
-    return m_impl->data;
+SP<CButtonBuilder> CButtonElement::rebuild() {
+    auto p       = SP<CButtonBuilder>(new CButtonBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SButtonData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
 }
 
 void CButtonElement::replaceData(const SButtonData& data) {
     m_impl->data = data;
 
-    auto labelData = m_impl->label->dataCopy();
-
-    if (labelData.text != data.label) {
-        labelData.text = data.label;
-        m_impl->label->replaceData(labelData);
-        m_impl->labelChanged = true;
-    }
+    m_impl->label->rebuild()->text(std::string{data.label})->commence();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

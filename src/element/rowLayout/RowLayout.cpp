@@ -1,26 +1,35 @@
-#include <hyprtoolkit/element/RowLayout.hpp>
+#include "RowLayout.hpp"
 #include <cmath>
 
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../core/InternalBackend.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "../../window/ToolkitWindow.hpp"
 
-#include "Element.hpp"
+#include "../Element.hpp"
 
 using namespace Hyprtoolkit;
 
 SP<CRowLayoutElement> CRowLayoutElement::create(const SRowLayoutData& data) {
-    auto p        = SP<CRowLayoutElement>(new CRowLayoutElement(data));
-    p->impl->self = p;
+    auto p          = SP<CRowLayoutElement>(new CRowLayoutElement(data));
+    p->impl->self   = p;
+    p->m_impl->self = p;
     return p;
 }
 
-CRowLayoutElement::CRowLayoutElement(const SRowLayoutData& data) : IElement(), m_data(data) {
-    ;
+CRowLayoutElement::CRowLayoutElement(const SRowLayoutData& data) : IElement(), m_impl(makeUnique<SRowLayoutImpl>()) {
+    m_impl->data = data;
 }
 
 void CRowLayoutElement::paint() {
     ; // no-op
+}
+
+void CRowLayoutElement::replaceData(const SRowLayoutData& data) {
+    m_impl->data = data;
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 // FIXME: de-dup with columnlayout?
@@ -86,11 +95,11 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         // can fit: use preferred
         widths.at(i) = cSize.x;
         child->impl->setFailedPositioning(false);
-        usedX += cSize.x + m_data.gap;
+        usedX += cSize.x + m_impl->data.gap;
     }
 
     if (!C.empty())
-        usedX -= m_data.gap;
+        usedX -= m_impl->data.gap;
 
     // check if any element grows and grow if applicable
     if (usedX < MAX_X) {
@@ -131,7 +140,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
 
         g_positioner->position(child, childBox, Vector2D{-1.F, box.h});
 
-        currentX += childBox.w + m_data.gap;
+        currentX += childBox.w + m_impl->data.gap;
     }
 }
 
@@ -148,19 +157,19 @@ Hyprutils::Math::Vector2D CRowLayoutElement::size() {
 }
 
 std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto calc = m_data.size.calculate(parent);
+    auto calc = m_impl->data.size.calculate(parent);
 
     if (calc.x != -1 && calc.y != -1)
         return calc;
 
     Vector2D max;
     for (const auto& child : impl->children) {
-        max.x += childSize(child).x + m_data.gap;
+        max.x += childSize(child).x + m_impl->data.gap;
         max.y = std::max(max.y, childSize(child).y);
     }
 
     if (!impl->children.empty())
-        max.x -= m_data.gap;
+        max.x -= m_impl->data.gap;
 
     max.x += impl->margin * 2;
     max.y += impl->margin * 2;

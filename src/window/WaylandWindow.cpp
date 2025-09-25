@@ -44,7 +44,7 @@ bool CWaylandBuffer::good() {
 }
 
 CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData(data) {
-    m_rootElement = CRectangleElement::create();
+    m_rootElement = CRectangleBuilder::begin()->commence();
 }
 
 CWaylandWindow::~CWaylandWindow() {

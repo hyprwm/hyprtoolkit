@@ -1,16 +1,17 @@
 #include "Rectangle.hpp"
 
-#include "../layout/Positioner.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../window/ToolkitWindow.hpp"
-#include "../core/AnimationManager.hpp"
-#include "Element.hpp"
+#include "../../layout/Positioner.hpp"
+#include "../../renderer/Renderer.hpp"
+#include "../../window/ToolkitWindow.hpp"
+#include "../../core/AnimationManager.hpp"
+#include "../Element.hpp"
 
 using namespace Hyprtoolkit;
 
 SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
-    auto p        = SP<CRectangleElement>(new CRectangleElement(data));
-    p->impl->self = p;
+    auto p          = SP<CRectangleElement>(new CRectangleElement(data));
+    p->impl->self   = p;
+    p->m_impl->self = p;
     return p;
 }
 
@@ -57,8 +58,12 @@ void CRectangleElement::reposition(const Hyprutils::Math::CBox& box, const Hypru
     g_positioner->positionChildren(impl->self.lock());
 }
 
-SRectangleData CRectangleElement::dataCopy() {
-    return m_impl->data;
+SP<CRectangleBuilder> CRectangleElement::rebuild() {
+    auto p       = SP<CRectangleBuilder>(new CRectangleBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SRectangleData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
 }
 
 void CRectangleElement::replaceData(const SRectangleData& data) {
