@@ -11,8 +11,8 @@
 using namespace Hyprtoolkit;
 
 SP<CColumnLayoutElement> CColumnLayoutElement::create(const SColumnLayoutData& data) {
-    auto p        = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
-    p->impl->self = p;
+    auto p          = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
+    p->impl->self   = p;
     p->m_impl->self = p;
     return p;
 }
@@ -34,7 +34,7 @@ SP<CColumnLayoutBuilder> CColumnLayoutElement::rebuild() {
 }
 
 void CColumnLayoutElement::replaceData(const SColumnLayoutData& data) {
-    m_impl->data         = data;
+    m_impl->data = data;
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

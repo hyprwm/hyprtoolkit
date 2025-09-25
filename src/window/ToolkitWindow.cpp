@@ -42,6 +42,7 @@ void IToolkitWindow::onPreRender() {
 }
 
 void IToolkitWindow::scheduleReposition(WP<IElement> e) {
+    damageEntire();
     m_needsReposition.emplace_back(e);
     scheduleFrame();
 }

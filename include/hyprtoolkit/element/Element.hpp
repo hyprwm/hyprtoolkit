@@ -37,6 +37,7 @@ namespace Hyprtoolkit {
         virtual void setPositionMode(ePositionMode mode);
         virtual void setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
         virtual void addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void removeChild(Hyprutils::Memory::CSharedPointer<IElement> child);
         virtual void clearChildren();
         virtual void setMargin(float thick);
 

@@ -50,6 +50,23 @@ void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
     child->impl->window = impl->window;
     child->impl->breadthfirst([w = impl->window.lock()](SP<IElement> e) { e->impl->setWindow(w); });
     impl->children.emplace_back(child);
+
+    if (impl->window)
+        impl->window->scheduleReposition(child);
+}
+
+void IElement::removeChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
+    if (std::ranges::find(impl->children, child) == impl->children.end())
+        return;
+
+    std::erase(impl->children, child);
+
+    child->impl->parent.reset();
+    child->impl->window.reset();
+    child->impl->breadthfirst([](SP<IElement> e) { e->impl->setWindow(nullptr); });
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 void IElement::clearChildren() {

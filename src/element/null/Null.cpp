@@ -9,8 +9,8 @@
 using namespace Hyprtoolkit;
 
 SP<CNullElement> CNullElement::create(const SNullData& data) {
-    auto p        = SP<CNullElement>(new CNullElement(data));
-    p->impl->self = p;
+    auto p          = SP<CNullElement>(new CNullElement(data));
+    p->impl->self   = p;
     p->m_impl->self = p;
     return p;
 }

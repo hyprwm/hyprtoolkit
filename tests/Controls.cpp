@@ -24,28 +24,41 @@ using namespace Hyprtoolkit;
 #define WP CWeakPointer
 #define UP CUniquePointer
 
-static SP<CBackend> backend;
+static SP<CBackend>             backend;
+static SP<CSliderElement>       hiddenSlider;
+static SP<CColumnLayoutElement> mainLayout;
 
-int                 main(int argc, char** argv, char** envp) {
+static void                     toggleVisibilityOfSecretSlider() {
+    static bool visible = false;
+
+    if (!visible)
+        mainLayout->addChild(hiddenSlider);
+    else
+        mainLayout->removeChild(hiddenSlider);
+
+    visible = !visible;
+}
+
+int main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
 
     //
     auto window = backend->openWindow(SWindowCreationData{
-                        .preferredSize = Vector2D{480, 480},
-                        .minSize       = Vector2D{480, 480},
-                        .maxSize       = Vector2D{1280, 720},
-                        .title         = "Controls",
-                        .class_        = "hyprtoolkit-controls",
+        .preferredSize = Vector2D{480, 480},
+        .minSize       = Vector2D{480, 480},
+        .maxSize       = Vector2D{1280, 720},
+        .title         = "Controls",
+        .class_        = "hyprtoolkit-controls",
     });
 
     window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence());
 
-    auto layout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}})->commence();
+    mainLayout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}})->commence();
 
-    layout->setMargin(3);
-    layout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
+    mainLayout->setMargin(3);
+    mainLayout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
 
-    window->m_rootElement->addChild(layout);
+    window->m_rootElement->addChild(mainLayout);
 
     auto title = CTextBuilder::begin() //
                      ->text("Controls")
@@ -60,9 +73,13 @@ int                 main(int argc, char** argv, char** envp) {
 
     hr->setMargin(4);
 
-    auto button1 = CButtonBuilder::begin()->label("Hello World")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto button1 = CButtonBuilder::begin()
+                       ->label("Secret")
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->onMainClick([](SP<CButtonElement>) { toggleVisibilityOfSecretSlider(); })
+                       ->commence();
 
-    auto checkbox = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto checkbox  = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
     auto checkbox2 = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
 
     auto spinbox = CSpinboxBuilder::begin()
@@ -87,18 +104,21 @@ int                 main(int argc, char** argv, char** envp) {
 
     auto null1 = CNullBuilder::begin()->commence();
 
+    hiddenSlider =
+        CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+
     null1->setGrow(true);
 
-    layout->addChild(title);
-    layout->addChild(hr);
-    layout->addChild(button1);
-    layout->addChild(checkbox);
-    layout->addChild(checkbox2);
-    layout->addChild(spinbox);
-    layout->addChild(slider);
-    layout->addChild(slider2);
-    layout->addChild(slider3);
-    layout->addChild(null1);
+    mainLayout->addChild(title);
+    mainLayout->addChild(hr);
+    mainLayout->addChild(button1);
+    mainLayout->addChild(checkbox);
+    mainLayout->addChild(checkbox2);
+    mainLayout->addChild(spinbox);
+    mainLayout->addChild(slider);
+    mainLayout->addChild(slider2);
+    mainLayout->addChild(slider3);
+    mainLayout->addChild(null1);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();
