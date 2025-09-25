@@ -8,6 +8,8 @@
 
 #include "../helpers/Memory.hpp"
 
+#include "Polygon.hpp"
+
 using namespace Hyprutils::Math;
 using namespace Hyprgraphics;
 
@@ -44,12 +46,19 @@ namespace Hyprtoolkit {
             int        thick    = 0;
         };
 
+        struct SPolygonRenderData {
+            CBox       box;
+            CHyprColor color = {1, 1, 1, 1};
+            CPolygon   poly;
+        };
+
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) = 0;
         virtual void                 endRendering()                                                         = 0;
         virtual void                 renderRectangle(const SRectangleRenderData& data)                      = 0;
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data)                                = 0;
         virtual void                 renderTexture(const STextureRenderData& data)                          = 0;
         virtual void                 renderBorder(const SBorderRenderData& data)                            = 0;
+        virtual void                 renderPolygon(const SPolygonRenderData& data)                          = 0;
     };
 
     inline SP<IRenderer> g_renderer;

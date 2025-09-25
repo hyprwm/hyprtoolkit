@@ -878,3 +878,41 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     glDisableVertexAttribArray(m_borderShader.posAttrib);
     glDisableVertexAttribArray(m_borderShader.texAttrib);
 }
+
+void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
+    const auto ROUNDEDBOX    = logicalToGL(data.box);
+    const auto UNTRANSFORMED = logicalToGL(data.box, false);
+    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
+
+    if (m_damage.copy().intersect(UNTRANSFORMED).empty())
+        return;
+
+    glUseProgram(m_rectShader.program);
+
+    glUniformMatrix3fv(m_rectShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
+
+    // premultiply the color as well as we don't work with straight alpha
+    const auto COL = data.color;
+    glUniform4f(m_rectShader.color, COL.r * COL.a, COL.g * COL.a, COL.b * COL.a, COL.a);
+
+    glUniform1f(m_rectShader.radius, 0);
+
+    std::vector<float> verts;
+    verts.resize(data.poly.m_points.size() * 2);
+    for (size_t i = 0; i < data.poly.m_points.size(); i++) {
+        verts[i * 2]       = data.poly.m_points[i].x;
+        verts[1 + (i * 2)] = data.poly.m_points[i].y;
+    }
+
+    glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, verts.data());
+
+    glEnableVertexAttribArray(m_rectShader.posAttrib);
+
+    m_damage.forEachRect([this, &verts](const auto& RECT) {
+        scissor(&RECT);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, verts.size() / 2);
+    });
+
+    glDisableVertexAttribArray(m_rectShader.posAttrib);
+}

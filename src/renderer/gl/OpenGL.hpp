@@ -32,6 +32,7 @@ namespace Hyprtoolkit {
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data);
         virtual void                 renderTexture(const STextureRenderData& data);
         virtual void                 renderBorder(const SBorderRenderData& data);
+        virtual void                 renderPolygon(const SPolygonRenderData& data);
 
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);

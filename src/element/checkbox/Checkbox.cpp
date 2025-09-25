@@ -47,12 +47,11 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
 
     m_impl->background->setPositionMode(HT_POSITION_CENTER);
 
-    m_impl->foreground = CRectangleBuilder::begin() //
-                             ->color(m_impl->getFgColor())
-                             ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
-                             ->commence();
+    CHyprColor col = g_palette->m_colors.accent;
+    col.a          = m_impl->data.toggled ? 1.F : 0.F;
+    m_impl->foreground =
+        CCheckmarkElement::create(SCheckmarkData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}}, .color = [col] { return col; }});
 
-    m_impl->foreground->setMargin(4);
     m_impl->foreground->setPositionMode(HT_POSITION_CENTER);
 
     m_impl->label = CTextBuilder::begin()
@@ -108,10 +107,9 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
             if (m_impl->data.onToggled)
                 m_impl->data.onToggled(m_impl->self.lock(), m_impl->data.toggled);
 
-            auto fg = m_impl->foreground
-                          ->rebuild() //
-                          ->color(m_impl->getFgColor())
-                          ->commence();
+            CHyprColor col               = g_palette->m_colors.accent;
+            col.a                        = m_impl->data.toggled ? 1.F : 0.F;
+            *m_impl->foreground->m_color = col;
         }
     });
 }
@@ -138,6 +136,10 @@ void CCheckboxElement::replaceData(const SCheckboxData& data) {
     m_impl->data = data;
 
     m_impl->label->rebuild()->text(std::string{data.label})->commence();
+
+    CHyprColor col               = g_palette->m_colors.accent;
+    col.a                        = m_impl->data.toggled ? 1.F : 0.F;
+    *m_impl->foreground->m_color = col;
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
