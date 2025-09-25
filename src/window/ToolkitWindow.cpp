@@ -56,7 +56,7 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
             el = current;
     });
 
-    if (el == m_hoveredElement) {
+    if (el == m_hoveredElement || m_mouseIsDown /* Lock focus while mouse is down */) {
         if (m_hoveredElement)
             m_hoveredElement->impl->m_externalEvents.mouseMove.emit(coords - m_hoveredElement->impl->position.pos());
         return;
@@ -80,6 +80,8 @@ void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
 }
 
 void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
+    m_mouseIsDown = state;
+
     if (!m_hoveredElement)
         return;
 

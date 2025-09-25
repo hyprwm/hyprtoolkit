@@ -39,6 +39,7 @@ namespace Hyprtoolkit {
         bool                      m_needsFrame = true;
         WP<IToolkitWindow>        m_self;
         Hyprutils::Math::Vector2D m_mousePos;
+        bool                      m_mouseIsDown = false;
 
         SP<IElement>              m_hoveredElement;
 
