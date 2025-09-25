@@ -54,5 +54,7 @@ namespace Hyprtoolkit {
         friend class CSpinboxElement;
         friend class CSpinboxSpinner;
         friend class CRowLayoutBuilder;
+        friend class CSliderSlider;
+        friend class CSliderElement;
     };
 };

@@ -9,6 +9,7 @@
 #include <hyprtoolkit/element/Null.hpp>
 #include <hyprtoolkit/element/Checkbox.hpp>
 #include <hyprtoolkit/element/Spinbox.hpp>
+#include <hyprtoolkit/element/Slider.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -71,6 +72,19 @@ int                 main(int argc, char** argv, char** envp) {
                        ->fill(true)
                        ->commence();
 
+    auto slider = CSliderBuilder::begin()->label("Slider")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+
+    auto slider2 = CSliderBuilder::begin()->label("Big Slider")->max(10000)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+
+    auto slider3 = CSliderBuilder::begin()
+                       ->label("Float Slider")
+                       ->max(10.F)
+                       ->val(5.F)
+                       ->snapInt(false)
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->fill(true)
+                       ->commence();
+
     auto null1 = CNullBuilder::begin()->commence();
 
     null1->setGrow(true);
@@ -81,6 +95,9 @@ int                 main(int argc, char** argv, char** envp) {
     layout->addChild(checkbox);
     layout->addChild(checkbox2);
     layout->addChild(spinbox);
+    layout->addChild(slider);
+    layout->addChild(slider2);
+    layout->addChild(slider3);
     layout->addChild(null1);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
