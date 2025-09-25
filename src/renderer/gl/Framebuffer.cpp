@@ -1,6 +1,8 @@
 #include "Framebuffer.hpp"
 #include "OpenGL.hpp"
 #include "GLTexture.hpp"
+#include "../../core/InternalBackend.hpp"
+#include "GL.hpp"
 
 #include <GLES3/gl32.h>
 
@@ -61,11 +63,11 @@ bool CFramebuffer::alloc(int w, int h, uint32_t drmFormat) {
 }
 
 void CFramebuffer::bind() {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fb);
+    GLCALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fb));
 }
 
 void CFramebuffer::unbind() {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLCALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 }
 
 void CFramebuffer::release() {

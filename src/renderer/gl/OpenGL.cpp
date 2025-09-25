@@ -882,11 +882,29 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
 void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
     const auto ROUNDEDBOX    = logicalToGL(data.box);
     const auto UNTRANSFORMED = logicalToGL(data.box, false);
-    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
-    Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
     if (m_damage.copy().intersect(UNTRANSFORMED).empty())
         return;
+
+    // We always do 4X MSAA on polygons, otherwise pixel galore
+
+    Vector2D     FB_SIZE = ROUNDEDBOX.size() * 2.F;
+
+    Mat3x3       matrix = m_projMatrix.projectBox(CBox{{}, FB_SIZE}, HYPRUTILS_TRANSFORM_NORMAL, 0);
+
+    auto         proj     = Mat3x3::outputProjection(FB_SIZE, HYPRUTILS_TRANSFORM_NORMAL);
+    Mat3x3       glMatrix = proj.copy().multiply(matrix);
+
+    CFramebuffer fb;
+    fb.alloc(FB_SIZE.x, FB_SIZE.y);
+    fb.bind();
+
+    glViewport(0, 0, FB_SIZE.x, FB_SIZE.y);
+
+    scissor(nullptr);
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(m_rectShader.program);
 
@@ -909,10 +927,19 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
 
     glEnableVertexAttribArray(m_rectShader.posAttrib);
 
-    m_damage.forEachRect([this, &verts](const auto& RECT) {
-        scissor(&RECT);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, verts.size() / 2);
-    });
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, verts.size() / 2);
 
     glDisableVertexAttribArray(m_rectShader.posAttrib);
+
+    // bind back to our fbo and render
+    auto tex = fb.getTexture();
+    fb.release();
+    m_currentRBO->bind();
+
+    glViewport(0, 0, m_currentViewport.x, m_currentViewport.y);
+
+    renderTexture(STextureRenderData{
+        .box     = data.box,
+        .texture = tex,
+    });
 }
