@@ -20,7 +20,7 @@ SP<CSpinboxSpinner> CSpinboxSpinner::create(SP<CSpinboxElement> data) {
 
 CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_parent(data) {
 
-    m_layout = CRowLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    m_layout = CRowLayoutBuilder::begin()->gap(6)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
     m_layout->setPositionMode(HT_POSITION_CENTER);
 
@@ -54,9 +54,14 @@ CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_paren
                   ->callback([this] { g_positioner->repositionNeeded(m_parent); })
                   ->commence();
 
+    m_leftPad  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {0.F, 1.F}})->commence();
+    m_rightPad = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {0.F, 1.F}})->commence();
+
+    m_layout->addChild(m_leftPad);
     m_layout->addChild(m_left);
     m_layout->addChild(m_label);
     m_layout->addChild(m_right);
+    m_layout->addChild(m_rightPad);
 
     addChild(m_background);
     addChild(m_layout);
@@ -64,9 +69,19 @@ CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_paren
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         m_primedForUp  = false;
         m_lastPosLocal = pos;
+        m_background
+            ->rebuild() //
+            ->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })
+            ->commence();
     });
     impl->m_externalEvents.mouseMove.listenStatic([this](const Vector2D& pos) { m_lastPosLocal = pos; });
-    impl->m_externalEvents.mouseLeave.listenStatic([this]() { m_primedForUp = false; });
+    impl->m_externalEvents.mouseLeave.listenStatic([this]() {
+        m_primedForUp = false;
+        m_background
+            ->rebuild() //
+            ->borderColor([] { return g_palette->m_colors.alternateBase; })
+            ->commence();
+    });
 
     impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
         if (button != Input::MOUSE_BUTTON_LEFT)

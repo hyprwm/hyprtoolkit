@@ -65,13 +65,18 @@ CSliderSlider::CSliderSlider(SP<CSliderElement> data) : IElement(), m_parent(dat
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         m_dragging     = false;
         m_lastPosLocal = pos;
+
+        m_background->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })->commence();
     });
     impl->m_externalEvents.mouseMove.listenStatic([this](const Vector2D& pos) {
         m_lastPosLocal = pos;
         if (m_dragging)
             updateValue();
     });
-    impl->m_externalEvents.mouseLeave.listenStatic([this]() { m_dragging = false; });
+    impl->m_externalEvents.mouseLeave.listenStatic([this]() {
+        m_dragging = false;
+        m_background->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase; })->commence();
+    });
 
     impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
         if (button != Input::MOUSE_BUTTON_LEFT)

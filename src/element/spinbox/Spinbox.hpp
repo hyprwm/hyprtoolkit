@@ -44,6 +44,7 @@ namespace Hyprtoolkit {
         SP<CTextElement>                                 m_label;
         SP<CTextElement>                                 m_left;
         SP<CTextElement>                                 m_right;
+        SP<CNullElement>                                 m_leftPad, m_rightPad;
 
         bool                                             m_primedForUp = false;
         Hyprutils::Math::Vector2D                        m_lastPosLocal;

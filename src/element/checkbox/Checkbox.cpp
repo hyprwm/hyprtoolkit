@@ -79,7 +79,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
         m_impl->background
             ->rebuild() //
             ->color([] { return g_palette->m_colors.base.brighten(0.11F); })
-            ->borderColor([] { return g_palette->m_colors.accent; })
+            ->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })
             ->commence();
         m_impl->primedForUp = false;
     });

@@ -99,7 +99,8 @@ void IElement::recheckColor() {
 
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
-    position.expand(-margin);
+    if (margin > 0)
+        position.expand(-margin);
 }
 
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
