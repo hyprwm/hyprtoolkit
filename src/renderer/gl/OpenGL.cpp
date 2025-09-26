@@ -608,10 +608,9 @@ COpenGLRenderer::~COpenGLRenderer() {
 
 CBox COpenGLRenderer::logicalToGL(const CBox& box, bool transform) {
     auto b = box.copy();
-    b.scale(m_scale);
+    b.scale(m_scale).round();
     if (transform)
         b.transform(Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, m_currentViewport.x, m_currentViewport.y);
-    b.round();
     return b;
 }
 
