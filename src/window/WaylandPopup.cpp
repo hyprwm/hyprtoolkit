@@ -112,6 +112,12 @@ void CWaylandPopup::open() {
 }
 
 void CWaylandPopup::close() {
+    if (g_waylandPlatform->m_currentWindow == m_self)
+        g_waylandPlatform->m_currentWindow = m_parent;
+
+    if (m_parent)
+        std::erase(m_parent->m_popups, m_self);
+
     if (!m_open)
         return;
 
