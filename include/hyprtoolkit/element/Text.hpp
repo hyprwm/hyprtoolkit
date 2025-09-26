@@ -45,7 +45,7 @@ namespace Hyprtoolkit {
 
     class CTextElement : public IElement {
       public:
-        virtual ~CTextElement() = default;
+        virtual ~CTextElement();
 
         Hyprutils::Memory::CSharedPointer<CTextBuilder> rebuild();
 

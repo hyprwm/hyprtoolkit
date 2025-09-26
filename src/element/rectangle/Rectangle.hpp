@@ -19,6 +19,6 @@ namespace Hyprtoolkit {
         PHLANIMVAR<CHyprColor> color;
         PHLANIMVAR<CHyprColor> borderColor;
 
-        SP<CRectangleElement>  self;
+        WP<CRectangleElement>  self;
     };
 }

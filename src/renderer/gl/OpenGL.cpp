@@ -664,6 +664,8 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
 
     renderBreadthfirst(window->m_rootElement);
 
+    m_alreadyRendered.clear();
+
     glDisable(GL_BLEND);
 }
 

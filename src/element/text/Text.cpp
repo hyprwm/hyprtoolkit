@@ -26,6 +26,8 @@ CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUniqu
     m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
 }
 
+CTextElement::~CTextElement() = default;
+
 void CTextElement::replaceData(const STextData& data) {
     const bool TEXT_DIFFERENT = data.text != m_impl->data.text;
 
