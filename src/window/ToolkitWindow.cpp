@@ -104,17 +104,8 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
 
     m_hoveredElements = alwaysHover;
 
-    for (const auto& e : m_hoveredElements) {
-        if (!e->m_el)
-            continue;
-        e->m_el->impl->m_externalEvents.mouseMove.emit(coords - e->m_el->impl->position.pos());
-    }
-
-    if ((el == (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{})) || m_mouseIsDown /* Lock focus while mouse is down */) {
-        if (el)
-            el->impl->m_externalEvents.mouseMove.emit(coords - el->impl->position.pos());
+    if ((el == (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{})) || m_mouseIsDown /* Lock focus while mouse is down */)
         return;
-    }
 
     if (el) {
         initElementIfNeeded(el);
@@ -126,10 +117,28 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
 
 void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {
     updateFocus(local);
+
+    if (m_mainHoverElement && m_mainHoverElement->m_el)
+        m_mainHoverElement->m_el->impl->m_externalEvents.mouseMove.emit(local - m_mainHoverElement->m_el->impl->position.pos());
+
+    for (const auto& e : m_hoveredElements) {
+        if (!e->m_el)
+            continue;
+        e->m_el->impl->m_externalEvents.mouseMove.emit(local - e->m_el->impl->position.pos());
+    }
 }
 
 void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
     updateFocus(local);
+
+    if (m_mainHoverElement && m_mainHoverElement->m_el)
+        m_mainHoverElement->m_el->impl->m_externalEvents.mouseMove.emit(local - m_mainHoverElement->m_el->impl->position.pos());
+
+    for (const auto& e : m_hoveredElements) {
+        if (!e->m_el)
+            continue;
+        e->m_el->impl->m_externalEvents.mouseMove.emit(local - e->m_el->impl->position.pos());
+    }
 }
 
 void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
