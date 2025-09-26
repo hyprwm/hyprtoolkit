@@ -794,7 +794,7 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     // Rounded corners
     glUniform2f(m_rectShader.topLeft, (float)TOPLEFT.x, (float)TOPLEFT.y);
     glUniform2f(m_rectShader.fullSize, (float)FULLSIZE.x, (float)FULLSIZE.y);
-    glUniform1f(m_rectShader.radius, data.rounding);
+    glUniform1f(m_rectShader.radius, data.rounding * m_scale);
     glUniform1f(m_rectShader.roundingPower, 2);
 
     glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
@@ -845,7 +845,7 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     // Rounded corners
     glUniform2f(shader->topLeft, TOPLEFT.x, TOPLEFT.y);
     glUniform2f(shader->fullSize, FULLSIZE.x, FULLSIZE.y);
-    glUniform1f(shader->radius, data.rounding);
+    glUniform1f(shader->radius, data.rounding * m_scale);
     glUniform1f(shader->roundingPower, 2);
 
     glUniform1i(shader->discardOpaque, 0);
@@ -899,10 +899,10 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     glUniform2f(m_borderShader.topLeft, (float)TOPLEFT.x, (float)TOPLEFT.y);
     glUniform2f(m_borderShader.fullSize, (float)FULLSIZE.x, (float)FULLSIZE.y);
     glUniform2f(m_borderShader.fullSizeUntransformed, (float)UNTRANSFORMED.width, (float)UNTRANSFORMED.height);
-    glUniform1f(m_borderShader.radius, data.rounding);
-    glUniform1f(m_borderShader.radiusOuter, data.rounding);
+    glUniform1f(m_borderShader.radius, data.rounding * m_scale);
+    glUniform1f(m_borderShader.radiusOuter, data.rounding * m_scale);
     glUniform1f(m_borderShader.roundingPower, 2);
-    glUniform1f(m_borderShader.thick, data.thick);
+    glUniform1f(m_borderShader.thick, data.thick * m_scale);
 
     glVertexAttribPointer(m_borderShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
     glVertexAttribPointer(m_borderShader.texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);

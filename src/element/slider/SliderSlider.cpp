@@ -41,7 +41,7 @@ CSliderSlider::CSliderSlider(SP<CSliderElement> data) : IElement(), m_parent(dat
 
     m_background = CRectangleBuilder::begin()
                        ->color([] { return g_palette->m_colors.base; })
-                       ->rounding(BAR_HEIGHT / 2.F)
+                       ->rounding(BAR_HEIGHT / 2.5F)
                        ->borderColor([] { return g_palette->m_colors.alternateBase; })
                        ->borderThickness(1)
                        ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {BAR_SIZE, BAR_HEIGHT}})
@@ -51,7 +51,7 @@ CSliderSlider::CSliderSlider(SP<CSliderElement> data) : IElement(), m_parent(dat
 
     m_foreground = CRectangleBuilder::begin()
                        ->color([] { return g_palette->m_colors.accent; })
-                       ->rounding(BAR_HEIGHT / 2.F)
+                       ->rounding(BAR_HEIGHT / 2.5F)
                        ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {BAR_SIZE * (m_parent->m_impl->data.current / m_parent->m_impl->data.max), 1.F}})
                        ->commence();
 

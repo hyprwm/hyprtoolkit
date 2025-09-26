@@ -87,6 +87,7 @@ namespace Hyprtoolkit {
 
         SP<IToolkitWindow>             m_window;
         CRegion                        m_damage;
+        float                          m_scale = 1.F;
 
         std::vector<SP<CGLTexture>>    m_glTextures;
         std::vector<SP<CRenderbuffer>> m_rbos;
@@ -101,8 +102,6 @@ namespace Hyprtoolkit {
 
         Mat3x3                         m_projMatrix = Mat3x3::identity();
         Mat3x3                         m_projection;
-
-        float                          m_scale = 1.F;
 
         Vector2D                       m_currentViewport;
 
