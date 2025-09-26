@@ -25,7 +25,7 @@ namespace Hyprtoolkit {
             Schedules a frame event as well.
             Takes logical coordinates (unscaled)
         */
-        virtual void damage(const Hyprutils::Math::CRegion& rg);
+        virtual void damage(Hyprutils::Math::CRegion&& rg);
         virtual void scheduleFrame();
         virtual void damageEntire();
 

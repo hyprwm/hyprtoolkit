@@ -12,6 +12,10 @@ IElement::IElement() {
     impl = UP<SElementInternalData>(new SElementInternalData());
 }
 
+IElement::~IElement() {
+    impl.reset();
+}
+
 void IElement::setPositionMode(ePositionMode mode) {
     impl->positionMode = mode;
 }

@@ -39,10 +39,10 @@ SToolkitFocusLock::~SToolkitFocusLock() {
     m_el->impl->toolkitWindowData->unlock();
 }
 
-void IToolkitWindow::damage(const Hyprutils::Math::CRegion& rg) {
-    auto newRg = rg.copy().scale(scale());
+void IToolkitWindow::damage(Hyprutils::Math::CRegion&& rg) {
+    rg.scale(scale());
 
-    if (m_damageRing.damage(newRg))
+    if (m_damageRing.damage(std::move(rg)))
         scheduleFrame();
 }
 
@@ -66,6 +66,21 @@ void IToolkitWindow::scheduleFrame() {
 
 void IToolkitWindow::onPreRender() {
     g_animationManager->tick();
+
+    // simplify repositions: many will be repeated. Only calculate those that don't have any parent above
+    std::erase_if(m_needsReposition, [this](WP<IElement> e) {
+        if (!e)
+            return false;
+
+        while (e->impl->parent) {
+            if (std::ranges::find(m_needsReposition, e) != m_needsReposition.end())
+                return true;
+
+            e = e->impl->parent.lock();
+        }
+
+        return false;
+    });
 
     for (const auto& e : m_needsReposition) {
         g_positioner->repositionNeeded(e.lock());

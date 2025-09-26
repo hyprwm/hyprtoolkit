@@ -29,7 +29,7 @@ namespace Hyprtoolkit {
             HT_POSITION_AUTO,
         };
 
-        virtual ~IElement() = default;
+        virtual ~IElement();
 
         virtual void                      paint() = 0;
         virtual Hyprutils::Math::Vector2D size()  = 0;

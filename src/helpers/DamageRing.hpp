@@ -9,7 +9,7 @@ namespace Hyprtoolkit {
     class CDamageRing {
       public:
         void                     setSize(const Hyprutils::Math::Vector2D& size_);
-        bool                     damage(const Hyprutils::Math::CRegion& rg);
+        bool                     damage(Hyprutils::Math::CRegion&& rg);
         void                     damageEntire();
         void                     rotate();
         Hyprutils::Math::CRegion getBufferDamage(int age);

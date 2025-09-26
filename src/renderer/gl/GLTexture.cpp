@@ -69,7 +69,9 @@ IRendererTexture::eTextureType CGLTexture::type() {
 }
 
 void CGLTexture::destroy() {
-    g_openGL->makeEGLCurrent();
+    if (g_openGL)
+        g_openGL->makeEGLCurrent();
+
     if (m_allocated) {
         GLCALL(glDeleteTextures(1, &m_texID));
         m_texID = 0;

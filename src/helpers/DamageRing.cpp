@@ -12,12 +12,12 @@ void CDamageRing::setSize(const Vector2D& size_) {
     damageEntire();
 }
 
-bool CDamageRing::damage(const CRegion& rg) {
-    CRegion clipped = rg.copy().intersect(CBox{{}, m_size});
-    if (clipped.empty())
+bool CDamageRing::damage(CRegion&& rg) {
+    rg.intersect(CBox{{}, m_size});
+    if (rg.empty())
         return false;
 
-    m_current.add(clipped);
+    m_current.add(rg);
     return true;
 }
 
