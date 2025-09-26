@@ -56,5 +56,7 @@ namespace Hyprtoolkit {
         friend class CRowLayoutBuilder;
         friend class CSliderSlider;
         friend class CSliderElement;
+        friend class CComboboxElement;
+        friend class CComboboxClickable;
     };
 };

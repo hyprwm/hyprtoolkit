@@ -11,6 +11,7 @@
 #include <hyprtoolkit/element/Spinbox.hpp>
 #include <hyprtoolkit/element/Slider.hpp>
 #include <hyprtoolkit/element/ScrollArea.hpp>
+#include <hyprtoolkit/element/Combobox.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -163,6 +164,13 @@ int main(int argc, char** argv, char** envp) {
                        ->fill(true)
                        ->commence();
 
+    auto combo = CComboboxBuilder::begin()
+                     ->label("Combobox")
+                     ->items({"Hello", "World", "Amongus"})
+                     ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                     ->fill(true)
+                     ->commence();
+
     hiddenSlider =
         CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
 
@@ -178,6 +186,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(slider3);
     mainLayout->addChild(slider4);
     mainLayout->addChild(slider5);
+    mainLayout->addChild(combo);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

@@ -27,7 +27,7 @@ void SToolkitWindowData::unlock() {
     RASSERT(cursorFocusLocks, "SToolkitWindowData::unlock() on no locks");
     cursorFocusLocks--;
 
-    if (!cursorFocusLocks)
+    if (!cursorFocusLocks && !self->impl->window.expired())
         self->impl->m_externalEvents.mouseLeave.emit();
 }
 

@@ -20,6 +20,8 @@ namespace Hyprtoolkit {
 
         static Hyprutils::Memory::CSharedPointer<CButtonBuilder> begin();
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        label(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBorder(bool);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBg(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onRightClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        size(CDynamicSize&&);

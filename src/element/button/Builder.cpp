@@ -14,6 +14,16 @@ SP<CButtonBuilder> CButtonBuilder::label(std::string&& s) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::noBorder(bool x) {
+    m_data->noBorder = x;
+    return m_self.lock();
+}
+
+SP<CButtonBuilder> CButtonBuilder::noBg(bool x) {
+    m_data->noBg = x;
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&& f) {
     m_data->onMainClick = std::move(f);
     return m_self.lock();

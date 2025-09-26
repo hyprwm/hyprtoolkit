@@ -36,3 +36,11 @@ CPolygon CPolygon::langle() {
     }
     return p;
 }
+
+CPolygon CPolygon::dropdown() {
+    return CPolygon{std::vector<Vector2D>{
+        {0.1F, 0.3F},
+        {0.9F, 0.3F},
+        {0.5F, 0.7F},
+    }};
+}

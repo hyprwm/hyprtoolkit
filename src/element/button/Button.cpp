@@ -23,10 +23,14 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleBuilder::begin()
-                             ->color([] { return g_palette->m_colors.base; })
+                             ->color([nobg = m_impl->data.noBg] {
+                                 if (nobg)
+                                     return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
+                                 return g_palette->m_colors.base;
+                             })
                              ->rounding(5)
                              ->borderColor([] { return g_palette->m_colors.alternateBase; })
-                             ->borderThickness(1)
+                             ->borderThickness(data.noBorder ? 0 : 1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                              ->commence();
 
@@ -46,7 +50,11 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         m_impl->background
             ->rebuild() //
-            ->color([] { return g_palette->m_colors.base.brighten(0.11F); })
+            ->color([nb = m_impl->data.noBorder, nobg = m_impl->data.noBg] {
+                if (nobg)
+                    return g_palette->m_colors.base.brighten(0.05F);
+                return g_palette->m_colors.base.brighten(nb ? 0.3F : 0.11F);
+            })
             ->borderColor([] { return g_palette->m_colors.accent; })
             ->commence();
     });
@@ -54,7 +62,11 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
         m_impl->background
             ->rebuild() //
-            ->color([] { return g_palette->m_colors.base; })
+            ->color([nobg = m_impl->data.noBg] {
+                if (nobg)
+                    return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
+                return g_palette->m_colors.base;
+            })
             ->borderColor([] { return g_palette->m_colors.alternateBase; })
             ->commence();
     });

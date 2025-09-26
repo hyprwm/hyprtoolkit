@@ -130,6 +130,14 @@ SP<CWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
     for (const auto& w : m_windows) {
         if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
             return w.lock();
+
+        for (const auto& p : w->m_popups) {
+            if (!p)
+                continue;
+            auto pp = reinterpretPointerCast<CWaylandWindow>(p.lock());
+            if (pp->m_waylandState.surface && pp->m_waylandState.surface->resource() == proxy)
+                return pp;
+        }
     }
     return nullptr;
 }
