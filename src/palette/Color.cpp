@@ -1,5 +1,6 @@
 #include <hyprtoolkit/palette/Color.hpp>
 #include "../Macros.hpp"
+#include "../helpers/Memory.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -74,4 +75,20 @@ CHyprColor CHyprColor::brighten(float coeff) const {
 
 CHyprColor CHyprColor::darken(float coeff) const {
     return {r * (1.F - coeff), g * (1.F - coeff), b * (1.F - coeff), a};
+}
+
+CHyprColor CHyprColor::mix(const CHyprColor& with, float coeff) const {
+    const auto C = std::clamp(coeff, 0.F, 1.F);
+
+    const auto A = asOkLab();
+    const auto B = with.asOkLab();
+
+    return {
+        Hyprgraphics::CColor::SOkLab{
+            .l = (A.l * (1.F - C)) + (B.l * C),
+            .a = (A.a * (1.F - C)) + (B.a * C),
+            .b = (A.b * (1.F - C)) + (B.b * C),
+        },
+        sc<float>((a * (1.F - C)) + (with.a * C)),
+    };
 }

@@ -17,3 +17,22 @@ CPolygon CPolygon::checkmark() {
         {0.78F, 0.17F},
     }};
 }
+
+CPolygon CPolygon::rangle() {
+    return CPolygon{std::vector<Vector2D>{
+        {0.25F, 0.15F},
+        {0.35F, 0.05F},
+        {0.6F, 0.5F},
+        {0.8F, 0.5F},
+        {0.25F, 0.85F},
+        {0.35F, 0.95F},
+    }};
+}
+
+CPolygon CPolygon::langle() {
+    auto p = rangle();
+    for (auto& v : p.m_points) {
+        v.x = 1.F - v.x;
+    }
+    return p;
+}

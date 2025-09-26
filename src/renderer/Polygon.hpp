@@ -12,6 +12,8 @@ namespace Hyprtoolkit {
         ~CPolygon() = default;
 
         static CPolygon checkmark();
+        static CPolygon rangle();
+        static CPolygon langle();
 
       private:
         std::vector<Hyprutils::Math::Vector2D> m_points;

@@ -20,6 +20,7 @@ namespace Hyprtoolkit {
 
         CHyprColor                   brighten(float coeff) const;
         CHyprColor                   darken(float coeff) const;
+        CHyprColor                   mix(const CHyprColor& with, float coeff) const;
 
         //
         bool operator==(const CHyprColor& c2) const;
