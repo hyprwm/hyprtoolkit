@@ -31,7 +31,7 @@ void CSliderElement::init() {
     m_impl->label = CTextBuilder::begin() //
                         ->text(std::string{m_impl->data.label})
                         ->color([] { return g_palette->m_colors.text; })
-                        ->callback([this] { g_positioner->repositionNeeded(m_impl->self.lock()); })
+                        ->callback([this] { impl->window->scheduleReposition(impl->self); })
                         ->commence();
 
     m_impl->slider = CSliderSlider::create(m_impl->self.lock());

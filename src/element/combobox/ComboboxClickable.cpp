@@ -25,7 +25,7 @@ SP<CComboboxClickable> CComboboxClickable::create(SP<CComboboxElement> data) {
     return p;
 }
 
-constexpr float INNER_MARG             = 2.F;
+constexpr float INNER_MARG             = 4.F;
 constexpr float HANDLE_SIZE            = 12.F;
 constexpr float DROPDOWN_BUTTON_HEIGHT = 30.F;
 constexpr float DROPDOWN_BUTTON_PAD    = 2.F;
@@ -35,7 +35,7 @@ CComboboxClickable::CComboboxClickable(SP<CComboboxElement> data) : IElement(), 
 }
 
 void CComboboxClickable::init() {
-    m_layout = CRowLayoutBuilder::begin()->gap(6)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_ABSOLUTE, {1, 24}})->commence();
+    m_layout = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_ABSOLUTE, {1, 24}})->commence();
 
     m_layout->setPositionMode(HT_POSITION_CENTER);
     m_layout->setMargin(INNER_MARG);
@@ -43,7 +43,7 @@ void CComboboxClickable::init() {
     m_label = CTextBuilder::begin()
                   ->text(std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
                   ->color([] { return g_palette->m_colors.text; })
-                  ->callback([this] { g_positioner->repositionNeeded(m_parent); })
+                  ->callback([this] { impl->window->scheduleReposition(impl->self); })
                   ->commence();
 
     m_background = CRectangleBuilder::begin()
@@ -61,11 +61,13 @@ void CComboboxClickable::init() {
         .color = [] { return g_palette->m_colors.text; },
     });
 
-    m_leftPad  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {INNER_MARG, 1.F}})->commence();
-    m_rightPad = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {INNER_MARG, 1.F}})->commence();
+    m_leftPad   = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {INNER_MARG, 1.F}})->commence();
+    m_rightPad  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {INNER_MARG, 1.F}})->commence();
+    m_middlePad = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {INNER_MARG, 1.F}})->commence();
 
     m_layout->addChild(m_leftPad);
     m_layout->addChild(m_label);
+    m_layout->addChild(m_middlePad);
     m_layout->addChild(m_handle);
     m_layout->addChild(m_rightPad);
 

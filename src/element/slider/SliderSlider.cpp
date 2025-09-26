@@ -33,7 +33,7 @@ CSliderSlider::CSliderSlider(SP<CSliderElement> data) : IElement(), m_parent(dat
     m_valueText = CTextBuilder::begin() //
                       ->text(valueAsText())
                       ->color([] { return g_palette->m_colors.text; })
-                      ->callback([this] { g_positioner->repositionNeeded(impl->self.lock()); })
+                      ->callback([this] { impl->window->scheduleReposition(impl->self); })
                       ->commence();
 
     m_valueText->setPositionMode(HT_POSITION_CENTER);

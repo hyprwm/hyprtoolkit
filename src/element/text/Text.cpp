@@ -130,7 +130,7 @@ void CTextElement::renderTex() {
             m_impl->size = m_impl->resource->m_asset.pixelSize;
             m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
             if (impl->parent)
-                g_positioner->repositionNeeded(impl->self.lock());
+                impl->window->scheduleReposition(impl->self);
 
             m_impl->waitingForTex = false;
 

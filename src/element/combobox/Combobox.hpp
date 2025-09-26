@@ -86,7 +86,7 @@ namespace Hyprtoolkit {
         SP<CRowLayoutElement>                            m_layout;
         SP<CTextElement>                                 m_label;
         SP<CDropdownHandleElement>                       m_handle;
-        SP<CNullElement>                                 m_leftPad, m_rightPad;
+        SP<CNullElement>                                 m_leftPad, m_rightPad, m_middlePad;
 
         struct {
             SP<IWindow>                     popup;

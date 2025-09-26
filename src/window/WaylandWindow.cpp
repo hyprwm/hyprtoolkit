@@ -59,7 +59,8 @@ void CWaylandWindow::open() {
     if (m_open)
         return;
 
-    m_open = true;
+    m_open                 = true;
+    m_needsFirstReposition = true;
 
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
@@ -240,6 +241,9 @@ void CWaylandWindow::render() {
     }
 
     m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
+
+    if (m_needsFirstReposition)
+        m_rootElement->reposition({{}, m_waylandState.logicalSize});
 }
 
 void CWaylandWindow::onCallback() {

@@ -60,7 +60,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
                         ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                         ->callback([this] {
                             m_impl->labelChanged = true;
-                            g_positioner->repositionNeeded(impl->self.lock());
+                            impl->window->scheduleReposition(impl->self);
                         })
                         ->commence();
 

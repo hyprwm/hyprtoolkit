@@ -36,7 +36,7 @@ void CSpinboxSpinner::init() {
     m_label = CTextBuilder::begin()
                   ->text(std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
                   ->color([] { return g_palette->m_colors.text; })
-                  ->callback([this] { g_positioner->repositionNeeded(m_parent); })
+                  ->callback([this] { impl->window->scheduleReposition(impl->self); })
                   ->commence();
 
     m_background = CRectangleBuilder::begin()

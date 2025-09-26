@@ -44,6 +44,7 @@ namespace Hyprtoolkit {
         } m_waylandState;
 
         WP<CWaylandWindow>                    m_parent;
+        bool                                  m_needsFirstReposition = false;
 
         std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();
 
