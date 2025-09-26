@@ -41,7 +41,6 @@ namespace Hyprtoolkit {
         void                           scissor(const pixman_box32_t* box);
         void                           renderBreadthfirst(SP<IElement> el);
 
-        void                           initDRMFormats();
         void                           initEGL(bool gbm);
         EGLDeviceEXT                   eglDeviceFromDRMFD(int drmFD);
         EGLImageKHR                    createEGLImage(const Aquamarine::SDMABUFAttrs& attrs);

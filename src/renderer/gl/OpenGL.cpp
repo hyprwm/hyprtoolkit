@@ -218,98 +218,6 @@ void COpenGLRenderer::initEGL(bool gbm) {
     eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
 }
 
-void COpenGLRenderer::initDRMFormats() {
-    // const auto DISABLE_MODS = envEnabled("HYPRLAND_EGL_NO_MODIFIERS");
-    // if (DISABLE_MODS)
-    //     Debug::log(WARN, "HYPRLAND_EGL_NO_MODIFIERS set, disabling modifiers");
-
-    // if (!m_exts.EXT_image_dma_buf_import) {
-    //     Debug::log(ERR, "EGL: No dmabuf import, DMABufs will not work.");
-    //     return;
-    // }
-
-    // std::vector<EGLint> formats;
-
-    // if (!m_exts.EXT_image_dma_buf_import_modifiers || !m_proc.eglQueryDmaBufFormatsEXT) {
-    //     formats.push_back(DRM_FORMAT_ARGB8888);
-    //     formats.push_back(DRM_FORMAT_XRGB8888);
-    //     Debug::log(WARN, "EGL: No mod support");
-    // } else {
-    //     EGLint len = 0;
-    //     m_proc.eglQueryDmaBufFormatsEXT(m_eglDisplay, 0, nullptr, &len);
-    //     formats.resize(len);
-    //     m_proc.eglQueryDmaBufFormatsEXT(m_eglDisplay, len, formats.data(), &len);
-    // }
-
-    // if (formats.empty()) {
-    //     Debug::log(ERR, "EGL: Failed to get formats, DMABufs will not work.");
-    //     return;
-    // }
-
-    // Debug::log(LOG, "Supported DMA-BUF formats:");
-
-    // std::vector<SDRMFormat> dmaFormats;
-    // // reserve number of elements to avoid reallocations
-    // dmaFormats.reserve(formats.size());
-
-    // for (auto const& fmt : formats) {
-    //     std::vector<uint64_t> mods;
-    //     if (!DISABLE_MODS) {
-    //         auto ret = getModsForFormat(fmt);
-    //         if (!ret.has_value())
-    //             continue;
-
-    //         mods = *ret;
-    //     } else
-    //         mods = {DRM_FORMAT_MOD_LINEAR};
-
-    //     m_hasModifiers = m_hasModifiers || !mods.empty();
-
-    //     // EGL can always do implicit modifiers.
-    //     mods.push_back(DRM_FORMAT_MOD_INVALID);
-
-    //     dmaFormats.push_back(SDRMFormat{
-    //         .drmFormat = fmt,
-    //         .modifiers = mods,
-    //     });
-
-    //     std::vector<std::pair<uint64_t, std::string>> modifierData;
-    //     // reserve number of elements to avoid reallocations
-    //     modifierData.reserve(mods.size());
-
-    //     auto fmtName = drmGetFormatName(fmt);
-    //     Debug::log(LOG, "EGL: GPU Supports Format {} (0x{:x})", fmtName ? fmtName : "?unknown?", fmt);
-    //     for (auto const& mod : mods) {
-    //         auto modName = drmGetFormatModifierName(mod);
-    //         modifierData.emplace_back(std::make_pair<>(mod, modName ? modName : "?unknown?"));
-    //         free(modName);
-    //     }
-    //     free(fmtName);
-
-    //     mods.clear();
-    //     std::ranges::sort(modifierData, [](const auto& a, const auto& b) {
-    //         if (a.first == 0)
-    //             return false;
-    //         if (a.second.contains("DCC"))
-    //             return false;
-    //         return true;
-    //     });
-
-    //     for (auto const& [m, name] : modifierData) {
-    //         Debug::log(LOG, "EGL: | with modifier {} (0x{:x})", name, m);
-    //         mods.emplace_back(m);
-    //     }
-    // }
-
-    // Debug::log(LOG, "EGL: {} formats found in total. Some modifiers may be omitted as they are external-only.", dmaFormats.size());
-
-    // if (dmaFormats.empty())
-    //     Debug::log(WARN,
-    //                "EGL: WARNING: No dmabuf formats were found, dmabuf will be disabled. This will degrade performance, but is most likely a driver issue or a very old GPU.");
-
-    // m_drmFormats = dmaFormats;
-}
-
 EGLImageKHR COpenGLRenderer::createEGLImage(const Aquamarine::SDMABUFAttrs& attrs) {
     std::array<uint32_t, 50> attribs;
     size_t                   idx = 0;
@@ -521,8 +429,6 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) {
 
     auto* const EXTENSIONS = rc<const char*>(glGetString(GL_EXTENSIONS));
     RASSERT(EXTENSIONS, "Couldn't retrieve openGL extensions!");
-
-    initDRMFormats();
 
 #ifdef HYPRTOOLKIT_DEBUG
     glEnable(GL_DEBUG_OUTPUT);
