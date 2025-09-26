@@ -164,12 +164,15 @@ int main(int argc, char** argv, char** envp) {
                        ->fill(true)
                        ->commence();
 
-    auto combo = CComboboxBuilder::begin()
-                     ->label("Combobox")
-                     ->items({"Hello", "World", "Amongus"})
-                     ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-                     ->fill(true)
-                     ->commence();
+    auto combo =
+        CComboboxBuilder::begin()
+            ->label("Combobox")
+            ->items({"According", "to",  "all",  "known", "laws",   "of",    "aviation", "there",   "is",   "no",    "way",  "that", "a",      "bee",   "should", "be",
+                     "able",      "to",  "fly.", "its",   "wings",  "are",   "too",      "small",   "to",   "get",   "its",  "fat",  "little", "body",  "off",    "the",
+                     "ground.",   "the", "bee",  "of",    "course", "flies", "anyways,", "because", "bees", "don't", "care", "what", "humans", "think", "is",     "impossible."})
+            ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+            ->fill(true)
+            ->commence();
 
     hiddenSlider =
         CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
