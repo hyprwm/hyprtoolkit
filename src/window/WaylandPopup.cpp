@@ -29,7 +29,7 @@ void CWaylandPopup::open() {
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
 
-    m_open                 = true;
+    m_open = true;
 
     m_parent->updateFocus(Vector2D{-100000, -100000});
 
@@ -119,8 +119,6 @@ void CWaylandPopup::close() {
 
     m_waylandState.frameCallback.reset();
 
-    m_events.popupClosed.emit();
-
     if (m_waylandState.xdgPopup)
         m_waylandState.xdgPopup->sendDestroy();
     if (m_waylandState.xdgSurface)
@@ -129,6 +127,8 @@ void CWaylandPopup::close() {
         m_waylandState.surface->sendDestroy();
 
     m_waylandState = {};
+
+    m_events.popupClosed.emit();
 }
 
 void CWaylandPopup::onScaleUpdate() {

@@ -59,7 +59,7 @@ void CWaylandWindow::open() {
     if (m_open)
         return;
 
-    m_open                 = true;
+    m_open = true;
 
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });

@@ -100,6 +100,7 @@ namespace Hyprtoolkit {
 
         struct {
             CHyprSignalListener clicked;
+            CHyprSignalListener popupClosed;
         } m_listeners;
 
         friend class CComboboxElement;

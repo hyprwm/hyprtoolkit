@@ -122,7 +122,7 @@ void CComboboxClickable::openDropdown() {
         .size = POPUP_SIZE,
     });
 
-    m_dropdown.popup->m_events.popupClosed.listenStatic([this, self = m_self] {
+    m_listeners.popupClosed = m_dropdown.popup->m_events.popupClosed.listen([this, self = m_self] {
         if (!self)
             return;
 
