@@ -107,6 +107,7 @@ namespace Hyprtoolkit {
         Vector2D                       m_currentViewport;
 
         friend class CRenderbuffer;
+        friend class CGLTexture;
     };
 
     inline SP<COpenGLRenderer> g_openGL;
