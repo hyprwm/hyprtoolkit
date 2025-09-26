@@ -28,8 +28,11 @@ using namespace Hyprtoolkit;
 static SP<CBackend>             backend;
 static SP<CSliderElement>       hiddenSlider;
 static SP<CColumnLayoutElement> mainLayout;
+static SP<IWindow>              window;
+static SP<IWindow>              popup;
 
-static void                     toggleVisibilityOfSecretSlider() {
+//
+static void toggleVisibilityOfSecretSlider() {
     static bool visible = false;
 
     if (!visible)
@@ -40,11 +43,39 @@ static void                     toggleVisibilityOfSecretSlider() {
     visible = !visible;
 }
 
+static void openPopup() {
+    popup = window->openPopup(SPopupCreationData{
+        .pos  = {200, 200},
+        .size = {350, 600},
+    });
+
+    auto popbg = CRectangleBuilder::begin()
+                     ->rounding(10)
+                     ->color([] { return backend->getPalette()->m_colors.background.brighten(0.5); })
+                     ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
+                     ->commence();
+
+    auto poptext = CTextBuilder::begin() //
+                       ->text("THEY CALL ME MR BOOMBASTIC")
+                       ->fontSize({CFontSize::HT_FONT_H2})
+                       ->color([] { return backend->getPalette()->m_colors.text; })
+                       ->commence();
+
+    poptext->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
+
+    popup->m_rootElement->addChild(popbg);
+    popbg->addChild(poptext);
+
+    popup->open();
+
+    popup->m_events.popupClosed.listenStatic([] { popup.reset(); });
+}
+
 int main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
 
     //
-    auto window = backend->openWindow(SWindowCreationData{
+    window = backend->openWindow(SWindowCreationData{
         .preferredSize = Vector2D{480, 480},
         .minSize       = Vector2D{480, 480},
         .maxSize       = Vector2D{1280, 720},
@@ -83,6 +114,12 @@ int main(int argc, char** argv, char** envp) {
                        ->label("Secret")
                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
                        ->onMainClick([](SP<CButtonElement>) { toggleVisibilityOfSecretSlider(); })
+                       ->commence();
+
+    auto button2 = CButtonBuilder::begin()
+                       ->label("Popup")
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->onMainClick([](SP<CButtonElement>) { openPopup(); })
                        ->commence();
 
     auto checkbox  = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
@@ -132,6 +169,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(title);
     mainLayout->addChild(hr);
     mainLayout->addChild(button1);
+    mainLayout->addChild(button2);
     mainLayout->addChild(checkbox);
     mainLayout->addChild(checkbox2);
     mainLayout->addChild(spinbox);

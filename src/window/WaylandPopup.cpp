@@ -1,4 +1,3 @@
-#include "WaylandWindow.hpp"
 #include "WaylandPopup.hpp"
 
 #include <hyprtoolkit/element/Null.hpp>
@@ -8,61 +7,31 @@
 #include "../core/InternalBackend.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../core/AnimationManager.hpp"
+#include "../layout/Positioner.hpp"
 
 #include "../Macros.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-CWaylandBuffer::CWaylandBuffer(SP<Aquamarine::IBuffer> buffer) : m_buffer(buffer) {
-    auto params = makeShared<CCZwpLinuxBufferParamsV1>(g_waylandPlatform->m_waylandState.dmabuf->sendCreateParams());
-
-    if (!params) {
-        g_logger->log(HT_LOG_ERROR, "WaylandBuffer: failed to query params");
-        return;
-    }
-
-    auto attrs = buffer->dmabuf();
-
-    for (int i = 0; i < attrs.planes; ++i) {
-        params->sendAdd(attrs.fds.at(i), i, attrs.offsets.at(i), attrs.strides.at(i), attrs.modifier >> 32, attrs.modifier & 0xFFFFFFFF);
-    }
-
-    m_waylandState.buffer = makeShared<CCWlBuffer>(params->sendCreateImmed(attrs.size.x, attrs.size.y, attrs.format, (zwpLinuxBufferParamsV1Flags)0));
-
-    m_waylandState.buffer->setRelease([this](CCWlBuffer* r) { pendingRelease = false; });
-
-    params->sendDestroy();
-}
-
-CWaylandBuffer::~CWaylandBuffer() {
-    if (m_waylandState.buffer && m_waylandState.buffer->resource())
-        m_waylandState.buffer->sendDestroy();
-}
-
-bool CWaylandBuffer::good() {
-    return m_waylandState.buffer && m_waylandState.buffer->resource();
-}
-
-CWaylandWindow::CWaylandWindow(const SWindowCreationData& data) : m_creationData(data) {
+CWaylandPopup::CWaylandPopup(const SPopupCreationData& data, SP<CWaylandWindow> window) : m_parent(window), m_creationData(data) {
     m_rootElement = CNullBuilder::begin()->commence();
 }
 
-CWaylandWindow::~CWaylandWindow() {
+CWaylandPopup::~CWaylandPopup() {
     close();
-
-    if (g_waylandPlatform)
-        std::erase_if(g_waylandPlatform->m_windows, [this](const auto& e) { return e.get() == this; });
 }
 
-void CWaylandWindow::open() {
+void CWaylandPopup::open() {
     if (m_open)
         return;
 
-    m_open = true;
-
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
+
+    m_open = true;
+
+    m_parent->updateFocus(Vector2D{-100000, -100000});
 
     m_waylandState.surface = makeShared<CCWlSurface>(g_waylandPlatform->m_waylandState.compositor->sendCreateSurface());
 
@@ -84,26 +53,28 @@ void CWaylandWindow::open() {
         m_waylandState.serial = serial;
     });
 
-    m_waylandState.xdgToplevel = makeShared<CCXdgToplevel>(m_waylandState.xdgSurface->sendGetToplevel());
+    m_waylandState.xdgPositioner = makeShared<CCXdgPositioner>(g_waylandPlatform->m_waylandState.xdg->sendCreatePositioner());
 
-    if (!m_waylandState.xdgToplevel->resource()) {
+    m_waylandState.xdgPositioner->sendSetAnchorRect(m_creationData.pos.x, m_creationData.pos.y, 1, 1);
+    m_waylandState.xdgPositioner->sendSetAnchor(XDG_POSITIONER_ANCHOR_TOP_LEFT);
+    m_waylandState.xdgPositioner->sendSetGravity(XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
+    m_waylandState.xdgPositioner->sendSetSize(m_creationData.size.x, m_creationData.size.y);
+    m_waylandState.xdgPositioner->sendSetConstraintAdjustment(
+        (xdgPositionerConstraintAdjustment)(XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X));
+
+    m_waylandState.xdgPopup = makeShared<CCXdgPopup>(m_waylandState.xdgSurface->sendGetPopup(m_parent->m_waylandState.xdgSurface.get(), m_waylandState.xdgPositioner.get()));
+
+    if (!m_waylandState.xdgPopup->resource()) {
         g_logger->log(HT_LOG_ERROR, "window opening failed: no xdgToplevel given. Errno: {}", errno);
         return;
     }
 
-    m_waylandState.xdgToplevel->setWmCapabilities([](CCXdgToplevel* r, wl_array* arr) { g_logger->log(HT_LOG_DEBUG, "window opening failed: wm_capabilities received"); });
-
-    m_waylandState.xdgToplevel->setConfigure([this](CCXdgToplevel* r, int32_t w, int32_t h, wl_array* arr) {
+    m_waylandState.xdgPopup->setConfigure([this](CCXdgPopup* r, int32_t x, int32_t y, int32_t w, int32_t h) {
         g_logger->log(HT_LOG_DEBUG, "wayland: configure toplevel with {}x{}", w, h);
-        if (w == 0 || h == 0) {
-            if (m_creationData.preferredSize) {
-                w = m_creationData.preferredSize->x;
-                h = m_creationData.preferredSize->y;
-            } else {
-                g_logger->log(HT_LOG_DEBUG, "configure: w/h is 0, sending default hardcoded 1280x720");
-                w = 1280;
-                h = 720;
-            }
+
+        if (!m_waylandState.grabbed) {
+            m_waylandState.grabbed = true;
+            m_waylandState.xdgPopup->sendGrab(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastEnterSerial);
         }
 
         if (m_waylandState.logicalSize == Vector2D{w, h})
@@ -114,7 +85,7 @@ void CWaylandWindow::open() {
         m_events.resized.emit(m_waylandState.logicalSize);
     });
 
-    m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { m_events.closeRequest.emit(); });
+    m_waylandState.xdgPopup->setPopupDone([this](CCXdgPopup* r) { close(); });
 
     m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
 
@@ -130,14 +101,6 @@ void CWaylandWindow::open() {
 
     m_waylandState.viewport = makeShared<CCWpViewport>(g_waylandPlatform->m_waylandState.viewporter->sendGetViewport(m_waylandState.surface->resource()));
 
-    m_waylandState.xdgToplevel->sendSetTitle(m_creationData.title.c_str());
-    m_waylandState.xdgToplevel->sendSetAppId(m_creationData.class_.c_str());
-
-    if (m_creationData.minSize)
-        m_waylandState.xdgToplevel->sendSetMinSize(m_creationData.minSize->x, m_creationData.minSize->y);
-    if (m_creationData.maxSize)
-        m_waylandState.xdgToplevel->sendSetMaxSize(m_creationData.maxSize->x, m_creationData.maxSize->y);
-
     auto inputRegion = makeShared<CCWlRegion>(g_waylandPlatform->m_waylandState.compositor->sendCreateRegion());
     inputRegion->sendAdd(0, 0, INT32_MAX, INT32_MAX);
 
@@ -148,7 +111,7 @@ void CWaylandWindow::open() {
     inputRegion->sendDestroy();
 }
 
-void CWaylandWindow::close() {
+void CWaylandPopup::close() {
     if (!m_open)
         return;
 
@@ -156,8 +119,10 @@ void CWaylandWindow::close() {
 
     m_waylandState.frameCallback.reset();
 
-    if (m_waylandState.xdgToplevel)
-        m_waylandState.xdgToplevel->sendDestroy();
+    m_events.popupClosed.emit();
+
+    if (m_waylandState.xdgPopup)
+        m_waylandState.xdgPopup->sendDestroy();
     if (m_waylandState.xdgSurface)
         m_waylandState.xdgSurface->sendDestroy();
     if (m_waylandState.surface)
@@ -166,11 +131,11 @@ void CWaylandWindow::close() {
     m_waylandState = {};
 }
 
-void CWaylandWindow::onScaleUpdate() {
+void CWaylandPopup::onScaleUpdate() {
     configure(m_waylandState.logicalSize, m_waylandState.serial);
 }
 
-void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
+void CWaylandPopup::configure(const Vector2D& size, uint32_t serial) {
 
     m_waylandState.logicalSize  = size;
     m_waylandState.appliedScale = m_fractionalScale;
@@ -187,7 +152,7 @@ void CWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
     render();
 }
 
-void CWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
+void CWaylandPopup::resizeSwapchain(const Vector2D& pixelSize) {
     m_damageRing.setSize(pixelSize);
 
     if (!m_waylandState.swapchain)
@@ -204,7 +169,7 @@ void CWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     }
 }
 
-void CWaylandWindow::render() {
+void CWaylandPopup::render() {
     if (m_waylandState.frameCallback)
         return;
 
@@ -242,59 +207,25 @@ void CWaylandWindow::render() {
     m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
 }
 
-void CWaylandWindow::onCallback() {
+void CWaylandPopup::onCallback() {
     m_waylandState.frameCallback.reset();
 
     if (m_needsFrame)
         render();
 }
 
-Hyprutils::Math::Vector2D CWaylandWindow::pixelSize() {
+Hyprutils::Math::Vector2D CWaylandPopup::pixelSize() {
     return m_waylandState.size;
 }
 
-float CWaylandWindow::scale() {
+float CWaylandPopup::scale() {
     return m_fractionalScale;
 }
 
-void CWaylandWindow::setCursor(ePointerShape shape) {
+void CWaylandPopup::setCursor(ePointerShape shape) {
     g_waylandPlatform->setCursor(shape);
 }
 
-SP<IWindow> CWaylandWindow::openPopup(const SPopupCreationData& data) {
-    auto x    = makeShared<CWaylandPopup>(data, reinterpretPointerCast<CWaylandWindow>(m_self.lock()));
-    x->m_self = x;
-    m_popups.emplace_back(x);
-    return x;
-}
-
-void CWaylandWindow::mouseButton(const Input::eMouseButton button, bool state) {
-    if (m_popups.empty() || !state || m_ignoreNextButtonEvent) {
-        m_ignoreNextButtonEvent = false;
-        IToolkitWindow::mouseButton(button, state);
-        return;
-    }
-
-    for (const auto& p : m_popups) {
-        if (p)
-            p->close();
-    }
-
-    m_popups.clear();
-
-    m_ignoreNextButtonEvent = true;
-}
-
-void CWaylandWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
-    if (!m_popups.empty())
-        return;
-
-    IToolkitWindow::mouseMove(local);
-}
-
-void CWaylandWindow::mouseAxis(const Input::eAxisAxis axis, float delta) {
-    if (!m_popups.empty())
-        return;
-
-    IToolkitWindow::mouseAxis(axis, delta);
+SP<IWindow> CWaylandPopup::openPopup(const SPopupCreationData& data) {
+    return nullptr; //FIXME:
 }

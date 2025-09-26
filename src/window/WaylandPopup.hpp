@@ -1,43 +1,14 @@
 #pragma once
 
-#include <hyprtoolkit/window/Window.hpp>
-#include <hyprtoolkit/window/WindowTypes.hpp>
-
-#include <hyprutils/math/Vector2D.hpp>
-
-#include <aquamarine/allocator/Swapchain.hpp>
-#include <aquamarine/allocator/GBM.hpp>
-
-#include "../helpers/Memory.hpp"
-#include "ToolkitWindow.hpp"
-
-#include <wayland.hpp>
-#include <xdg-shell.hpp>
-#include <fractional-scale-v1.hpp>
-#include <viewporter.hpp>
-
-#include <chrono>
+#include "WaylandWindow.hpp"
 
 namespace Hyprtoolkit {
-    class CWaylandBuffer {
+
+    // TODO: de-dup this shit
+    class CWaylandPopup : public IToolkitWindow {
       public:
-        CWaylandBuffer(Hyprutils::Memory::CSharedPointer<Aquamarine::IBuffer> buffer);
-        ~CWaylandBuffer();
-        bool good();
-
-        bool pendingRelease = false;
-
-        struct {
-            Hyprutils::Memory::CSharedPointer<CCWlBuffer> buffer;
-        } m_waylandState;
-
-        Hyprutils::Memory::CWeakPointer<Aquamarine::IBuffer> m_buffer;
-    };
-
-    class CWaylandWindow : public IToolkitWindow {
-      public:
-        CWaylandWindow(const SWindowCreationData& data);
-        ~CWaylandWindow();
+        CWaylandPopup(const SPopupCreationData& data, SP<CWaylandWindow> parent);
+        ~CWaylandPopup();
 
         virtual Hyprutils::Math::Vector2D                  pixelSize();
         virtual float                                      scale();
@@ -46,20 +17,17 @@ namespace Hyprtoolkit {
         virtual void                                       close();
         virtual void                                       open();
         virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SPopupCreationData& data);
-        virtual void                                       mouseMove(const Hyprutils::Math::Vector2D& local);
-        virtual void                                       mouseButton(const Input::eMouseButton button, bool state);
-        virtual void                                       mouseAxis(const Input::eAxisAxis axis, float delta);
 
       private:
         float m_fractionalScale = 1.0;
 
-        bool  m_open                  = false;
-        bool  m_ignoreNextButtonEvent = false;
+        bool  m_open = false;
 
         struct {
             SP<CCWlSurface>                   surface;
             SP<CCXdgSurface>                  xdgSurface;
-            SP<CCXdgToplevel>                 xdgToplevel;
+            SP<CCXdgPopup>                    xdgPopup;
+            SP<CCXdgPositioner>               xdgPositioner;
             SP<CCWlCallback>                  frameCallback;
 
             std::array<SP<CWaylandBuffer>, 2> wlBuffers;
@@ -72,7 +40,10 @@ namespace Hyprtoolkit {
             SP<CCWpFractionalScaleV1>         fractional = nullptr;
             SP<CCWpViewport>                  viewport   = nullptr;
             uint32_t                          serial     = 0;
+            bool                              grabbed    = false;
         } m_waylandState;
+
+        WP<CWaylandWindow>                    m_parent;
 
         std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();
 
@@ -81,11 +52,9 @@ namespace Hyprtoolkit {
         void                                  configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
         void                                  resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
-        std::vector<WP<IWindow>>              m_popups;
-
-        SWindowCreationData                   m_creationData;
+        SPopupCreationData                    m_creationData;
 
         friend class CWaylandPlatform;
-        friend class CWaylandPopup;
+        friend class CWaylandWindow;
     };
 };

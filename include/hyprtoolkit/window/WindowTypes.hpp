@@ -11,4 +11,9 @@ namespace Hyprtoolkit {
         std::string                              title  = "Hyprtoolkit App";
         std::string                              class_ = "hyprtoolkit-app";
     };
+
+    struct SPopupCreationData {
+        Hyprutils::Math::Vector2D pos;
+        Hyprutils::Math::Vector2D size; // suggestion, could be clamped
+    };
 }
