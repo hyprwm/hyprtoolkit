@@ -82,7 +82,6 @@ namespace Hyprtoolkit {
         void                                  resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
         std::vector<WP<IWindow>>              m_popups;
-        bool                                  m_needsFirstReposition = false;
 
         SWindowCreationData                   m_creationData;
 

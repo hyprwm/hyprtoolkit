@@ -417,6 +417,7 @@ EGLDeviceEXT COpenGLRenderer::eglDeviceFromDRMFD(int drmFD) {
     g_logger->log(HT_LOG_DEBUG, "eglDeviceFromDRMFD: No drm devices found");
     return EGL_NO_DEVICE_EXT;
 }
+
 void COpenGLRenderer::makeEGLCurrent() {
     if (eglGetCurrentContext() != m_eglContext)
         eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);

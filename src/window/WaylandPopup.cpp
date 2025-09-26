@@ -30,7 +30,6 @@ void CWaylandPopup::open() {
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
 
     m_open                 = true;
-    m_needsFirstReposition = true;
 
     m_parent->updateFocus(Vector2D{-100000, -100000});
 
@@ -206,9 +205,6 @@ void CWaylandPopup::render() {
     }
 
     m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
-
-    if (m_needsFirstReposition)
-        m_rootElement->reposition({{}, m_waylandState.logicalSize});
 }
 
 void CWaylandPopup::onCallback() {
