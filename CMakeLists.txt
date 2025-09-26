@@ -27,7 +27,6 @@ pkg_check_modules(
   IMPORTED_TARGET
   wayland-client
   wayland-protocols
-  wayland-egl
   egl
   hyprutils>=0.8.0
   hyprlang>=0.6.0
