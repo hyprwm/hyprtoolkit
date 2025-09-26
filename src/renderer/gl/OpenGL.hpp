@@ -36,8 +36,10 @@ namespace Hyprtoolkit {
 
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);
+        CRegion                        damageWithClip();
         void                           scissor(const CBox& box);
         void                           scissor(const pixman_box32_t* box);
+        void                           renderBreadthfirst(SP<IElement> el);
 
         void                           initDRMFormats();
         void                           initEGL(bool gbm);
@@ -89,6 +91,9 @@ namespace Hyprtoolkit {
         std::vector<SP<CGLTexture>>    m_glTextures;
         std::vector<SP<CRenderbuffer>> m_rbos;
         SP<CRenderbuffer>              m_currentRBO;
+
+        std::vector<CBox>              m_clipBoxes;
+        std::vector<SP<IElement>>      m_alreadyRendered;
 
         CShader                        m_rectShader;
         CShader                        m_texShader;

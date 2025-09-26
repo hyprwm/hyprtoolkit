@@ -13,6 +13,7 @@
 namespace Hyprtoolkit {
     class IToolkitWindow;
     struct SPositionerData;
+    struct SToolkitWindowData;
 
     struct SElementInternalData {
         Hyprutils::Memory::CWeakPointer<IElement>                self;
@@ -20,6 +21,7 @@ namespace Hyprtoolkit {
         Hyprutils::Math::CBox                                    position;
 
         UP<SPositionerData>                                      positionerData;
+        UP<SToolkitWindowData>                                   toolkitWindowData;
 
         std::vector<Hyprutils::Memory::CSharedPointer<IElement>> children;
 
@@ -29,15 +31,19 @@ namespace Hyprtoolkit {
         bool                                                     growH  = false;
         float                                                    margin = 0;
 
-        WP<IElement>                                             parent;
+        // rendering: clip children to parent box
+        bool         clipChildren = false;
 
-        bool                                                     failedPositioning = false;
+        WP<IElement> parent;
+
+        bool         failedPositioning = false;
 
         struct {
             Hyprutils::Signal::CSignalT<Hyprutils::Math::Vector2D> mouseEnter; // local coords
             Hyprutils::Signal::CSignalT<Hyprutils::Math::Vector2D> mouseMove;  // local coords
             Hyprutils::Signal::CSignalT<Input::eMouseButton, bool> mouseButton;
             Hyprutils::Signal::CSignalT<>                          mouseLeave;
+            Hyprutils::Signal::CSignalT<Input::eAxisAxis, float>   mouseAxis;
         } m_externalEvents;
 
         //

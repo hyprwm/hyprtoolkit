@@ -24,6 +24,8 @@ namespace Hyprtoolkit {
         enum ePositionMode : uint8_t {
             HT_POSITION_ABSOLUTE = 0,
             HT_POSITION_CENTER,
+            HT_POSITION_HCENTER,
+            HT_POSITION_VCENTER,
             HT_POSITION_AUTO,
         };
 
@@ -50,6 +52,7 @@ namespace Hyprtoolkit {
 
         virtual bool                                     acceptsMouseInput();
         virtual ePointerShape                            pointerShape();
+        virtual bool                                     alwaysGetMouseInput();
 
         virtual void                                     recheckColor();
 

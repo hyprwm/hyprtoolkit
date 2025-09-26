@@ -10,6 +10,7 @@
 #include <hyprtoolkit/element/Checkbox.hpp>
 #include <hyprtoolkit/element/Spinbox.hpp>
 #include <hyprtoolkit/element/Slider.hpp>
+#include <hyprtoolkit/element/ScrollArea.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -51,14 +52,19 @@ int main(int argc, char** argv, char** envp) {
         .class_        = "hyprtoolkit-controls",
     });
 
-    window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence());
+    auto bg = CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence();
 
-    mainLayout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {0.7F, 1.F}})->commence();
+    window->m_rootElement->addChild(bg);
+
+    auto scroll = CScrollAreaBuilder::begin()->scrollY(true)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
+
+    mainLayout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.7F, 1.F}})->commence();
 
     mainLayout->setMargin(3);
-    mainLayout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
+    mainLayout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_HCENTER);
 
-    window->m_rootElement->addChild(mainLayout);
+    bg->addChild(scroll);
+    scroll->addChild(mainLayout);
 
     auto title = CTextBuilder::begin() //
                      ->text("Controls")
@@ -102,12 +108,26 @@ int main(int argc, char** argv, char** envp) {
                        ->fill(true)
                        ->commence();
 
-    auto null1 = CNullBuilder::begin()->commence();
+    auto slider4 = CSliderBuilder::begin()
+                       ->label("Float Slider 2")
+                       ->max(10.F)
+                       ->val(5.F)
+                       ->snapInt(false)
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->fill(true)
+                       ->commence();
+
+    auto slider5 = CSliderBuilder::begin()
+                       ->label("Float Slider 3")
+                       ->max(10.F)
+                       ->val(5.F)
+                       ->snapInt(false)
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->fill(true)
+                       ->commence();
 
     hiddenSlider =
         CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
-
-    null1->setGrow(true);
 
     mainLayout->addChild(title);
     mainLayout->addChild(hr);
@@ -118,7 +138,8 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
     mainLayout->addChild(slider3);
-    mainLayout->addChild(null1);
+    mainLayout->addChild(slider4);
+    mainLayout->addChild(slider5);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

@@ -6,10 +6,6 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-struct Hyprtoolkit::SPositionerData {
-    CBox baseBox;
-};
-
 void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     if (!element->impl->window)
         return;
@@ -25,9 +21,9 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
     element->impl->window->damage(box);
 }
 
-void CPositioner::positionChildren(SP<IElement> element) {
+void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& data) {
     const auto C   = element->impl->children;
-    const auto BOX = element->impl->position;
+    const auto BOX = element->impl->position.copy().translate(data.offset);
 
     // position children according to how they wanna be positioned
 
@@ -36,7 +32,13 @@ void CPositioner::positionChildren(SP<IElement> element) {
 
         if (!itemSize) {
             // no size to base off of, just position
-            position(c, BOX);
+            CBox itemBox = BOX;
+            if (data.growX)
+                itemBox.w = 99999999;
+            if (data.growY)
+                itemBox.h = 99999999;
+
+            position(c, itemBox);
             continue;
         }
 
@@ -46,6 +48,15 @@ void CPositioner::positionChildren(SP<IElement> element) {
             itemBox.translate(c->impl->absoluteOffset);
         else if (c->impl->positionMode == IElement::HT_POSITION_CENTER)
             itemBox.translate((BOX.size() - itemBox.size()) / 2.F);
+        else if (c->impl->positionMode == IElement::HT_POSITION_HCENTER)
+            itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
+        else if (c->impl->positionMode == IElement::HT_POSITION_VCENTER)
+            itemBox.translate(Vector2D{0.F, ((BOX.size() - itemBox.size()) / 2.F).y});
+
+        if (data.growX)
+            itemBox.w = 99999999;
+        if (data.growY)
+            itemBox.h = 99999999;
 
         position(c, itemBox);
     }

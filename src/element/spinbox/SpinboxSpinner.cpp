@@ -139,3 +139,7 @@ bool CSpinboxSpinner::acceptsMouseInput() {
 ePointerShape CSpinboxSpinner::pointerShape() {
     return HT_POINTER_ARROW;
 }
+
+bool CSpinboxSpinner::alwaysGetMouseInput() {
+    return true;
+}

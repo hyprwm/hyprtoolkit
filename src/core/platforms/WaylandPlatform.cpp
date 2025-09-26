@@ -191,6 +191,13 @@ void CWaylandPlatform::initSeat() {
                 m_currentWindow->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
             });
 
+            m_waylandState.pointer->setAxis([this](CCWlPointer* r, uint32_t serial, wl_pointer_axis axis, wl_fixed_t delta) {
+                if (!m_currentWindow)
+                    return;
+
+                m_currentWindow->mouseAxis(axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL ? Input::AXIS_AXIS_HORIZONTAL : Input::AXIS_AXIS_VERTICAL, wl_fixed_to_double(delta));
+            });
+
             m_waylandState.cursorShapeDev = makeShared<CCWpCursorShapeDeviceV1>(m_waylandState.cursorShapeMgr->sendGetPointer(m_waylandState.pointer->resource()));
 
         } else if (!HAS_POINTER && m_waylandState.pointer) {

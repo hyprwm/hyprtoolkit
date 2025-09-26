@@ -9,6 +9,13 @@
 
 namespace Hyprtoolkit {
 
+    struct SToolkitFocusLock {
+        SToolkitFocusLock(SP<IElement> e, const Hyprutils::Math::Vector2D& coord);
+        ~SToolkitFocusLock();
+
+        WP<IElement> m_el;
+    };
+
     class IToolkitWindow : public IWindow {
       public:
         IToolkitWindow()          = default;
@@ -29,20 +36,24 @@ namespace Hyprtoolkit {
         virtual void mouseEnter(const Hyprutils::Math::Vector2D& local);
         virtual void mouseMove(const Hyprutils::Math::Vector2D& local);
         virtual void mouseButton(const Input::eMouseButton button, bool state);
+        virtual void mouseAxis(const Input::eAxisAxis axis, float delta);
         virtual void mouseLeave();
 
         virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
         virtual void setCursor(ePointerShape shape) = 0;
 
+        void         initElementIfNeeded(SP<IElement>);
+
         // Damage ring is in pixel coords
-        CDamageRing               m_damageRing;
-        bool                      m_needsFrame = true;
-        WP<IToolkitWindow>        m_self;
-        Hyprutils::Math::Vector2D m_mousePos;
-        bool                      m_mouseIsDown = false;
+        CDamageRing                        m_damageRing;
+        bool                               m_needsFrame = true;
+        WP<IToolkitWindow>                 m_self;
+        Hyprutils::Math::Vector2D          m_mousePos;
+        bool                               m_mouseIsDown = false;
 
-        SP<IElement>              m_hoveredElement;
+        SP<SToolkitFocusLock>              m_mainHoverElement;
+        std::vector<SP<SToolkitFocusLock>> m_hoveredElements;
 
-        std::vector<WP<IElement>> m_needsReposition;
+        std::vector<WP<IElement>>          m_needsReposition;
     };
 }

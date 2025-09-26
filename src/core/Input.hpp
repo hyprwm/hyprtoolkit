@@ -11,5 +11,10 @@ namespace Hyprtoolkit::Input {
         MOUSE_BUTTON_MIDDLE,
     };
 
+    enum eAxisAxis : uint8_t {
+        AXIS_AXIS_HORIZONTAL,
+        AXIS_AXIS_VERTICAL,
+    };
+
     eMouseButton buttonFromWayland(uint32_t wl);
 }

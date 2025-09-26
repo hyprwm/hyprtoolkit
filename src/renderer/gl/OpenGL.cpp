@@ -660,36 +660,57 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+    m_alreadyRendered.clear();
+
+    renderBreadthfirst(window->m_rootElement);
+
+    glDisable(GL_BLEND);
+}
+
+void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
     static const auto DEBUG_LAYOUT = Env::envEnabled("HT_DEBUG_LAYOUT");
     CHyprColor        DEBUG_COLOR  = {Hyprgraphics::CColor::SHSL{.h = 0.0F, .s = 0.7F, .l = 0.5F}, 0.8F};
 
-    window->m_rootElement->impl->breadthfirst([this, &DEBUG_COLOR](SP<IElement> el) {
-        if (!el->impl->failedPositioning) {
-            el->paint();
+    e->impl->breadthfirst([this, &DEBUG_COLOR](SP<IElement> el) {
+        if (el->impl->failedPositioning)
+            return;
 
-            if (DEBUG_LAYOUT) {
-                auto BOX = el->impl->position.copy();
-                if (BOX.w == 0)
-                    BOX.w = 1;
-                if (BOX.h == 0)
-                    BOX.h = 1;
+        if (std::ranges::find(m_alreadyRendered, el) != m_alreadyRendered.end())
+            return;
 
-                renderBorder(SBorderRenderData{
-                    .box   = BOX,
-                    .color = DEBUG_COLOR,
-                    .thick = 1,
-                });
+        el->paint();
 
-                auto hsl = DEBUG_COLOR.asHSL();
-                hsl.h += 0.05F;
-                if (hsl.h > 1.F)
-                    hsl.h -= 1.F;
-                DEBUG_COLOR = CHyprColor{hsl, 0.8F};
-            }
+        m_alreadyRendered.emplace_back(el);
+
+        if (DEBUG_LAYOUT) {
+            auto BOX = el->impl->position.copy();
+            if (BOX.w == 0)
+                BOX.w = 1;
+            if (BOX.h == 0)
+                BOX.h = 1;
+
+            renderBorder(SBorderRenderData{
+                .box   = BOX,
+                .color = DEBUG_COLOR,
+                .thick = 1,
+            });
+
+            auto hsl = DEBUG_COLOR.asHSL();
+            hsl.h += 0.05F;
+            if (hsl.h > 1.F)
+                hsl.h -= 1.F;
+            DEBUG_COLOR = CHyprColor{hsl, 0.8F};
+        }
+
+        if (el->impl->clipChildren) {
+            // clip children: push a clip box and render all children now, then pop box
+            m_clipBoxes.emplace_back(logicalToGL(el->impl->position, false));
+
+            renderBreadthfirst(el);
+
+            m_clipBoxes.pop_back();
         }
     });
-
-    glDisable(GL_BLEND);
 }
 
 void COpenGLRenderer::endRendering() {
@@ -735,13 +756,25 @@ void COpenGLRenderer::scissor(const CBox& box) {
     glEnable(GL_SCISSOR_TEST);
 }
 
+CRegion COpenGLRenderer::damageWithClip() {
+    auto dmg = m_damage.copy();
+
+    for (const auto& cb : m_clipBoxes) {
+        dmg.intersect(cb);
+    }
+
+    return dmg;
+}
+
 void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     const auto ROUNDEDBOX    = logicalToGL(data.box);
     const auto UNTRANSFORMED = logicalToGL(data.box, false);
     Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
     Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
-    if (m_damage.copy().intersect(UNTRANSFORMED).empty())
+    const auto DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
         return;
 
     glUseProgram(m_rectShader.program);
@@ -765,7 +798,7 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 
     glEnableVertexAttribArray(m_rectShader.posAttrib);
 
-    m_damage.forEachRect([this](const auto& RECT) {
+    DAMAGE.forEachRect([this](const auto& RECT) {
         scissor(&RECT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     });
@@ -784,7 +817,9 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
     Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
-    if (m_damage.copy().intersect(UNTRANSFORMED).empty())
+    const auto DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
         return;
 
     CShader* shader = &m_texShader;
@@ -820,7 +855,7 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glEnableVertexAttribArray(shader->posAttrib);
     glEnableVertexAttribArray(shader->texAttrib);
 
-    m_damage.forEachRect([this](const auto& RECT) {
+    DAMAGE.forEachRect([this](const auto& RECT) {
         scissor(&RECT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     });
@@ -837,7 +872,9 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
     Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
-    if (m_damage.copy().intersect(UNTRANSFORMED).empty())
+    const auto DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
         return;
 
     glUseProgram(m_borderShader.program);
@@ -870,7 +907,7 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     glEnableVertexAttribArray(m_borderShader.posAttrib);
     glEnableVertexAttribArray(m_borderShader.texAttrib);
 
-    m_damage.forEachRect([this](const auto& RECT) {
+    DAMAGE.forEachRect([this](const auto& RECT) {
         scissor(&RECT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     });
@@ -883,7 +920,9 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
     const auto ROUNDEDBOX    = logicalToGL(data.box);
     const auto UNTRANSFORMED = logicalToGL(data.box, false);
 
-    if (m_damage.copy().intersect(UNTRANSFORMED).empty())
+    const auto DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
         return;
 
     // We always do 4X MSAA on polygons, otherwise pixel galore

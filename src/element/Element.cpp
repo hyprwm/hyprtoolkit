@@ -85,6 +85,10 @@ ePointerShape IElement::pointerShape() {
     return HT_POINTER_ARROW;
 }
 
+bool IElement::alwaysGetMouseInput() {
+    return false;
+}
+
 void IElement::setMargin(float thick) {
     impl->margin = thick;
 }
