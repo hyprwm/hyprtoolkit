@@ -54,6 +54,7 @@ namespace Hyprtoolkit {
         virtual bool                                     acceptsKeyboardInput();
         virtual ePointerShape                            pointerShape();
         virtual bool                                     alwaysGetMouseInput();
+        virtual void                                     imCommitNewText(const std::string& text);
 
         virtual void                                     recheckColor();
 

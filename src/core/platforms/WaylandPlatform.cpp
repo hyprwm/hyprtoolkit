@@ -6,6 +6,7 @@
 
 #include "../InternalBackend.hpp"
 #include "../Input.hpp"
+#include "../../element/Element.hpp"
 #include "../../window/WaylandWindow.hpp"
 #include "../../Macros.hpp"
 
@@ -73,6 +74,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.cursorShapeMgr =
                 makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_cursor_shape_manager_v1_interface, 1));
+        } else if (NAME == zwp_text_input_manager_v3_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.textInputManager =
+                makeShared<CCZwpTextInputManagerV3>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_text_input_manager_v3_interface, 1));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             m_waylandState.dmabuf =
@@ -91,6 +96,9 @@ bool CWaylandPlatform::attempt() {
         g_logger->log(HT_LOG_ERROR, "Wayland platform cannot start: Missing protocols");
         return false;
     }
+
+    if (m_waylandState.textInputManager)
+        initIM();
 
     dispatchEvents();
 
@@ -151,6 +159,36 @@ SP<CWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
         }
     }
     return nullptr;
+}
+
+void CWaylandPlatform::initIM() {
+    m_waylandState.textInput = makeShared<CCZwpTextInputV3>(m_waylandState.textInputManager->sendGetTextInput(m_waylandState.seat->resource()));
+
+    m_waylandState.textInput->setPreeditString([this](CCZwpTextInputV3* r, const char* s, int32_t begin, int32_t end) {
+        m_waylandState.imState.preeditBegin  = begin;
+        m_waylandState.imState.preeditEnd    = end;
+        m_waylandState.imState.preeditString = s;
+    });
+
+    m_waylandState.textInput->setDeleteSurroundingText([this](CCZwpTextInputV3* r, uint32_t bef, uint32_t aft) {
+        m_waylandState.imState.deleteAfter  = aft;
+        m_waylandState.imState.deleteBefore = bef;
+    });
+
+    m_waylandState.textInput->setCommitString([this](CCZwpTextInputV3* r, const char* s) { m_waylandState.imState.commitString = s; });
+
+    m_waylandState.textInput->setDone([this](CCZwpTextInputV3* r, uint32_t serial) {
+        if (!m_currentWindow || !m_currentWindow->m_keyboardFocus)
+            return;
+
+        const auto& originalStr = m_currentWindow->m_currentInput;
+
+        // FIXME: this is horribly wrong
+
+        m_currentWindow->m_keyboardFocus->imCommitNewText(originalStr + m_waylandState.imState.commitString);
+
+        m_waylandState.imState = {};
+    });
 }
 
 void CWaylandPlatform::initSeat() {

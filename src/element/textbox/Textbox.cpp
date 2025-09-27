@@ -60,9 +60,15 @@ void CTextboxElement::init() {
     m_impl->placeholder->setPositionMode(HT_POSITION_VCENTER);
     m_impl->text->setPositionMode(HT_POSITION_VCENTER);
 
-    m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] { m_impl->bg->addChild(m_impl->cursorCont); });
+    m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] {
+        m_impl->bg->addChild(m_impl->cursorCont);
+        impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
+    });
 
-    m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] { m_impl->bg->removeChild(m_impl->cursorCont); });
+    m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] {
+        m_impl->bg->removeChild(m_impl->cursorCont);
+        impl->window->resetIM();
+    });
 
     m_impl->listeners.key = impl->m_externalEvents.key.listen([this](const Input::SKeyboardKeyEvent& ev) {
         if (ev.xkbKeysym == XKB_KEY_BackSpace) {
@@ -139,11 +145,21 @@ void CTextboxElement::updateLabel() {
 
     updateCursor();
 
+    if (impl->window)
+        impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
+
     if (m_impl->data.onTextEdited)
         m_impl->data.onTextEdited(m_impl->self.lock(), m_impl->data.text);
 }
 
+void CTextboxElement::imCommitNewText(const std::string& s) {
+    m_impl->data.text = s;
+    updateLabel();
+}
+
 void CTextboxElement::updateCursor() {
+    m_impl->inputState.cursor = std::clamp(m_impl->inputState.cursor, sc<size_t>(0), sc<size_t>(m_impl->data.text.length()));
+
     m_impl->cursorCont->setAbsolutePosition({
         m_impl->estimateTextSize(m_impl->data.text.substr(0, m_impl->inputState.cursor)).x,
         0.F,

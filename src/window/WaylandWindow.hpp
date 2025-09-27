@@ -15,6 +15,7 @@
 #include <xdg-shell.hpp>
 #include <fractional-scale-v1.hpp>
 #include <viewporter.hpp>
+#include <text-input-unstable-v3.hpp>
 
 #include <chrono>
 
@@ -49,6 +50,8 @@ namespace Hyprtoolkit {
         virtual void                                       mouseMove(const Hyprutils::Math::Vector2D& local);
         virtual void                                       mouseButton(const Input::eMouseButton button, bool state);
         virtual void                                       mouseAxis(const Input::eAxisAxis axis, float delta);
+        virtual void                                       setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
+        virtual void                                       resetIM();
 
       private:
         float m_fractionalScale = 1.0;

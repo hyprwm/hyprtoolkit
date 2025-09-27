@@ -18,6 +18,7 @@
 #include <fractional-scale-v1.hpp>
 #include <viewporter.hpp>
 #include <cursor-shape-v1.hpp>
+#include <text-input-unstable-v3.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -37,6 +38,7 @@ namespace Hyprtoolkit {
         void               initSeat();
         void               initShell();
         bool               initDmabuf();
+        void               initIM();
         void               setCursor(ePointerShape shape);
 
         bool               dispatchEvents();
@@ -70,6 +72,8 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWlPointer>                  pointer;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeManagerV1>     cursorShapeMgr;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>      cursorShapeDev;
+            Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>      textInputManager;
+            Hyprutils::Memory::CSharedPointer<CCZwpTextInputV3>             textInput;
 
             // control
             bool dmabufFailed = false;
@@ -82,6 +86,14 @@ namespace Hyprtoolkit {
                 uint32_t              currentLayer    = 0;
                 std::vector<uint32_t> pressedKeys;
             } seatState;
+
+            struct {
+                bool        entered = false, enabled = false;
+                std::string preeditString;
+                int         preeditBegin = 0, preeditEnd = 0;
+                std::string commitString;
+                size_t      deleteBefore = 0, deleteAfter = 0;
+            } imState;
         } m_waylandState;
 
         struct {

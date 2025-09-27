@@ -219,3 +219,11 @@ void IToolkitWindow::unfocusKeyboard() {
     m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
     m_keyboardFocus.reset();
 }
+
+void IToolkitWindow::setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor) {
+    ;
+}
+
+void IToolkitWindow::resetIM() {
+    ;
+}

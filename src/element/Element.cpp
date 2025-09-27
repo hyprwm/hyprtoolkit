@@ -109,6 +109,10 @@ bool IElement::acceptsKeyboardInput() {
     return false;
 }
 
+void IElement::imCommitNewText(const std::string& text) {
+    ;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

@@ -45,6 +45,9 @@ namespace Hyprtoolkit {
         virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
         virtual void setCursor(ePointerShape shape) = 0;
 
+        virtual void setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
+        virtual void resetIM();
+
         void         initElementIfNeeded(SP<IElement>);
 
         // Damage ring is in pixel coords
@@ -53,6 +56,9 @@ namespace Hyprtoolkit {
         WP<IToolkitWindow>                 m_self;
         Hyprutils::Math::Vector2D          m_mousePos;
         bool                               m_mouseIsDown = false;
+
+        std::string                        m_currentInput       = "";
+        size_t                             m_currentInputCursor = 0;
 
         SP<SToolkitFocusLock>              m_mainHoverElement;
         std::vector<SP<SToolkitFocusLock>> m_hoveredElements;
