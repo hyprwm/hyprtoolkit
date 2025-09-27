@@ -12,6 +12,7 @@
 #include "../../core/InternalBackend.hpp"
 #include "../Element.hpp"
 #include "../text/Text.hpp"
+#include "../../helpers/UTF8.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -75,7 +76,7 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == 0)
                 return;
 
-            m_impl->data.text = m_impl->data.text.substr(0, m_impl->inputState.cursor - 1) + m_impl->data.text.substr(m_impl->inputState.cursor);
+            m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor - 1) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
             m_impl->inputState.cursor--;
             updateLabel();
             return;
@@ -85,7 +86,7 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == m_impl->data.text.length())
                 return;
 
-            m_impl->data.text = m_impl->data.text.substr(0, m_impl->inputState.cursor) + m_impl->data.text.substr(m_impl->inputState.cursor + 1);
+            m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor + 1);
             updateLabel();
             return;
         }
@@ -116,7 +117,7 @@ void CTextboxElement::init() {
         if (ev.utf8.empty())
             return;
 
-        m_impl->data.text = m_impl->data.text.substr(0, m_impl->inputState.cursor) + ev.utf8 + m_impl->data.text.substr(m_impl->inputState.cursor);
+        m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + ev.utf8 + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
         m_impl->inputState.cursor++;
         updateLabel();
     });
@@ -158,10 +159,10 @@ void CTextboxElement::imCommitNewText(const std::string& s) {
 }
 
 void CTextboxElement::updateCursor() {
-    m_impl->inputState.cursor = std::clamp(m_impl->inputState.cursor, sc<size_t>(0), sc<size_t>(m_impl->data.text.length()));
+    m_impl->inputState.cursor = std::clamp(m_impl->inputState.cursor, sc<size_t>(0), sc<size_t>(UTF8::length(m_impl->data.text)));
 
     m_impl->cursorCont->setAbsolutePosition({
-        m_impl->estimateTextSize(m_impl->data.text.substr(0, m_impl->inputState.cursor)).x,
+        m_impl->estimateTextSize(UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor)).x,
         0.F,
     });
 
