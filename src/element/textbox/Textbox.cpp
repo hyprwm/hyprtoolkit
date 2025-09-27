@@ -64,11 +64,13 @@ void CTextboxElement::init() {
     m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] {
         m_impl->bg->addChild(m_impl->cursorCont);
         impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
+        m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })->commence();
     });
 
     m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] {
         m_impl->bg->removeChild(m_impl->cursorCont);
         impl->window->resetIM();
+        m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase; })->commence();
     });
 
     m_impl->listeners.key = impl->m_externalEvents.key.listen([this](const Input::SKeyboardKeyEvent& ev) {
@@ -126,7 +128,6 @@ void CTextboxElement::init() {
     // m_impl->text->setMargin(1);
 
     addChild(m_impl->bg);
-    m_impl->bg->addChild(m_impl->cursorCont);
     m_impl->cursorCont->addChild(m_impl->cursor);
     m_impl->bg->impl->clipChildren = true;
 
