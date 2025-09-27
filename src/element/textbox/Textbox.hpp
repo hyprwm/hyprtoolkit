@@ -38,7 +38,8 @@ namespace Hyprtoolkit {
         } listeners;
 
         struct {
-            size_t cursor = 0;
+            size_t      cursor = 0;
+            std::string imText;
         } inputState;
 
         Hyprutils::Math::Vector2D estimateTextSize(const std::string& s);

@@ -93,6 +93,8 @@ namespace Hyprtoolkit {
                 int         preeditBegin = 0, preeditEnd = 0;
                 std::string commitString;
                 size_t      deleteBefore = 0, deleteAfter = 0;
+
+                std::string originalString;
             } imState;
         } m_waylandState;
 

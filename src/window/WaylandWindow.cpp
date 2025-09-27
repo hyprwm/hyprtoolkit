@@ -304,7 +304,6 @@ void CWaylandWindow::setIMTo(const Hyprutils::Math::CBox& box, const std::string
         g_waylandPlatform->m_waylandState.textInput->sendEnable();
         g_waylandPlatform->m_waylandState.imState.enabled = true;
     }
-    g_waylandPlatform->m_waylandState.textInput->sendSetSurroundingText(str.c_str(), cursor, cursor);
     g_waylandPlatform->m_waylandState.textInput->sendSetCursorRectangle(box.x, box.y, box.w, box.h);
     g_waylandPlatform->m_waylandState.textInput->sendCommit();
 

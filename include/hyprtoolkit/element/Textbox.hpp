@@ -57,6 +57,7 @@ namespace Hyprtoolkit {
         virtual ePointerShape                            pointerShape();
         virtual bool                                     acceptsKeyboardInput();
         virtual void                                     imCommitNewText(const std::string&);
+        virtual void                                     imApplyText();
 
         void                                             updateLabel();
         void                                             updateCursor();

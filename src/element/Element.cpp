@@ -113,6 +113,10 @@ void IElement::imCommitNewText(const std::string& text) {
     ;
 }
 
+void IElement::imApplyText() {
+    ;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

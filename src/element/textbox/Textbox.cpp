@@ -142,29 +142,42 @@ void CTextboxElement::updateLabel() {
         m_impl->bg->addChild(m_impl->text);
     }
 
-    m_impl->text->rebuild()->text(std::string{m_impl->data.text})->commence();
+    auto fullLabel = m_impl->inputState.imText.empty() ? //
+        m_impl->data.text :                              //
+        UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + "<u>" + m_impl->inputState.imText + "</u>" + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
+
+    m_impl->text->rebuild()->text(std::move(fullLabel))->commence();
 
     updateCursor();
-
-    if (impl->window)
-        impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
 
     if (m_impl->data.onTextEdited)
         m_impl->data.onTextEdited(m_impl->self.lock(), m_impl->data.text);
 }
 
 void CTextboxElement::imCommitNewText(const std::string& s) {
-    m_impl->data.text = s;
+    m_impl->inputState.imText = s;
+    updateLabel();
+}
+
+void CTextboxElement::imApplyText() {
+    m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + m_impl->inputState.imText + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
+    m_impl->inputState.cursor += UTF8::length(m_impl->inputState.imText);
+    m_impl->inputState.imText.clear();
     updateLabel();
 }
 
 void CTextboxElement::updateCursor() {
     m_impl->inputState.cursor = std::clamp(m_impl->inputState.cursor, sc<size_t>(0), sc<size_t>(UTF8::length(m_impl->data.text)));
 
+    const float WIDTH = m_impl->estimateTextSize(UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor)).x;
+
     m_impl->cursorCont->setAbsolutePosition({
-        m_impl->estimateTextSize(UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor)).x,
+        WIDTH,
         0.F,
     });
+
+    if (impl->window)
+        impl->window->setIMTo(impl->position.copy().translate({std::clamp(WIDTH, 0.F, sc<float>(impl->position.w)), 0.F}), m_impl->data.text, m_impl->inputState.cursor);
 
     g_positioner->repositionNeeded(m_impl->self.lock());
 }

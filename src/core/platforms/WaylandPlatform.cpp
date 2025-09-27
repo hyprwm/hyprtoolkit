@@ -181,13 +181,19 @@ void CWaylandPlatform::initIM() {
         if (!m_currentWindow || !m_currentWindow->m_keyboardFocus)
             return;
 
-        const auto& originalStr = m_currentWindow->m_currentInput;
+        // FIXME: this is incomplete. Very incomplete, but works for CJK IMEs just fine.
 
-        // FIXME: this is horribly wrong
+        const auto NEW_STR = m_waylandState.imState.commitString;
 
-        m_currentWindow->m_keyboardFocus->imCommitNewText(originalStr + m_waylandState.imState.commitString);
+        if (NEW_STR.empty()) {
+            m_currentWindow->m_keyboardFocus->imCommitNewText(m_waylandState.imState.preeditString);
+            return;
+        }
 
         m_waylandState.imState = {};
+
+        m_currentWindow->m_keyboardFocus->imCommitNewText(NEW_STR);
+        m_currentWindow->m_keyboardFocus->imApplyText();
     });
 }
 
