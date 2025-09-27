@@ -71,5 +71,6 @@ namespace Hyprtoolkit {
 
         friend class CButtonElement;
         friend class CTextBuilder;
+        friend struct STextboxImpl;
     };
 };

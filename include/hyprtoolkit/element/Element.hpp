@@ -51,6 +51,7 @@ namespace Hyprtoolkit {
         virtual void                                     setGrow(bool growH, bool growV);
 
         virtual bool                                     acceptsMouseInput();
+        virtual bool                                     acceptsKeyboardInput();
         virtual ePointerShape                            pointerShape();
         virtual bool                                     alwaysGetMouseInput();
 

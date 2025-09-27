@@ -39,6 +39,9 @@ namespace Hyprtoolkit {
         virtual void mouseAxis(const Input::eAxisAxis axis, float delta);
         virtual void mouseLeave();
 
+        virtual void keyboardKey(const Input::SKeyboardKeyEvent& e);
+        virtual void unfocusKeyboard();
+
         virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
         virtual void setCursor(ePointerShape shape) = 0;
 
@@ -53,6 +56,7 @@ namespace Hyprtoolkit {
 
         SP<SToolkitFocusLock>              m_mainHoverElement;
         std::vector<SP<SToolkitFocusLock>> m_hoveredElements;
+        WP<IElement>                       m_keyboardFocus;
 
         std::vector<WP<IElement>>          m_needsReposition;
     };

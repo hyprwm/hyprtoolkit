@@ -105,6 +105,10 @@ void IElement::recheckColor() {
     ;
 }
 
+bool IElement::acceptsKeyboardInput() {
+    return false;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

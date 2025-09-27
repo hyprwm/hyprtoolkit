@@ -7,6 +7,9 @@
 #include <vector>
 #include <functional>
 
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-compose.h>
+
 #include <wayland-client.h>
 
 #include <wayland.hpp>
@@ -40,6 +43,8 @@ namespace Hyprtoolkit {
 
         SP<CWaylandWindow> windowForSurf(wl_proxy* proxy);
 
+        void               onKey(uint32_t keycode, bool state);
+
         //
         std::vector<FIdleCallback> m_idleCallbacks;
 
@@ -68,6 +73,15 @@ namespace Hyprtoolkit {
 
             // control
             bool dmabufFailed = false;
+
+            struct {
+                xkb_context*          xkbContext      = nullptr;
+                xkb_keymap*           xkbKeymap       = nullptr;
+                xkb_state*            xkbState        = nullptr;
+                xkb_compose_state*    xkbComposeState = nullptr;
+                uint32_t              currentLayer    = 0;
+                std::vector<uint32_t> pressedKeys;
+            } seatState;
         } m_waylandState;
 
         struct {

@@ -12,6 +12,7 @@
 #include <hyprtoolkit/element/Slider.hpp>
 #include <hyprtoolkit/element/ScrollArea.hpp>
 #include <hyprtoolkit/element/Combobox.hpp>
+#include <hyprtoolkit/element/Textbox.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -174,6 +175,18 @@ int main(int argc, char** argv, char** envp) {
             ->fill(true)
             ->commence();
 
+    auto textbox =
+        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence();
+
+    auto textboxLayout = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto textboxLabel  = CTextBuilder::begin()->text("Textbox")->commence();
+    auto textboxNull   = CNullBuilder::begin()->commence();
+    textboxNull->setGrow(true);
+
+    textboxLayout->addChild(textboxLabel);
+    textboxLayout->addChild(textboxNull);
+    textboxLayout->addChild(textbox);
+
     hiddenSlider =
         CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
 
@@ -190,6 +203,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(slider4);
     mainLayout->addChild(slider5);
     mainLayout->addChild(combo);
+    mainLayout->addChild(textboxLayout);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

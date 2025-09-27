@@ -1,6 +1,8 @@
 #include "WaylandPlatform.hpp"
 
+#include <algorithm>
 #include <hyprutils/memory/Casts.hpp>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 #include "../InternalBackend.hpp"
 #include "../Input.hpp"
@@ -24,6 +26,8 @@ static std::string fourccToName(uint32_t drmFormat) {
 
 bool CWaylandPlatform::attempt() {
     g_logger->log(HT_LOG_DEBUG, "Starting the Wayland platform");
+
+    m_waylandState.seatState.xkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 
     m_waylandState.display = wl_display_connect(nullptr);
 
@@ -100,6 +104,13 @@ CWaylandPlatform::~CWaylandPlatform() {
 
     if (m_drmState.fd >= 0)
         close(m_drmState.fd);
+
+    if (m_waylandState.seatState.xkbState)
+        xkb_state_unref(m_waylandState.seatState.xkbState);
+    if (m_waylandState.seatState.xkbKeymap)
+        xkb_keymap_unref(m_waylandState.seatState.xkbKeymap);
+    if (m_waylandState.seatState.xkbContext)
+        xkb_context_unref(m_waylandState.seatState.xkbContext);
 }
 
 bool CWaylandPlatform::dispatchEvents() {
@@ -150,7 +161,61 @@ void CWaylandPlatform::initSeat() {
         if (HAS_KEYBOARD && !m_waylandState.keyboard) {
             m_waylandState.keyboard = makeShared<CCWlKeyboard>(m_waylandState.seat->sendGetKeyboard());
 
-            // TODO:
+            m_waylandState.keyboard->setKeymap([this](CCWlKeyboard*, wl_keyboard_keymap_format format, int32_t fd, uint32_t size) {
+                if (!m_waylandState.seatState.xkbContext)
+                    return;
+
+                if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+                    g_logger->log(HT_LOG_ERROR, "wayland: couldn't recognize keymap");
+                    return;
+                }
+
+                const char* buf = (const char*)mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+                if (buf == MAP_FAILED) {
+                    g_logger->log(HT_LOG_ERROR, "wayland: failed to mmap xkb keymap: {}", errno);
+                    return;
+                }
+
+                m_waylandState.seatState.xkbKeymap =
+                    xkb_keymap_new_from_buffer(m_waylandState.seatState.xkbContext, buf, size - 1, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+                munmap((void*)buf, size);
+                close(fd);
+
+                if (!m_waylandState.seatState.xkbKeymap) {
+                    g_logger->log(HT_LOG_ERROR, "wayland: failed to compile xkb keymap");
+                    return;
+                }
+
+                m_waylandState.seatState.xkbState = xkb_state_new(m_waylandState.seatState.xkbKeymap);
+                if (!m_waylandState.seatState.xkbState) {
+                    g_logger->log(HT_LOG_ERROR, "wayland: failed to create xkb state");
+                    return;
+                }
+
+                const auto PCOMOPOSETABLE = xkb_compose_table_new_from_locale(m_waylandState.seatState.xkbContext, setlocale(LC_CTYPE, nullptr), XKB_COMPOSE_COMPILE_NO_FLAGS);
+
+                if (!PCOMOPOSETABLE) {
+                    g_logger->log(HT_LOG_ERROR, "wayland: failed to create xkb compose table");
+                    return;
+                }
+
+                m_waylandState.seatState.xkbComposeState = xkb_compose_state_new(PCOMOPOSETABLE, XKB_COMPOSE_STATE_NO_FLAGS);
+            });
+
+            m_waylandState.keyboard->setModifiers([this](CCWlKeyboard* r, uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group) {
+                if (!m_waylandState.seatState.xkbContext)
+                    return;
+
+                if (group != m_waylandState.seatState.currentLayer)
+                    m_waylandState.seatState.currentLayer = group;
+
+                xkb_state_update_mask(m_waylandState.seatState.xkbState, mods_depressed, mods_latched, mods_locked, 0, 0, group);
+            });
+
+            m_waylandState.keyboard->setKey([this](CCWlKeyboard* r, uint32_t serial, uint32_t time, uint32_t key, wl_keyboard_key_state state) { //
+                onKey(key, state == WL_KEYBOARD_KEY_STATE_PRESSED);
+            });
 
         } else if (!HAS_KEYBOARD && m_waylandState.keyboard)
             m_waylandState.keyboard.reset();
@@ -334,8 +399,57 @@ void CWaylandPlatform::setCursor(ePointerShape shape) {
     switch (shape) {
         case HT_POINTER_ARROW: break;
         case HT_POINTER_POINTER: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER; break;
+        case HT_POINTER_TEXT: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_TEXT; break;
         default: break;
     }
 
     m_waylandState.cursorShapeDev->sendSetShape(m_lastEnterSerial, wlShape);
+}
+
+void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
+
+    const auto HAS_IN_VEC = std::ranges::contains(m_waylandState.seatState.pressedKeys, keycode);
+
+    if (state && HAS_IN_VEC) {
+        g_logger->log(HT_LOG_ERROR, "Invalid key down event (key already pressed?)");
+        return;
+    } else if (!state && !HAS_IN_VEC) {
+        g_logger->log(HT_LOG_ERROR, "Invalid key up event (stray release event?)");
+        return;
+    }
+
+    if (state)
+        m_waylandState.seatState.pressedKeys.emplace_back(keycode);
+    else
+        std::erase(m_waylandState.seatState.pressedKeys, keycode);
+
+    if (!m_currentWindow)
+        return;
+
+    if (state) {
+        const auto SYM = xkb_state_key_get_one_sym(m_waylandState.seatState.xkbState, keycode + 8);
+
+        if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down) {
+            // skip compose
+            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state});
+            return;
+        }
+
+        enum xkb_compose_status composeStatus = XKB_COMPOSE_NOTHING;
+        if (m_waylandState.seatState.xkbComposeState) {
+            xkb_compose_state_feed(m_waylandState.seatState.xkbComposeState, SYM);
+            composeStatus = xkb_compose_state_get_status(m_waylandState.seatState.xkbComposeState);
+        }
+
+        const bool COMPOSED = composeStatus == XKB_COMPOSE_COMPOSED;
+
+        char       buf[16] = {0};
+        int        len     = COMPOSED ? xkb_compose_state_get_utf8(m_waylandState.seatState.xkbComposeState, buf, sizeof(buf)) /* nullbyte */ + 1 :
+                                        xkb_keysym_to_utf8(SYM, buf, sizeof(buf)) /* already includes a nullbyte */;
+
+        if (len > 1)
+            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .utf8 = std::string{buf, sc<size_t>(len - 1)}});
+
+    } else if (m_waylandState.seatState.xkbComposeState && xkb_compose_state_get_status(m_waylandState.seatState.xkbComposeState) == XKB_COMPOSE_COMPOSED)
+        xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
 }

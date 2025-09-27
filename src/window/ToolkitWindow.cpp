@@ -165,6 +165,19 @@ void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
 void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
     m_mouseIsDown = state;
 
+    if (state) {
+        if (m_mainHoverElement && m_mainHoverElement->m_el && m_mainHoverElement->m_el->acceptsKeyboardInput() && m_keyboardFocus != m_mainHoverElement->m_el) {
+            // enter this element
+            if (m_keyboardFocus)
+                m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
+            m_keyboardFocus = m_mainHoverElement->m_el;
+            m_keyboardFocus->impl->m_externalEvents.keyboardEnter.emit();
+        } else if (m_keyboardFocus) {
+            m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
+            m_keyboardFocus.reset();
+        }
+    }
+
     if (m_mainHoverElement && m_mainHoverElement->m_el)
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseButton.emit(button, state);
 
@@ -190,4 +203,19 @@ void IToolkitWindow::mouseAxis(const Input::eAxisAxis axis, float delta) {
 void IToolkitWindow::mouseLeave() {
     m_mainHoverElement.reset();
     m_hoveredElements.clear();
+}
+
+void IToolkitWindow::keyboardKey(const Input::SKeyboardKeyEvent& ev) {
+    if (!m_keyboardFocus)
+        return;
+
+    m_keyboardFocus->impl->m_externalEvents.key.emit(ev);
+}
+
+void IToolkitWindow::unfocusKeyboard() {
+    if (!m_keyboardFocus)
+        return;
+
+    m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
+    m_keyboardFocus.reset();
 }

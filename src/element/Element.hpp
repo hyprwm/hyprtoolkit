@@ -44,6 +44,9 @@ namespace Hyprtoolkit {
             Hyprutils::Signal::CSignalT<Input::eMouseButton, bool> mouseButton;
             Hyprutils::Signal::CSignalT<>                          mouseLeave;
             Hyprutils::Signal::CSignalT<Input::eAxisAxis, float>   mouseAxis;
+            Hyprutils::Signal::CSignalT<Input::SKeyboardKeyEvent>  key;
+            Hyprutils::Signal::CSignalT<>                          keyboardEnter;
+            Hyprutils::Signal::CSignalT<>                          keyboardLeave;
         } m_externalEvents;
 
         //

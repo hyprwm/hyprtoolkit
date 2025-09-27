@@ -33,6 +33,8 @@ pkg_check_modules(
   pixman-1
   libdrm
   gbm
+  xkbcommon
+  pango
   hyprgraphics>=0.1.6
   aquamarine
 )

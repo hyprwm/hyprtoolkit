@@ -1,0 +1,46 @@
+#pragma once
+
+#include <hyprtoolkit/element/Textbox.hpp>
+#include <string_view>
+
+#include "../../helpers/Memory.hpp"
+#include "../../helpers/Signal.hpp"
+
+namespace Hyprtoolkit {
+
+    class CRectangleElement;
+    class CNullElement;
+    class CTextElement;
+
+    struct STextboxData {
+        std::string                                                                                 text;
+        std::string                                                                                 placeholder;
+        std::function<void(Hyprutils::Memory::CSharedPointer<CTextboxElement>, const std::string&)> onTextEdited;
+        CDynamicSize                                                                                size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+    };
+    struct STextboxImpl {
+        STextboxData          data;
+
+        WP<CTextboxElement>   self;
+
+        SP<CRectangleElement> bg;
+        SP<CNullElement>      cursorCont;
+        SP<CRectangleElement> cursor;
+        SP<CTextElement>      text;
+        SP<CTextElement>      placeholder;
+
+        bool                  active = false;
+
+        struct {
+            CHyprSignalListener key;
+            CHyprSignalListener enter;
+            CHyprSignalListener leave;
+        } listeners;
+
+        struct {
+            size_t cursor = 0;
+        } inputState;
+
+        Hyprutils::Math::Vector2D estimateTextSize(const std::string& s);
+    };
+}
