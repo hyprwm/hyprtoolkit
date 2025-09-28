@@ -109,6 +109,9 @@ void SSliderImpl::updateValue() {
         std::clamp(sc<float>(((lastPosLocal + background->impl->position.pos()).x - background->impl->position.pos().x) / background->impl->position.size().x), 0.F, 1.F);
 
     valueChanged(CURRENT_VALUE);
+
+    if (data.onChanged)
+        data.onChanged(self.lock(), CURRENT_VALUE);
 }
 
 void CSliderElement::paint() {
