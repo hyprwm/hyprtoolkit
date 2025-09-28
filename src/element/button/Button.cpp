@@ -40,7 +40,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                         ->callback([this] {
                             m_impl->labelChanged = true;
-                            impl->window->scheduleReposition(impl->self);
+                            if (impl->window)
+                                impl->window->scheduleReposition(impl->self);
                         })
                         ->commence();
 
