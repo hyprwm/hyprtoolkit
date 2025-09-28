@@ -31,6 +31,8 @@ static void aqLog(Aquamarine::eBackendLogLevel level, std::string msg) {
 }
 
 CBackend::CBackend() {
+    pipe(m_sLoopState.exitfd);
+
     Aquamarine::SBackendOptions options{};
     options.logFunction = ::aqLog;
 
@@ -43,6 +45,11 @@ CBackend::CBackend() {
     m_aqBackend             = Aquamarine::CBackend::create(implementations, options);
     g_asyncResourceGatherer = makeShared<CAsyncResourceGatherer>();
     g_animationManager      = makeShared<CHTAnimationManager>();
+}
+
+CBackend::~CBackend() {
+    close(m_sLoopState.exitfd[0]);
+    close(m_sLoopState.exitfd[1]);
 }
 
 SP<CBackend> CBackend::create() {
@@ -62,7 +69,6 @@ SP<CBackend> CBackend::create() {
 };
 
 void CBackend::destroy() {
-
     terminate();
 }
 
@@ -138,31 +144,59 @@ void CBackend::reloadTheme() {
     }
 }
 
+void CBackend::addFd(int fd, std::function<void()>&& callback) {
+    m_sLoopState.userFds.emplace_back(SFDListener{
+        .fd       = fd,
+        .callback = std::move(callback),
+    });
+
+    rebuildPollfds();
+}
+
+void CBackend::removeFd(int fd) {
+    std::erase_if(m_sLoopState.userFds, [fd](const auto& e) { return e.fd == fd; });
+    rebuildPollfds();
+}
+
+constexpr size_t INTERNAL_FDS = 3;
+
+void             CBackend::rebuildPollfds() {
+    m_pollfds.resize(INTERNAL_FDS + m_sLoopState.userFds.size());
+
+    m_pollfds[0] = {
+                    .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
+                    .events = POLLIN,
+    };
+    m_pollfds[1] = {
+                    .fd     = m_sLoopState.exitfd[0],
+                    .events = POLLIN,
+    };
+    m_pollfds[2] = {
+                    .fd     = g_config->m_inotifyFd.get(),
+                    .events = POLLIN,
+    };
+
+    int i = INTERNAL_FDS;
+
+    for (const auto& uf : m_sLoopState.userFds) {
+        m_pollfds[i++] = {
+                        .fd     = uf.fd,
+                        .events = POLLIN,
+        };
+    }
+}
+
 void CBackend::enterLoop() {
-    int exitfd[2];
-    pipe(exitfd);
 
-    pollfd pollfds[3];
-    pollfds[0] = {
-        .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
-        .events = POLLIN,
-    };
-    pollfds[1] = {
-        .fd     = exitfd[0],
-        .events = POLLIN,
-    };
-    pollfds[2] = {
-        .fd     = g_config->m_inotifyFd.get(),
-        .events = POLLIN,
-    };
+    rebuildPollfds();
 
-    std::thread pollThr([this, &pollfds]() {
+    std::thread pollThr([this]() {
         while (!m_terminate) {
             bool preparedToRead = wl_display_prepare_read(g_waylandPlatform->m_waylandState.display) == 0;
 
             int  events = 0;
             if (preparedToRead) {
-                events = poll(pollfds, 3, 5000);
+                events = poll(m_pollfds.data(), m_pollfds.size(), 5000);
 
                 if (m_terminate)
                     return;
@@ -174,14 +208,19 @@ void CBackend::enterLoop() {
                 }
 
                 for (size_t i = 0; i < 1; ++i) {
-                    RASSERT(!(pollfds[i].revents & POLLHUP), "[core] Disconnected from pollfd id {}", i);
+                    RASSERT(!(m_pollfds[i].revents & POLLHUP), "[core] Disconnected from pollfd id {}", i);
                 }
 
                 wl_display_read_events(g_waylandPlatform->m_waylandState.display);
                 m_sLoopState.wlDispatched = false;
             }
 
-            m_needsConfigReload = pollfds[2].revents & POLLIN;
+            m_needsConfigReload = m_pollfds[2].revents & POLLIN;
+
+            for (size_t i = INTERNAL_FDS; i < m_pollfds.size(); ++i) {
+                if (m_pollfds[i].revents & POLLIN)
+                    m_sLoopState.userFds[i - INTERNAL_FDS].needsDispatch = true;
+            }
 
             if (events > 0 || !preparedToRead || m_needsConfigReload) {
                 std::unique_lock lk(m_sLoopState.eventLoopMutex);
@@ -271,6 +310,8 @@ void CBackend::enterLoop() {
         std::erase_if(m_timers, [passed](const auto& timer) { return std::find(passed.begin(), passed.end(), timer) != passed.end(); });
         m_sLoopState.timersMutex.unlock();
 
+        passed.clear();
+
         // do idles
         m_sLoopState.idlesMutex.lock();
         auto idlesCpy = m_idles;
@@ -294,7 +335,14 @@ void CBackend::enterLoop() {
             reloadTheme();
         }
 
-        passed.clear();
+        // do user fds
+        for (auto& uf : m_sLoopState.userFds) {
+            if (!uf.needsDispatch)
+                continue;
+
+            uf.needsDispatch = false;
+            uf.callback();
+        }
     }
 
     g_renderer.reset();
@@ -315,7 +363,7 @@ void CBackend::enterLoop() {
     m_sLoopState.timerEvent = true;
     m_sLoopState.timerCV.notify_all();
 
-    write(exitfd[1], "hello", 5);
+    write(m_sLoopState.exitfd[1], "hello", 5);
 
     if (timersThr.joinable())
         timersThr.join();

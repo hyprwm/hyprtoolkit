@@ -6,6 +6,7 @@
 #include <aquamarine/backend/Backend.hpp>
 #include <functional>
 #include <string>
+#include <sys/poll.h>
 
 #include "LogTypes.hpp"
 #include "../palette/Palette.hpp"
@@ -34,9 +35,13 @@ namespace Hyprtoolkit {
         */
         void destroy();
 
-        ~CBackend() = default;
+        ~CBackend();
 
         void setLogFn(LogFn&& fn);
+
+        /* These are non-owning. */
+        void addFd(int fd, std::function<void()>&& callback);
+        void removeFd(int fd);
 
         /*
             Open a window. This opens a toplevel window. Each window has a root
@@ -70,6 +75,9 @@ namespace Hyprtoolkit {
 
         void                                                    terminate();
         void                                                    reloadTheme();
+        void                                                    rebuildPollfds();
+
+        std::vector<pollfd>                                     m_pollfds;
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
@@ -78,24 +86,34 @@ namespace Hyprtoolkit {
         bool                                                    m_terminate         = false;
         bool                                                    m_needsConfigReload = false;
 
+        struct SFDListener {
+            int                   fd = 0;
+            std::function<void()> callback;
+            bool                  needsDispatch = false;
+        };
+
         struct {
-            std::mutex              timersMutex;
-            std::mutex              idlesMutex;
-            std::mutex              eventRequestMutex;
-            std::mutex              eventLoopMutex;
-            std::condition_variable loopCV;
-            bool                    event = false;
+            std::mutex               timersMutex;
+            std::mutex               idlesMutex;
+            std::mutex               eventRequestMutex;
+            std::mutex               eventLoopMutex;
+            std::condition_variable  loopCV;
+            bool                     event = false;
 
-            std::condition_variable wlDispatchCV;
-            bool                    wlDispatched = false;
+            std::condition_variable  wlDispatchCV;
+            bool                     wlDispatched = false;
 
-            std::condition_variable timerCV;
-            std::mutex              timerRequestMutex;
-            bool                    timerEvent = false;
+            std::condition_variable  timerCV;
+            std::mutex               timerRequestMutex;
+            bool                     timerEvent = false;
 
-            std::condition_variable idleCV;
-            std::mutex              idleRequestMutex;
-            bool                    idleEvent = false;
+            std::condition_variable  idleCV;
+            std::mutex               idleRequestMutex;
+            bool                     idleEvent = false;
+
+            int                      exitfd[2];
+
+            std::vector<SFDListener> userFds;
         } m_sLoopState;
 
         std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
