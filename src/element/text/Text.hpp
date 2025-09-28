@@ -4,12 +4,13 @@
 #include <hyprtoolkit/element/Text.hpp>
 
 #include "../../helpers/Memory.hpp"
+#include "../../core/InternalBackend.hpp"
 
 namespace Hyprtoolkit {
     struct STextData {
         std::string                              text;
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
-        colorFn                                  color = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
+        colorFn                                  color = [] { return g_backend->getPalette()->m_colors.text; };
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
         CDynamicSize                             size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
