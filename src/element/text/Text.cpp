@@ -131,7 +131,7 @@ void CTextElement::renderTex() {
             ASP<IAsyncResource> resourceGeneric(m_impl->resource);
             m_impl->size = m_impl->resource->m_asset.pixelSize;
             m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
-            if (impl->parent)
+            if (impl->window)
                 impl->window->scheduleReposition(impl->self);
 
             m_impl->waitingForTex = false;
