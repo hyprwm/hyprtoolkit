@@ -1,4 +1,5 @@
 #include "WaylandPopup.hpp"
+#include "WaylandWindow.hpp"
 
 #include <hyprtoolkit/element/Null.hpp>
 
@@ -53,28 +54,28 @@ void CWaylandPopup::open() {
         m_waylandState.serial = serial;
     });
 
-    m_waylandState.xdgPositioner = makeShared<CCXdgPositioner>(g_waylandPlatform->m_waylandState.xdg->sendCreatePositioner());
+    m_wlPopupState.xdgPositioner = makeShared<CCXdgPositioner>(g_waylandPlatform->m_waylandState.xdg->sendCreatePositioner());
 
-    m_waylandState.xdgPositioner->sendSetAnchorRect(m_creationData.pos.x, m_creationData.pos.y, 1, 1);
-    m_waylandState.xdgPositioner->sendSetAnchor(XDG_POSITIONER_ANCHOR_TOP_LEFT);
-    m_waylandState.xdgPositioner->sendSetGravity(XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
-    m_waylandState.xdgPositioner->sendSetSize(m_creationData.size.x, m_creationData.size.y);
-    m_waylandState.xdgPositioner->sendSetConstraintAdjustment(
+    m_wlPopupState.xdgPositioner->sendSetAnchorRect(m_creationData.pos.x, m_creationData.pos.y, 1, 1);
+    m_wlPopupState.xdgPositioner->sendSetAnchor(XDG_POSITIONER_ANCHOR_TOP_LEFT);
+    m_wlPopupState.xdgPositioner->sendSetGravity(XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
+    m_wlPopupState.xdgPositioner->sendSetSize(m_creationData.size.x, m_creationData.size.y);
+    m_wlPopupState.xdgPositioner->sendSetConstraintAdjustment(
         (xdgPositionerConstraintAdjustment)(XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X));
 
-    m_waylandState.xdgPopup = makeShared<CCXdgPopup>(m_waylandState.xdgSurface->sendGetPopup(m_parent->m_waylandState.xdgSurface.get(), m_waylandState.xdgPositioner.get()));
+    m_wlPopupState.xdgPopup = makeShared<CCXdgPopup>(m_waylandState.xdgSurface->sendGetPopup(m_parent->m_waylandState.xdgSurface.get(), m_wlPopupState.xdgPositioner.get()));
 
-    if (!m_waylandState.xdgPopup->resource()) {
+    if (!m_wlPopupState.xdgPopup->resource()) {
         g_logger->log(HT_LOG_ERROR, "window opening failed: no xdgToplevel given. Errno: {}", errno);
         return;
     }
 
-    m_waylandState.xdgPopup->setConfigure([this](CCXdgPopup* r, int32_t x, int32_t y, int32_t w, int32_t h) {
+    m_wlPopupState.xdgPopup->setConfigure([this](CCXdgPopup* r, int32_t x, int32_t y, int32_t w, int32_t h) {
         g_logger->log(HT_LOG_DEBUG, "wayland: configure toplevel with {}x{}", w, h);
 
-        if (!m_waylandState.grabbed) {
-            m_waylandState.grabbed = true;
-            m_waylandState.xdgPopup->sendGrab(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastEnterSerial);
+        if (!m_wlPopupState.grabbed) {
+            m_wlPopupState.grabbed = true;
+            m_wlPopupState.xdgPopup->sendGrab(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastEnterSerial);
         }
 
         if (m_waylandState.logicalSize == Vector2D{w, h})
@@ -85,7 +86,7 @@ void CWaylandPopup::open() {
         m_events.resized.emit(m_waylandState.logicalSize);
     });
 
-    m_waylandState.xdgPopup->setPopupDone([this](CCXdgPopup* r) { close(); });
+    m_wlPopupState.xdgPopup->setPopupDone([this](CCXdgPopup* r) { close(); });
 
     m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
 
@@ -125,8 +126,8 @@ void CWaylandPopup::close() {
 
     m_waylandState.frameCallback.reset();
 
-    if (m_waylandState.xdgPopup)
-        m_waylandState.xdgPopup->sendDestroy();
+    if (m_wlPopupState.xdgPopup)
+        m_wlPopupState.xdgPopup->sendDestroy();
     if (m_waylandState.xdgSurface)
         m_waylandState.xdgSurface->sendDestroy();
     if (m_waylandState.surface)
@@ -135,101 +136,6 @@ void CWaylandPopup::close() {
     m_waylandState = {};
 
     m_events.popupClosed.emit();
-}
-
-void CWaylandPopup::onScaleUpdate() {
-    configure(m_waylandState.logicalSize, m_waylandState.serial);
-}
-
-void CWaylandPopup::configure(const Vector2D& size, uint32_t serial) {
-
-    m_waylandState.logicalSize  = size;
-    m_waylandState.appliedScale = m_fractionalScale;
-
-    m_waylandState.size = (size * m_fractionalScale).floor();
-    m_waylandState.viewport->sendSetDestination(m_waylandState.logicalSize.x, m_waylandState.logicalSize.y);
-    m_waylandState.surface->sendSetBufferScale(1);
-
-    resizeSwapchain(m_waylandState.size);
-    damageEntire();
-
-    m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
-
-    render();
-}
-
-void CWaylandPopup::resizeSwapchain(const Vector2D& pixelSize) {
-    m_damageRing.setSize(pixelSize);
-
-    if (!m_waylandState.swapchain)
-        m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_backend->m_aqBackend->getImplementations().at(0));
-
-    m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
-        .length = 2,
-        .size   = pixelSize,
-        .format = g_waylandPlatform->m_dmabufFormats.at(0).drmFormat,
-    });
-
-    for (size_t i = 0; i < m_waylandState.wlBuffers.size(); ++i) {
-        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(m_waylandState.swapchain->next(nullptr));
-    }
-}
-
-void CWaylandPopup::render() {
-    if (m_waylandState.frameCallback)
-        return;
-
-    auto currentBuffer    = m_waylandState.wlBuffers[m_waylandState.bufIdx];
-    m_waylandState.bufIdx = (m_waylandState.bufIdx + 1) % 2;
-
-    onPreRender();
-
-    m_needsFrame = false;
-
-    g_renderer->beginRendering(m_self.lock(), currentBuffer->m_buffer.lock());
-
-    m_waylandState.frameCallback = makeShared<CCWlCallback>(m_waylandState.surface->sendFrame());
-    m_waylandState.frameCallback->setDone([this](CCWlCallback* r, uint32_t frameTime) { onCallback(); });
-
-    m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN).forEachRect([this](const pixman_box32_t box) {
-        m_waylandState.surface->sendDamageBuffer(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
-    });
-
-    g_renderer->endRendering();
-
-    m_waylandState.surface->sendAttach(currentBuffer->m_waylandState.buffer.get(), 0, 0);
-    m_waylandState.surface->sendCommit();
-
-    //
-
-    // print frame time
-    if (Env::isTrace()) {
-        auto dur   = std::chrono::steady_clock::now() - m_lastFrame;
-        auto durMs = std::chrono::duration_cast<std::chrono::microseconds>(dur).count() / 1000.F;
-        g_logger->log(HT_LOG_TRACE, "wayland: last frame took {:.2f}ms, FPS: {:.2f}", durMs, 1000.F / durMs);
-        m_lastFrame = std::chrono::steady_clock::now();
-    }
-
-    m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
-}
-
-void CWaylandPopup::onCallback() {
-    m_waylandState.frameCallback.reset();
-
-    if (m_needsFrame)
-        render();
-}
-
-Hyprutils::Math::Vector2D CWaylandPopup::pixelSize() {
-    return m_waylandState.size;
-}
-
-float CWaylandPopup::scale() {
-    return m_fractionalScale;
-}
-
-void CWaylandPopup::setCursor(ePointerShape shape) {
-    g_waylandPlatform->setCursor(shape);
 }
 
 SP<IWindow> CWaylandPopup::openPopup(const SPopupCreationData& data) {
