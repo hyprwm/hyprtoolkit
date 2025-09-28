@@ -133,7 +133,16 @@ SP<CSliderBuilder> CSliderElement::rebuild() {
 }
 
 void CSliderElement::replaceData(const SSliderData& data) {
+    const bool VALUE_CHANGED = data.current != m_impl->data.current;
+
     m_impl->data = data;
+
+    if (VALUE_CHANGED) {
+        m_impl->valueChanged(data.current);
+
+        if (data.onChanged)
+            data.onChanged(m_impl->self.lock(), m_impl->data.current);
+    }
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
