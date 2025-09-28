@@ -24,18 +24,8 @@ SP<CSliderBuilder> CSliderBuilder::val(float x) {
     return m_self.lock();
 }
 
-SP<CSliderBuilder> CSliderBuilder::fill(bool x) {
-    m_data->fill = x;
-    return m_self.lock();
-}
-
 SP<CSliderBuilder> CSliderBuilder::snapInt(bool x) {
     m_data->snapInt = x;
-    return m_self.lock();
-}
-
-SP<CSliderBuilder> CSliderBuilder::label(std::string&& x) {
-    m_data->label = std::move(x);
     return m_self.lock();
 }
 

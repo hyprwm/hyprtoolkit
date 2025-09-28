@@ -33,6 +33,8 @@ static SP<CColumnLayoutElement> mainLayout;
 static SP<IWindow>              window;
 static SP<IWindow>              popup;
 
+constexpr float                 SLIDER_HEIGHT = 10.F;
+
 //
 static void toggleVisibilityOfSecretSlider() {
     static bool visible = false;
@@ -71,6 +73,19 @@ static void openPopup() {
     popup->open();
 
     popup->m_events.popupClosed.listenStatic([] { popup.reset(); });
+}
+
+static SP<CRowLayoutElement> stretchLayout(std::string&& label, SP<IElement> control) {
+    auto layoutE = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto labelE  = CTextBuilder::begin()->text(std::move(label))->color([] { return backend->getPalette()->m_colors.text; })->commence();
+    auto nullE   = CNullBuilder::begin()->commence();
+    nullE->setGrow(true);
+
+    layoutE->addChild(labelE);
+    layoutE->addChild(nullE);
+    layoutE->addChild(control);
+
+    return layoutE;
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -134,36 +149,10 @@ int main(int argc, char** argv, char** envp) {
                        ->fill(true)
                        ->commence();
 
-    auto slider = CSliderBuilder::begin()->label("Slider")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+    auto slider = stretchLayout("Slider", CSliderBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
-    auto slider2 = CSliderBuilder::begin()->label("Big Slider")->max(10000)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
-
-    auto slider3 = CSliderBuilder::begin()
-                       ->label("Float Slider")
-                       ->max(10.F)
-                       ->val(5.F)
-                       ->snapInt(false)
-                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-                       ->fill(true)
-                       ->commence();
-
-    auto slider4 = CSliderBuilder::begin()
-                       ->label("Float Slider 2")
-                       ->max(10.F)
-                       ->val(5.F)
-                       ->snapInt(false)
-                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-                       ->fill(true)
-                       ->commence();
-
-    auto slider5 = CSliderBuilder::begin()
-                       ->label("Float Slider 3")
-                       ->max(10.F)
-                       ->val(5.F)
-                       ->snapInt(false)
-                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-                       ->fill(true)
-                       ->commence();
+    auto slider2 = stretchLayout(
+        "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
     auto combo =
         CComboboxBuilder::begin()
@@ -175,20 +164,11 @@ int main(int argc, char** argv, char** envp) {
             ->fill(true)
             ->commence();
 
-    auto textbox =
-        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence();
+    auto textbox = stretchLayout(
+        "Textbox",
+        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence());
 
-    auto textboxLayout = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
-    auto textboxLabel  = CTextBuilder::begin()->text("Textbox")->commence();
-    auto textboxNull   = CNullBuilder::begin()->commence();
-    textboxNull->setGrow(true);
-
-    textboxLayout->addChild(textboxLabel);
-    textboxLayout->addChild(textboxNull);
-    textboxLayout->addChild(textbox);
-
-    hiddenSlider =
-        CSliderBuilder::begin()->label("Hidden Sex Slider")->max(100)->val(69)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+    hiddenSlider = CSliderBuilder::begin()->max(100)->val(69)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, SLIDER_HEIGHT}})->commence();
 
     mainLayout->addChild(title);
     mainLayout->addChild(hr);
@@ -199,11 +179,8 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(spinbox);
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
-    mainLayout->addChild(slider3);
-    mainLayout->addChild(slider4);
-    mainLayout->addChild(slider5);
     mainLayout->addChild(combo);
-    mainLayout->addChild(textboxLayout);
+    mainLayout->addChild(textbox);
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

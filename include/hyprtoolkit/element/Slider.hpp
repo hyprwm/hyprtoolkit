@@ -19,12 +19,10 @@ namespace Hyprtoolkit {
         ~CSliderBuilder() = default;
 
         static Hyprutils::Memory::CSharedPointer<CSliderBuilder> begin();
-        Hyprutils::Memory::CSharedPointer<CSliderBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        onChanged(std::function<void(Hyprutils::Memory::CSharedPointer<CSliderElement>, float)>&&);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        min(float);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        max(float);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        val(float);
-        Hyprutils::Memory::CSharedPointer<CSliderBuilder>        fill(bool);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        snapInt(bool);
         Hyprutils::Memory::CSharedPointer<CSliderBuilder>        size(CDynamicSize&&);
 
@@ -54,9 +52,6 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CSliderElement> create(const SSliderData& data);
 
         void                                                     replaceData(const SSliderData& data);
-        void                                                     valueChanged(float perc);
-
-        void                                                     init();
 
         virtual void                                             paint();
         virtual void                                             reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
