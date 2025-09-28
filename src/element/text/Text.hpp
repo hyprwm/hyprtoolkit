@@ -9,6 +9,7 @@
 namespace Hyprtoolkit {
     struct STextData {
         std::string                              text;
+        std::string                              fontFamily = "Sans Serif";
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
         colorFn                                  color = [] { return g_backend->getPalette()->m_colors.text; };
         float                                    a     = 1.F;

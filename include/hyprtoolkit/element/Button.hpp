@@ -2,6 +2,7 @@
 
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
+#include "../types/FontSizeType.hpp"
 
 #include <hyprgraphics/color/Color.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
@@ -22,6 +23,8 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBorder(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBg(bool);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontFamily(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontSize(CFontSize&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        onRightClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        size(CDynamicSize&&);

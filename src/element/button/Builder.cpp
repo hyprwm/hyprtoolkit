@@ -24,6 +24,16 @@ SP<CButtonBuilder> CButtonBuilder::noBg(bool x) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::fontFamily(std::string&& x) {
+    m_data->fontFamily = std::move(x);
+    return m_self.lock();
+}
+
+SP<CButtonBuilder> CButtonBuilder::fontSize(CFontSize&& x) {
+    m_data->fontSize = std::move(x);
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&& f) {
     m_data->onMainClick = std::move(f);
     return m_self.lock();

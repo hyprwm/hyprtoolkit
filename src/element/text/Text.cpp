@@ -108,8 +108,8 @@ void CTextElement::renderTex() {
     auto col = m_impl->data.color();
 
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-        .text = m_impl->data.text,
-        // .font
+        .text     = m_impl->data.text,
+        .font     = m_impl->data.fontFamily,
         .fontSize = sc<size_t>(m_impl->lastFontSizeUnscaled * m_impl->lastScale),
         .color    = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
         // .align

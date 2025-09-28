@@ -27,6 +27,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        a(float);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        fontSize(CFontSize&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        text(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CTextBuilder>        fontFamily(std::string&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        clampSize(Hyprutils::Math::Vector2D&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        callback(std::function<void()>&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        size(CDynamicSize&&);

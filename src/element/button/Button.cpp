@@ -36,6 +36,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
 
     m_impl->label = CTextBuilder::begin()
                         ->text(std::string{data.label})
+                        ->fontSize(CFontSize{data.fontSize})
+                        ->fontFamily(std::string{data.fontFamily})
                         ->color([] { return g_palette->m_colors.text; })
                         ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                         ->callback([this] {
@@ -44,6 +46,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                                 impl->window->scheduleReposition(impl->self);
                         })
                         ->commence();
+
+    m_impl->label->setPositionMode(HT_POSITION_CENTER);
 
     addChild(m_impl->background);
     addChild(m_impl->label);
