@@ -1,6 +1,12 @@
 ## hyprtoolkit
 A modern C++ Wayland-native GUI toolkit
 
+> [!IMPORTANT]
+> hyprtoolkit is a very fresh project, and breaking changes are to be expected
+> almost daily, alongside bugs and missing features.
+>
+> You have been warned.
+
 ## What Hyprtoolkit is
 
 Hyprtoolkit is designed to be a small, simple, and modern C++ toolkit for making wayland GUI apps, with
