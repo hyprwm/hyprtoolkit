@@ -24,11 +24,11 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("accent", Hyprlang::INT{0xFF00FFCC});
     m_config->addConfigValue("accent_secondary", Hyprlang::INT{0xFF0099F0});
 
-    m_config->addConfigValue("h1Size", Hyprlang::INT{19});
-    m_config->addConfigValue("h2Size", Hyprlang::INT{15});
-    m_config->addConfigValue("h3Size", Hyprlang::INT{13});
-    m_config->addConfigValue("fontSize", Hyprlang::INT{11});
-    m_config->addConfigValue("smallFontSize", Hyprlang::INT{10});
+    m_config->addConfigValue("h1_size", Hyprlang::INT{19});
+    m_config->addConfigValue("h2_size", Hyprlang::INT{15});
+    m_config->addConfigValue("h3_size", Hyprlang::INT{13});
+    m_config->addConfigValue("font_size", Hyprlang::INT{11});
+    m_config->addConfigValue("small_font_size", Hyprlang::INT{10});
 
     m_config->commence();
 
@@ -63,11 +63,11 @@ SP<CPalette> CConfigManager::getPalette() {
     static auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
     static auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
 
-    static auto H1SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1Size");
-    static auto H2SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2Size");
-    static auto H3SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3Size");
-    static auto FONTSIZE      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "fontSize");
-    static auto SMALLFONTSIZE = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "smallFontSize");
+    static auto H1SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
+    static auto H2SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
+    static auto H3SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
+    static auto FONTSIZE      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
+    static auto SMALLFONTSIZE = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
 
     p->m_colors.background      = *BACKGROUND;
     p->m_colors.base            = *BASE;
