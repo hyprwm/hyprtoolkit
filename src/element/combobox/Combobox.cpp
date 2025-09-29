@@ -220,6 +220,14 @@ void CComboboxElement::paint() {
     ;
 }
 
+SP<CComboboxBuilder> CComboboxElement::rebuild() {
+    auto p       = SP<CComboboxBuilder>(new CComboboxBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SComboboxData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
+}
+
 void CComboboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
