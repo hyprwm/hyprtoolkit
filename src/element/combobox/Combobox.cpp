@@ -45,7 +45,10 @@ void CComboboxElement::init() {
     m_impl->label = CTextBuilder::begin()
                         ->text(std::string{m_impl->data.items.at(m_impl->data.currentItem)})
                         ->color([] { return g_palette->m_colors.text; })
-                        ->callback([this] { impl->window->scheduleReposition(impl->self); })
+                        ->callback([this] {
+                            if (impl->window)
+                                impl->window->scheduleReposition(impl->self);
+                        })
                         ->commence();
 
     m_impl->background = CRectangleBuilder::begin()
@@ -211,6 +214,8 @@ void CComboboxElement::setCurrent(size_t current) {
 
 void CComboboxElement::replaceData(const SComboboxData& data) {
     m_impl->data = data;
+
+    setCurrent(data.currentItem);
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
