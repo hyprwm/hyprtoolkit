@@ -172,6 +172,8 @@ void CComboboxElement::openDropdown() {
                                                           return;
 
                                                       setSelection(i);
+                                                      if (m_impl->data.onChanged)
+                                                          m_impl->data.onChanged(m_impl->self.lock(), i);
 
                                                       g_backend->addIdle([this, self = m_impl->self] {
                                                           if (!self)
