@@ -55,10 +55,14 @@ IElement::~IElement() {
 
 void IElement::setPositionMode(ePositionMode mode) {
     impl->positionMode = mode;
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 void IElement::setAbsolutePosition(const Hyprutils::Math::Vector2D& offset) {
     impl->absoluteOffset = offset;
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 std::optional<Hyprutils::Math::Vector2D> IElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
