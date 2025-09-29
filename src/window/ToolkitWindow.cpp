@@ -36,7 +36,8 @@ SToolkitFocusLock::SToolkitFocusLock(SP<IElement> e, const Hyprutils::Math::Vect
 }
 
 SToolkitFocusLock::~SToolkitFocusLock() {
-    m_el->impl->toolkitWindowData->unlock();
+    if (m_el)
+        m_el->impl->toolkitWindowData->unlock();
 }
 
 void IToolkitWindow::damage(Hyprutils::Math::CRegion&& rg) {
