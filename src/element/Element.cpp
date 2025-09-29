@@ -12,6 +12,41 @@ using namespace Hyprutils::Math;
 
 IElement::IElement() {
     impl = UP<SElementInternalData>(new SElementInternalData());
+    impl->m_externalEvents.mouseEnter.listenStatic([this](Vector2D local) {
+        if (!impl->userRequestedMouseInput)
+            return;
+
+        if (impl->userFns.mouseEnter)
+            impl->userFns.mouseEnter(local);
+    });
+    impl->m_externalEvents.mouseLeave.listenStatic([this]() {
+        if (!impl->userRequestedMouseInput)
+            return;
+
+        if (impl->userFns.mouseLeave)
+            impl->userFns.mouseLeave();
+    });
+    impl->m_externalEvents.mouseMove.listenStatic([this](Vector2D local) {
+        if (!impl->userRequestedMouseInput)
+            return;
+
+        if (impl->userFns.mouseMove)
+            impl->userFns.mouseMove(local);
+    });
+    impl->m_externalEvents.mouseButton.listenStatic([this](Input::eMouseButton button, bool down) {
+        if (!impl->userRequestedMouseInput)
+            return;
+
+        if (impl->userFns.mouseButton)
+            impl->userFns.mouseButton(button, down);
+    });
+    impl->m_externalEvents.mouseAxis.listenStatic([this](Input::eAxisAxis axis, bool down) {
+        if (!impl->userRequestedMouseInput)
+            return;
+
+        if (impl->userFns.mouseAxis)
+            impl->userFns.mouseAxis(axis, down);
+    });
 }
 
 IElement::~IElement() {
@@ -84,7 +119,7 @@ void IElement::clearChildren() {
 }
 
 bool IElement::acceptsMouseInput() {
-    return false;
+    return impl->userRequestedMouseInput;
 }
 
 ePointerShape IElement::pointerShape() {
@@ -117,6 +152,30 @@ void IElement::imCommitNewText(const std::string& text) {
 
 void IElement::imApplyText() {
     ;
+}
+
+void IElement::setReceivesMouse(bool x) {
+    impl->userRequestedMouseInput = true;
+}
+
+void IElement::setMouseEnter(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn) {
+    impl->userFns.mouseEnter = std::move(fn);
+}
+
+void IElement::setMouseLeave(std::function<void()>&& fn) {
+    impl->userFns.mouseLeave = std::move(fn);
+}
+
+void IElement::setMouseMove(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn) {
+    impl->userFns.mouseMove = std::move(fn);
+}
+
+void IElement::setMouseButton(std::function<void(Input::eMouseButton, bool)>&& fn) {
+    impl->userFns.mouseButton = std::move(fn);
+}
+
+void IElement::setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn) {
+    impl->userFns.mouseAxis = std::move(fn);
 }
 
 void SElementInternalData::setPosition(const CBox& box) {

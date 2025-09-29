@@ -12,6 +12,7 @@
 
 #include "../types/PointerShape.hpp"
 #include "../palette/Color.hpp"
+#include "../core/Input.hpp"
 
 namespace Hyprtoolkit {
 
@@ -44,6 +45,14 @@ namespace Hyprtoolkit {
         virtual void removeChild(Hyprutils::Memory::CSharedPointer<IElement> child);
         virtual void clearChildren();
         virtual void setMargin(float thick);
+
+        // this will make this element get mouse input, then you can get events
+        virtual void setReceivesMouse(bool x);
+        virtual void setMouseEnter(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn);
+        virtual void setMouseLeave(std::function<void()>&& fn);
+        virtual void setMouseMove(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn);
+        virtual void setMouseButton(std::function<void(Input::eMouseButton, bool)>&& fn);
+        virtual void setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn);
 
         /* Sizes for auto positioning in layouts */
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);

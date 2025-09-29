@@ -28,9 +28,10 @@ namespace Hyprtoolkit {
 
         IElement::ePositionMode                                  positionMode = IElement::HT_POSITION_AUTO;
         Hyprutils::Math::Vector2D                                absoluteOffset;
-        bool                                                     growV  = false;
-        bool                                                     growH  = false;
-        float                                                    margin = 0;
+        bool                                                     growV                   = false;
+        bool                                                     growH                   = false;
+        float                                                    margin                  = 0;
+        bool                                                     userRequestedMouseInput = false;
 
         // rendering: clip children to parent box
         bool         clipChildren = false;
@@ -49,6 +50,14 @@ namespace Hyprtoolkit {
             Hyprutils::Signal::CSignalT<>                          keyboardEnter;
             Hyprutils::Signal::CSignalT<>                          keyboardLeave;
         } m_externalEvents;
+
+        struct {
+            std::function<void(const Hyprutils::Math::Vector2D&)> mouseEnter;
+            std::function<void()>                                 mouseLeave;
+            std::function<void(const Hyprutils::Math::Vector2D&)> mouseMove;
+            std::function<void(Input::eMouseButton, bool)>        mouseButton;
+            std::function<void(Input::eAxisAxis, float)>          mouseAxis;
+        } userFns;
 
         //
         void                      bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
