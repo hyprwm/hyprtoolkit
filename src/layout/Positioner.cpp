@@ -44,9 +44,7 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 
         // it has a size, let's see what it wants.
         CBox itemBox = {BOX.pos(), *itemSize};
-        if (c->impl->positionMode == IElement::HT_POSITION_ABSOLUTE)
-            itemBox.translate(c->impl->absoluteOffset);
-        else if (c->impl->positionMode == IElement::HT_POSITION_CENTER)
+        if (c->impl->positionMode == IElement::HT_POSITION_CENTER)
             itemBox.translate((BOX.size() - itemBox.size()) / 2.F);
         else if (c->impl->positionMode == IElement::HT_POSITION_HCENTER)
             itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
@@ -56,6 +54,8 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 
         if (c->impl->positionMode == IElement::HT_POSITION_RIGHT && BOX.w > itemBox.w)
             itemBox.translate(Vector2D{(BOX.size() - itemBox.size()).x, 0.F});
+
+        itemBox.translate(c->impl->absoluteOffset);
 
         if (data.growX)
             itemBox.w = 99999999;
