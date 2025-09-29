@@ -121,6 +121,10 @@ void CSliderElement::paint() {
     ;
 }
 
+bool CSliderElement::sliding() {
+    return m_impl->dragging;
+}
+
 void CSliderElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 

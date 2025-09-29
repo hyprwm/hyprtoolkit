@@ -44,8 +44,7 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CSliderBuilder> rebuild();
 
-        bool                                              state();
-        void                                              setState(bool state);
+        bool                                              sliding();
 
       private:
         CSliderElement(const SSliderData& data);
