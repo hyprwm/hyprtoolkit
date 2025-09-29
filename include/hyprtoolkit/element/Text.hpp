@@ -49,6 +49,7 @@ namespace Hyprtoolkit {
         virtual ~CTextElement();
 
         Hyprutils::Memory::CSharedPointer<CTextBuilder> rebuild();
+        virtual Hyprutils::Math::Vector2D                      size();
 
       private:
         CTextElement(const STextData& data);
@@ -58,7 +59,6 @@ namespace Hyprtoolkit {
 
         virtual void                                           paint();
         virtual void                                           reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                      size();
         virtual std::optional<Hyprutils::Math::Vector2D>       preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>       minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>       maximumSize(const Hyprutils::Math::Vector2D& parent);
