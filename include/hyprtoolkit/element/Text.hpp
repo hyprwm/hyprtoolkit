@@ -3,7 +3,7 @@
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
 #include "../palette/Color.hpp"
-#include "../types/FontSizeType.hpp"
+#include "../types/FontTypes.hpp"
 
 #include <hyprgraphics/resource/resources/TextResource.hpp>
 

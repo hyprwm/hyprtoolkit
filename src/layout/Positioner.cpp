@@ -50,8 +50,12 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
             itemBox.translate((BOX.size() - itemBox.size()) / 2.F);
         else if (c->impl->positionMode == IElement::HT_POSITION_HCENTER)
             itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
-        else if (c->impl->positionMode == IElement::HT_POSITION_VCENTER)
+        else if (c->impl->positionMode == IElement::HT_POSITION_VCENTER || c->impl->positionMode == IElement::HT_POSITION_LEFT ||
+                 c->impl->positionMode == IElement::HT_POSITION_RIGHT)
             itemBox.translate(Vector2D{0.F, ((BOX.size() - itemBox.size()) / 2.F).y});
+
+        if (c->impl->positionMode == IElement::HT_POSITION_RIGHT && BOX.w > itemBox.w)
+            itemBox.translate(Vector2D{(BOX.size() - itemBox.size()).x, 0.F});
 
         if (data.growX)
             itemBox.w = 99999999;

@@ -34,6 +34,11 @@ SP<CButtonBuilder> CButtonBuilder::fontSize(CFontSize&& x) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::alignText(eFontAlignment x) {
+    m_data->alignText = x;
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::onMainClick(std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)>&& f) {
     m_data->onMainClick = std::move(f);
     return m_self.lock();

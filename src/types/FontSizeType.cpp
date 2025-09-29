@@ -1,4 +1,4 @@
-#include <hyprtoolkit/types/FontSizeType.hpp>
+#include <hyprtoolkit/types/FontTypes.hpp>
 
 #include "../core/InternalBackend.hpp"
 #include "../Macros.hpp"

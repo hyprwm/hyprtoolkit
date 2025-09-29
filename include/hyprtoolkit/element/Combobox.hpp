@@ -20,11 +20,9 @@ namespace Hyprtoolkit {
         ~CComboboxBuilder() = default;
 
         static Hyprutils::Memory::CSharedPointer<CComboboxBuilder> begin();
-        Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        items(std::vector<std::string>&&);
         Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        currentItem(size_t);
         Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        onChanged(std::function<void(Hyprutils::Memory::CSharedPointer<CComboboxElement>, size_t)>&&);
-        Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        fill(bool);
         Hyprutils::Memory::CSharedPointer<CComboboxBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CComboboxElement>        commence();
@@ -54,8 +52,6 @@ namespace Hyprtoolkit {
 
         void                                                       replaceData(const SComboboxData& data);
 
-        void                                                       init();
-
         virtual void                                               paint();
         virtual void                                               reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual Hyprutils::Math::Vector2D                          size();
@@ -64,6 +60,13 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D>           maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual bool                                               acceptsMouseInput();
         virtual ePointerShape                                      pointerShape();
+
+        void                                                       setSelection(size_t idx);
+        void                                                       init();
+        void                                                       updateLabel(const std::string& str);
+
+        void                                                       openDropdown();
+        void                                                       closeDropdown();
 
         Hyprutils::Memory::CUniquePointer<SComboboxImpl>           m_impl;
 

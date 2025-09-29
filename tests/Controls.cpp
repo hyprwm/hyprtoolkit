@@ -155,14 +155,12 @@ int main(int argc, char** argv, char** envp) {
         "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
     auto combo =
-        CComboboxBuilder::begin()
-            ->label("Combobox")
+        stretchLayout("Combo", CComboboxBuilder::begin()
             ->items({"According", "to",  "all",  "known", "laws",   "of",    "aviation", "there",   "is",   "no",    "way",  "that", "a",      "bee",   "should", "be",
                      "able",      "to",  "fly.", "its",   "wings",  "are",   "too",      "small",   "to",   "get",   "its",  "fat",  "little", "body",  "off",    "the",
                      "ground.",   "the", "bee",  "of",    "course", "flies", "anyways,", "because", "bees", "don't", "care", "what", "humans", "think", "is",     "impossible."})
-            ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-            ->fill(true)
-            ->commence();
+            ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.3F, 25.F}})
+            ->commence());
 
     auto textbox = stretchLayout(
         "Textbox",

@@ -24,4 +24,10 @@ namespace Hyprtoolkit {
         eSizingBase m_base  = HT_FONT_TEXT;
         float       m_value = 1.F;
     };
+
+    enum eFontAlignment : uint8_t {
+        HT_FONT_ALIGN_LEFT,
+        HT_FONT_ALIGN_CENTER,
+        HT_FONT_ALIGN_RIGHT,
+    };
 }

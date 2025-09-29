@@ -39,7 +39,7 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->fontSize(CFontSize{data.fontSize})
                         ->fontFamily(std::string{data.fontFamily})
                         ->color([] { return g_palette->m_colors.text; })
-                        ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
                         ->callback([this] {
                             m_impl->labelChanged = true;
                             if (impl->window)
@@ -47,10 +47,12 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         })
                         ->commence();
 
-    m_impl->label->setPositionMode(HT_POSITION_CENTER);
+    m_impl->label->setPositionMode(m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_CENTER :
+                                                                                    (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_RIGHT : HT_POSITION_LEFT));
 
     addChild(m_impl->background);
-    addChild(m_impl->label);
+    m_impl->background->addChild(m_impl->label);
+    m_impl->label->setMargin(2);
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         m_impl->background
@@ -97,27 +99,7 @@ void CButtonElement::paint() {
 void CButtonElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    g_positioner->position(m_impl->background, impl->position);
-
-    // center label box in box
-    auto labelBox = CBox{
-        box.pos(),
-        m_impl->label->preferredSize(impl->position.size()).value(),
-    };
-
-    const bool LABEL_CHANGED = m_impl->labelChanged;
-
-    if (LABEL_CHANGED) {
-        m_impl->labelChanged = false;
-        g_positioner->position(m_impl->label, impl->position);
-    }
-
-    labelBox.translate((box.size() - m_impl->label->preferredSize(impl->position.size()).value()) / 2.F);
-
-    g_positioner->position(m_impl->label, labelBox);
-
-    if (LABEL_CHANGED)
-        g_positioner->position(impl->parent.lock(), impl->parent->impl->position);
+    g_positioner->positionChildren(impl->self.lock());
 }
 
 SP<CButtonBuilder> CButtonElement::rebuild() {
@@ -132,6 +114,9 @@ void CButtonElement::replaceData(const SButtonData& data) {
     m_impl->data = data;
 
     m_impl->label->rebuild()->text(std::string{data.label})->commence();
+
+    m_impl->label->setPositionMode(m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_CENTER :
+                                                                                    (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_RIGHT : HT_POSITION_LEFT));
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

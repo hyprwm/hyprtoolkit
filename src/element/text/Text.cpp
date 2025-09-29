@@ -67,9 +67,10 @@ void CTextElement::paint() {
     if (!textureToUse)
         return; // ???
 
-    CBox renderBox = impl->position;
-    renderBox.w    = unscale().x;
-    renderBox.h    = unscale().y;
+    CBox     renderBox      = impl->position;
+    Vector2D texSizeLogical = m_impl->size / impl->window->scale();
+    renderBox.w             = texSizeLogical.x;
+    renderBox.h             = texSizeLogical.y;
 
     g_renderer->renderTexture({
         .box      = renderBox,
@@ -148,8 +149,8 @@ void CTextElement::recheckColor() {
 
 Hyprutils::Math::Vector2D CTextElement::unscale() {
     if (!impl->window)
-        return m_impl->size;
-    return m_impl->size / impl->window->scale();
+        return m_impl->size + Vector2D{impl->margin * 2, impl->margin * 2};
+    return (m_impl->size + Vector2D{impl->margin * 2, impl->margin * 2}) / impl->window->scale();
 }
 
 Hyprutils::Math::Vector2D CTextElement::size() {

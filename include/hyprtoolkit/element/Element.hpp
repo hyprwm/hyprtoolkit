@@ -26,6 +26,8 @@ namespace Hyprtoolkit {
             HT_POSITION_CENTER,
             HT_POSITION_HCENTER,
             HT_POSITION_VCENTER,
+            HT_POSITION_RIGHT,
+            HT_POSITION_LEFT,
             HT_POSITION_AUTO,
         };
 

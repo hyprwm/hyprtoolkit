@@ -9,11 +9,6 @@ SP<CComboboxBuilder> CComboboxBuilder::begin() {
     return p;
 }
 
-SP<CComboboxBuilder> CComboboxBuilder::label(std::string&& x) {
-    m_data->label = std::move(x);
-    return m_self.lock();
-}
-
 SP<CComboboxBuilder> CComboboxBuilder::items(std::vector<std::string>&& x) {
     m_data->items = std::move(x);
     return m_self.lock();
@@ -21,11 +16,6 @@ SP<CComboboxBuilder> CComboboxBuilder::items(std::vector<std::string>&& x) {
 
 SP<CComboboxBuilder> CComboboxBuilder::currentItem(size_t x) {
     m_data->currentItem = x;
-    return m_self.lock();
-}
-
-SP<CComboboxBuilder> CComboboxBuilder::fill(bool x) {
-    m_data->fill = x;
     return m_self.lock();
 }
 

@@ -45,48 +45,22 @@ namespace Hyprtoolkit {
     };
 
     struct SComboboxData {
-        std::string                                                                      label       = "Choose one";
         std::vector<std::string>                                                         items       = {"Item A", "Item B"};
         size_t                                                                           currentItem = 0;
         std::function<void(Hyprutils::Memory::CSharedPointer<CComboboxElement>, size_t)> onChanged;
         CDynamicSize                                                                     size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
-        bool                                                                             fill = false;
     };
 
-    class CComboboxClickable : public IElement {
-      public:
-        static Hyprutils::Memory::CSharedPointer<CComboboxClickable> create(SP<CComboboxElement> element);
-        virtual ~CComboboxClickable() = default;
+    struct SComboboxImpl {
+        SComboboxData              data;
 
-        void updateLabel(const std::string& str);
+        WP<CComboboxElement>       self;
 
-      private:
-        CComboboxClickable(SP<CComboboxElement> element);
-
-        virtual void                                     paint();
-        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual Hyprutils::Math::Vector2D                size();
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual bool                                     acceptsMouseInput();
-        virtual ePointerShape                            pointerShape();
-
-        void                                             setSelection(size_t idx);
-        void                                             init();
-
-        void                                             openDropdown();
-        void                                             closeDropdown();
-
-        SP<CComboboxElement>                             m_parent;
-
-        WP<CComboboxClickable>                           m_self;
-
-        SP<CRectangleElement>                            m_background;
-        SP<CRowLayoutElement>                            m_layout;
-        SP<CTextElement>                                 m_label;
-        SP<CDropdownHandleElement>                       m_handle;
-        SP<CNullElement>                                 m_leftPad, m_rightPad, m_middlePad;
+        SP<CRectangleElement>      background;
+        SP<CRowLayoutElement>      layout;
+        SP<CTextElement>           label;
+        SP<CDropdownHandleElement> handle;
+        SP<CNullElement>           leftPad, rightPad, middlePad;
 
         struct {
             SP<IWindow>                     popup;
@@ -94,26 +68,13 @@ namespace Hyprtoolkit {
             SP<CColumnLayoutElement>        layout;
             SP<CScrollAreaElement>          scroll;
             std::vector<SP<CButtonElement>> buttons;
-        } m_dropdown;
+        } dropdown;
 
-        bool m_primedForUp = false;
+        bool primedForUp = false;
 
         struct {
             CHyprSignalListener clicked;
             CHyprSignalListener popupClosed;
-        } m_listeners;
-
-        friend class CComboboxElement;
-    };
-
-    struct SComboboxImpl {
-        SComboboxData          data;
-
-        WP<CComboboxElement>   self;
-
-        SP<CRowLayoutElement>  layout;
-        SP<CTextElement>       label;
-        SP<CNullElement>       spacer;
-        SP<CComboboxClickable> clickable;
+        } listeners;
     };
 }

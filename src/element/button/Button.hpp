@@ -13,6 +13,7 @@ namespace Hyprtoolkit {
         bool                                                                   noBg       = false;
         std::string                                                            fontFamily = "Sans Serif";
         CFontSize                                                              fontSize   = {CFontSize::HT_FONT_TEXT};
+        eFontAlignment                                                         alignText  = HT_FONT_ALIGN_CENTER;
         std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onMainClick;
         std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onRightClick;
         CDynamicSize                                                           size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}};
