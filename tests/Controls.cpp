@@ -75,17 +75,28 @@ static void openPopup() {
     popup->m_events.popupClosed.listenStatic([] { popup.reset(); });
 }
 
-static SP<CRowLayoutElement> stretchLayout(std::string&& label, SP<IElement> control) {
+static SP<IElement> stretchLayout(std::string&& label, SP<IElement> control) {
+    auto bg = CRectangleBuilder::begin()
+                  ->color([] { return backend->getPalette()->m_colors.alternateBase; })
+                  ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                  ->rounding(4)
+                  ->commence();
     auto layoutE = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
     auto labelE  = CTextBuilder::begin()->text(std::move(label))->color([] { return backend->getPalette()->m_colors.text; })->commence();
     auto nullE   = CNullBuilder::begin()->commence();
     nullE->setGrow(true);
 
+    auto container = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    container->setMargin(4);
+
+    bg->addChild(container);
+    container->addChild(layoutE);
+
     layoutE->addChild(labelE);
     layoutE->addChild(nullE);
     layoutE->addChild(control);
 
-    return layoutE;
+    return bg;
 }
 
 int main(int argc, char** argv, char** envp) {
@@ -154,8 +165,9 @@ int main(int argc, char** argv, char** envp) {
     auto slider2 = stretchLayout(
         "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
-    auto combo =
-        stretchLayout("Combo", CComboboxBuilder::begin()
+    auto combo = stretchLayout(
+        "Combo",
+        CComboboxBuilder::begin()
             ->items({"According", "to",  "all",  "known", "laws",   "of",    "aviation", "there",   "is",   "no",    "way",  "that", "a",      "bee",   "should", "be",
                      "able",      "to",  "fly.", "its",   "wings",  "are",   "too",      "small",   "to",   "get",   "its",  "fat",  "little", "body",  "off",    "the",
                      "ground.",   "the", "bee",  "of",    "course", "flies", "anyways,", "because", "bees", "don't", "care", "what", "humans", "think", "is",     "impossible."})

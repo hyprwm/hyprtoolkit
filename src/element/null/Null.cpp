@@ -49,7 +49,7 @@ Hyprutils::Math::Vector2D CNullElement::size() {
 }
 
 std::optional<Vector2D> CNullElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 std::optional<Vector2D> CNullElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {

@@ -6,7 +6,7 @@ CDynamicSize::CDynamicSize(eSizingType typeX, eSizingType typeY, const Hyprutils
     ;
 }
 
-Hyprutils::Math::Vector2D CDynamicSize::calculate(Hyprutils::Math::Vector2D elSize) {
+Hyprutils::Math::Vector2D CDynamicSize::calculate(Hyprutils::Math::Vector2D elSize) const {
     Hyprutils::Math::Vector2D size;
     switch (m_typeX) {
         case HT_SIZE_ABSOLUTE: size.x = m_value.x; break;

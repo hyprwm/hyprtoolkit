@@ -14,6 +14,7 @@ namespace Hyprtoolkit {
     class IToolkitWindow;
     struct SPositionerData;
     struct SToolkitWindowData;
+    class CDynamicSize;
 
     struct SElementInternalData {
         Hyprutils::Memory::CWeakPointer<IElement>                self;
@@ -50,12 +51,14 @@ namespace Hyprtoolkit {
         } m_externalEvents;
 
         //
-        void bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
-        void breadthfirst(const std::function<void(SP<IElement>)>& fn);
-        void setWindow(SP<IToolkitWindow> w);
-        void damageEntire();
-        void setPosition(const Hyprutils::Math::CBox& box);
-        void setFailedPositioning(bool set);
+        void                      bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn);
+        void                      breadthfirst(const std::function<void(SP<IElement>)>& fn);
+        void                      setWindow(SP<IToolkitWindow> w);
+        void                      damageEntire();
+        void                      setPosition(const Hyprutils::Math::CBox& box);
+        void                      setFailedPositioning(bool set);
+        Hyprutils::Math::Vector2D maxChildSize(const Hyprutils::Math::Vector2D& parent);
+        Hyprutils::Math::Vector2D getPreferredSizeGeneric(const CDynamicSize& size, const Hyprutils::Math::Vector2D& parent);
     };
 
 }

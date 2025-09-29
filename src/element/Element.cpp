@@ -1,6 +1,7 @@
 #include "Element.hpp"
 
 #include <hyprutils/math/Box.hpp>
+#include <hyprtoolkit/types/SizeType.hpp>
 
 #include "../helpers/Memory.hpp"
 #include "../window/ToolkitWindow.hpp"
@@ -161,4 +162,32 @@ void SElementInternalData::damageEntire() {
 
 void SElementInternalData::setFailedPositioning(bool set) {
     breadthfirst([set](SP<IElement> e) { e->impl->failedPositioning = set; });
+}
+
+Vector2D SElementInternalData::maxChildSize(const Vector2D& parent) {
+    Vector2D max;
+    for (const auto& e : children) {
+        auto size = e->preferredSize(parent);
+        if (!size)
+            size = e->minimumSize(parent);
+
+        if (!size)
+            continue;
+
+        max.x = std::max(max.x, size->x);
+        max.y = std::max(max.y, size->y);
+    }
+    return max + Vector2D{margin * 2, margin * 2};
+}
+
+Vector2D SElementInternalData::getPreferredSizeGeneric(const CDynamicSize& size, const Vector2D& parent) {
+    auto s = size.calculate(parent);
+    if (s.x != -1 && s.y != -1)
+        return s;
+    auto max = maxChildSize(parent - Vector2D{margin * 2, margin * 2});
+    if (s.x == -1)
+        s.x = max.x;
+    if (s.y == -1)
+        s.y = max.y;
+    return s;
 }

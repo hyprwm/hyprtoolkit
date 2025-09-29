@@ -69,7 +69,7 @@ Vector2D CScrollAreaElement::size() {
 }
 
 std::optional<Vector2D> CScrollAreaElement::preferredSize(const Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 std::optional<Vector2D> CScrollAreaElement::minimumSize(const Vector2D& parent) {
