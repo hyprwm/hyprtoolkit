@@ -119,9 +119,10 @@ void CComboboxElement::openDropdown() {
 
     const Vector2D POPUP_SIZE = Vector2D{
         100.F + impl->position.size().x + (2 * DROPDOWN_BUTTON_PAD),
-        std::min(                                                                                                                                       //
-            (DROPDOWN_BUTTON_HEIGHT * m_impl->data.items.size()) + (DROPDOWN_BUTTON_PAD * (m_impl->data.items.size() - 1)) + (2 * DROPDOWN_BUTTON_PAD), //
-            600.F                                                                                                                                       //
+        std::min( //
+            (DROPDOWN_BUTTON_HEIGHT * m_impl->data.items.size()) + (DROPDOWN_BUTTON_PAD * (m_impl->data.items.size() - 1)) + (2 * DROPDOWN_BUTTON_PAD) +
+                (2 * DROPDOWN_MARGIN_OUTER), //
+            600.F                            //
             ),
     };
 
