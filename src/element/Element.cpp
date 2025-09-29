@@ -5,6 +5,7 @@
 
 #include "../helpers/Memory.hpp"
 #include "../window/ToolkitWindow.hpp"
+#include "../layout/Positioner.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;

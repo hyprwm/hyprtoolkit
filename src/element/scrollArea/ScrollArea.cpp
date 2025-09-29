@@ -22,20 +22,19 @@ CScrollAreaElement::CScrollAreaElement(const SScrollAreaData& data) : IElement()
     impl->clipChildren = true;
 
     m_impl->listeners.axis = impl->m_externalEvents.mouseAxis.listen([this](Input::eAxisAxis axis, float delta) {
-        if (axis == Input::AXIS_AXIS_HORIZONTAL)
+        const bool SCROLLING_X = axis == Input::AXIS_AXIS_HORIZONTAL;
+
+        if (SCROLLING_X && !m_impl->data.scrollX)
+            return;
+        if (!SCROLLING_X && !m_impl->data.scrollY)
+            return;
+
+        if (SCROLLING_X)
             m_impl->data.currentScroll.x += delta;
         else
             m_impl->data.currentScroll.y += delta;
 
-        if (!impl->children.empty()) {
-            const auto SCROLL_MAX =
-                impl->children.at(0)->preferredSize(impl->children.at(0)->impl->positionerData->baseBox.size()).value_or({9999999, 9999999}) - impl->position.size();
-            if (SCROLL_MAX.x < 0 || SCROLL_MAX.y < 0) // can't scroll: content is smaller
-                m_impl->data.currentScroll = {};
-            else
-                m_impl->data.currentScroll = m_impl->data.currentScroll.clamp({0, 0}, SCROLL_MAX);
-        } else
-            m_impl->data.currentScroll = m_impl->data.currentScroll.clamp({0, 0});
+        m_impl->clampMaxScroll();
 
         if (impl->window)
             impl->window->scheduleReposition(impl->self);
@@ -55,6 +54,8 @@ void CScrollAreaElement::replaceData(const SScrollAreaData& data) {
 
 void CScrollAreaElement::reposition(const Hyprutils::Math::CBox& sbox, const Vector2D& maxSize) {
     IElement::reposition(sbox);
+
+    m_impl->clampMaxScroll();
 
     g_positioner->positionChildren(impl->self.lock(),
                                    {
@@ -86,4 +87,21 @@ ePointerShape CScrollAreaElement::pointerShape() {
 
 bool CScrollAreaElement::alwaysGetMouseInput() {
     return true;
+}
+
+void SScrollAreaImpl::clampMaxScroll() {
+    // recheck limits
+    if (self->impl->children.empty() || !self->impl->children.at(0)->impl->positionerData)
+        return;
+
+    Vector2D scrollMax = (self->impl->children.at(0)
+                              ->preferredSize({
+                                  data.scrollX ? 99999999999 : self->impl->position.w,
+                                  data.scrollY ? 99999999999 : self->impl->position.h,
+                              })
+                              .value_or({99999999, 99999999}) -
+                          self->impl->position.size())
+                             .clamp({0, 0});
+
+    data.currentScroll = data.currentScroll.clamp({}, scrollMax);
 }

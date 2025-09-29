@@ -16,6 +16,8 @@ namespace Hyprtoolkit {
 
         WP<CScrollAreaElement> self;
 
+        void                   clampMaxScroll();
+
         struct {
             CHyprSignalListener axis;
         } listeners;
