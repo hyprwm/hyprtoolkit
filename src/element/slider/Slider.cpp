@@ -32,7 +32,10 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
     m_impl->valueText = CTextBuilder::begin() //
                             ->text(m_impl->valueAsText())
                             ->color([] { return g_palette->m_colors.text; })
-                            ->callback([this] { impl->window->scheduleReposition(impl->self); })
+                            ->callback([this] {
+                                if (impl->window)
+                                    impl->window->scheduleReposition(impl->self);
+                            })
                             ->commence();
 
     m_impl->valueText->setPositionMode(HT_POSITION_CENTER);
