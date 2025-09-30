@@ -91,6 +91,8 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
 
         m_impl->updateValue();
     });
+
+    impl->grouped = true;
 }
 
 void SSliderImpl::valueChanged(float perc) {

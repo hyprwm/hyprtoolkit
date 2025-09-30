@@ -90,6 +90,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                 m_impl->data.onMainClick(m_impl->self.lock());
         }
     });
+
+    impl->grouped = true;
 }
 
 void CButtonElement::paint() {

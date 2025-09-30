@@ -189,6 +189,8 @@ void CComboboxElement::openDropdown() {
     }
 
     m_impl->dropdown.popup->open();
+
+    impl->grouped = true;
 }
 
 void CComboboxElement::closeDropdown() {

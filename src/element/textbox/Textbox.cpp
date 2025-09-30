@@ -132,6 +132,8 @@ void CTextboxElement::init() {
     m_impl->bg->impl->clipChildren = true;
 
     updateLabel();
+
+    impl->grouped = true;
 }
 
 void CTextboxElement::updateLabel() {

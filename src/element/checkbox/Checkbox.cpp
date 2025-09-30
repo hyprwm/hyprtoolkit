@@ -112,6 +112,8 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
             *m_impl->foreground->m_color = col;
         }
     });
+
+    impl->grouped = true;
 }
 
 void CCheckboxElement::paint() {
