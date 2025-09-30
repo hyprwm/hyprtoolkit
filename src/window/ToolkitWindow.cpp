@@ -236,3 +236,7 @@ void IToolkitWindow::setIMTo(const Hyprutils::Math::CBox& box, const std::string
 void IToolkitWindow::resetIM() {
     ;
 }
+
+Hyprutils::Math::Vector2D IToolkitWindow::cursorPos() {
+    return m_mousePos;
+}

@@ -25,30 +25,31 @@ namespace Hyprtoolkit {
             Schedules a frame event as well.
             Takes logical coordinates (unscaled)
         */
-        virtual void damage(Hyprutils::Math::CRegion&& rg);
-        virtual void scheduleFrame();
-        virtual void damageEntire();
+        virtual void                      damage(Hyprutils::Math::CRegion&& rg);
+        virtual void                      scheduleFrame();
+        virtual void                      damageEntire();
 
-        virtual void onPreRender();
-        virtual void render() = 0;
-        virtual void scheduleReposition(WP<IElement> e);
+        virtual Hyprutils::Math::Vector2D cursorPos();
+        virtual void                      onPreRender();
+        virtual void                      render() = 0;
+        virtual void                      scheduleReposition(WP<IElement> e);
 
-        virtual void mouseEnter(const Hyprutils::Math::Vector2D& local);
-        virtual void mouseMove(const Hyprutils::Math::Vector2D& local);
-        virtual void mouseButton(const Input::eMouseButton button, bool state);
-        virtual void mouseAxis(const Input::eAxisAxis axis, float delta);
-        virtual void mouseLeave();
+        virtual void                      mouseEnter(const Hyprutils::Math::Vector2D& local);
+        virtual void                      mouseMove(const Hyprutils::Math::Vector2D& local);
+        virtual void                      mouseButton(const Input::eMouseButton button, bool state);
+        virtual void                      mouseAxis(const Input::eAxisAxis axis, float delta);
+        virtual void                      mouseLeave();
 
-        virtual void keyboardKey(const Input::SKeyboardKeyEvent& e);
-        virtual void unfocusKeyboard();
+        virtual void                      keyboardKey(const Input::SKeyboardKeyEvent& e);
+        virtual void                      unfocusKeyboard();
 
-        virtual void updateFocus(const Hyprutils::Math::Vector2D& coords);
-        virtual void setCursor(ePointerShape shape) = 0;
+        virtual void                      updateFocus(const Hyprutils::Math::Vector2D& coords);
+        virtual void                      setCursor(ePointerShape shape) = 0;
 
-        virtual void setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
-        virtual void resetIM();
+        virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
+        virtual void                      resetIM();
 
-        void         initElementIfNeeded(SP<IElement>);
+        void                              initElementIfNeeded(SP<IElement>);
 
         // Damage ring is in pixel coords
         CDamageRing                        m_damageRing;

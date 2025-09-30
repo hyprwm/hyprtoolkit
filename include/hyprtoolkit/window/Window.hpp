@@ -17,6 +17,7 @@ namespace Hyprtoolkit {
         virtual float                                      scale()                                   = 0;
         virtual void                                       close()                                   = 0;
         virtual void                                       open()                                    = 0;
+        virtual Hyprutils::Math::Vector2D                  cursorPos()                               = 0;
         virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SPopupCreationData& data) = 0;
 
         struct {
