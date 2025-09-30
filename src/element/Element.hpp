@@ -32,6 +32,7 @@ namespace Hyprtoolkit {
         bool                                                     growH                   = false;
         float                                                    margin                  = 0;
         bool                                                     userRequestedMouseInput = false;
+        bool                                                     grouped                 = false;
 
         // rendering: clip children to parent box
         bool         clipChildren = false;

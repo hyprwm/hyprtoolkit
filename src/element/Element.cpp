@@ -182,6 +182,10 @@ void IElement::setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn) {
     impl->userFns.mouseAxis = std::move(fn);
 }
 
+void IElement::setGrouped(bool grouped) {
+    impl->grouped = grouped;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

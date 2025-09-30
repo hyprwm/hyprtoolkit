@@ -45,6 +45,7 @@ namespace Hyprtoolkit {
         virtual void removeChild(Hyprutils::Memory::CSharedPointer<IElement> child);
         virtual void clearChildren();
         virtual void setMargin(float thick);
+        virtual void setGrouped(bool grouped);
 
         // this will make this element get mouse input, then you can get events
         virtual void setReceivesMouse(bool x);

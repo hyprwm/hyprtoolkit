@@ -618,6 +618,11 @@ void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
 
             m_clipBoxes.pop_back();
         }
+
+        if (el->impl->grouped) {
+            // grouped: render all children as one
+            renderBreadthfirst(el);
+        }
     });
 }
 
