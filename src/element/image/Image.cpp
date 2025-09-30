@@ -56,6 +56,9 @@ void CImageElement::paint() {
 }
 
 void CImageElement::renderTex() {
+    if (m_impl->waitingForTex)
+        return;
+
     m_impl->resource.reset();
     m_impl->oldTex = m_impl->tex;
     m_impl->tex.reset();
