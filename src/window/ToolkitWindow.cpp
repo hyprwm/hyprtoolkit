@@ -116,6 +116,14 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
     std::vector<SP<SToolkitFocusLock>> alwaysHover;
     m_rootElement->impl->breadthfirst([this, &el, &alwaysHover, coords](SP<IElement> current) {
         if (current->acceptsMouseInput() && current->impl->position.containsPoint(coords)) {
+            // check for any parent being a clip
+            auto parent = current->impl->parent;
+            while (parent) {
+                if (parent->impl->clipChildren && !parent->impl->position.containsPoint(coords))
+                    return; // nope
+
+                parent = parent->impl->parent;
+            }
             el = current;
             if (current->alwaysGetMouseInput()) {
                 initElementIfNeeded(el);
