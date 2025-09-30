@@ -52,6 +52,13 @@ namespace Hyprtoolkit {
             CPolygon   poly;
         };
 
+        struct SLineRenderData {
+            CBox                        box;
+            const std::vector<Vector2D> points;
+            CHyprColor                  color = {1, 1, 1, 1};
+            int                         thick = 2;
+        };
+
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) = 0;
         virtual void                 endRendering()                                                         = 0;
         virtual void                 renderRectangle(const SRectangleRenderData& data)                      = 0;
@@ -59,6 +66,7 @@ namespace Hyprtoolkit {
         virtual void                 renderTexture(const STextureRenderData& data)                          = 0;
         virtual void                 renderBorder(const SBorderRenderData& data)                            = 0;
         virtual void                 renderPolygon(const SPolygonRenderData& data)                          = 0;
+        virtual void                 renderLine(const SLineRenderData& data)                                = 0;
     };
 
     inline SP<IRenderer> g_renderer;

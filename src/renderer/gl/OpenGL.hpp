@@ -33,6 +33,7 @@ namespace Hyprtoolkit {
         virtual void                 renderTexture(const STextureRenderData& data);
         virtual void                 renderBorder(const SBorderRenderData& data);
         virtual void                 renderPolygon(const SPolygonRenderData& data);
+        virtual void                 renderLine(const SLineRenderData& data);
 
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);

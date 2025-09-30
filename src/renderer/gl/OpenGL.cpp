@@ -895,3 +895,53 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
         .texture = tex,
     });
 }
+
+void COpenGLRenderer::renderLine(const SLineRenderData& data) {
+    const auto ROUNDEDBOX    = logicalToGL(data.box);
+    const auto UNTRANSFORMED = logicalToGL(data.box, false);
+
+    const auto DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
+        return;
+
+    if (data.points.size() <= 1)
+        return;
+
+    // generate a polygon
+    // FIXME: inconsistent size on x/y, why?
+
+    std::vector<Vector2D> polyPoints;
+    polyPoints.resize((data.points.size() * 4) - 2);
+
+    for (size_t i = 0; i < data.points.size(); ++i) {
+        Vector2D dir;
+
+        if (i == data.points.size() - 1) {
+            // last point: copy dir from last
+            dir = (data.points.at(i) - data.points.at(i - 1));
+        } else
+            dir = (data.points.at(i + 1) - data.points.at(i));
+
+        // normalize vec
+        dir = dir / dir.size();
+
+        // rotate by 90 deg left and right
+        const auto V1              = Vector2D{-dir.y, dir.x} * data.thick / ROUNDEDBOX.size();
+        const auto V2              = Vector2D{dir.y, -dir.x} * data.thick / ROUNDEDBOX.size();
+        polyPoints.at(i * 4)       = data.points.at(i) + V1;
+        polyPoints.at(1 + (i * 4)) = data.points.at(i) + V2;
+
+        // then add the same for the next point, if there is one
+        if (i + 1 < data.points.size()) {
+            polyPoints.at(2 + (i * 4)) = data.points.at(i + 1) + V1;
+            polyPoints.at(3 + (i * 4)) = data.points.at(i + 1) + V2;
+        }
+    }
+
+    renderPolygon(SPolygonRenderData{
+        .box   = data.box,
+        .color = data.color,
+        .poly  = CPolygon{polyPoints},
+    });
+}
