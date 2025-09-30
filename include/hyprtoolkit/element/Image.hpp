@@ -40,7 +40,7 @@ namespace Hyprtoolkit {
         virtual ~CImageElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CImageBuilder> rebuild();
-        virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                size();
 
       private:
         CImageElement(const SImageData& data);

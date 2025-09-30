@@ -47,7 +47,7 @@ namespace Hyprtoolkit {
         virtual ~CButtonElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CButtonBuilder> rebuild();
-        virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                 size();
 
       private:
         CButtonElement(const SButtonData& data);

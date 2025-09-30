@@ -33,7 +33,7 @@ namespace Hyprtoolkit {
         virtual ~CRowLayoutElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CRowLayoutBuilder> rebuild();
-virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                    size();
 
       private:
         CRowLayoutElement(const SRowLayoutData& data);

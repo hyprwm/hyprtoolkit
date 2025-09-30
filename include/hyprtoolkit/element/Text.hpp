@@ -49,7 +49,7 @@ namespace Hyprtoolkit {
         virtual ~CTextElement();
 
         Hyprutils::Memory::CSharedPointer<CTextBuilder> rebuild();
-        virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D               size();
 
       private:
         CTextElement(const STextData& data);

@@ -42,7 +42,7 @@ namespace Hyprtoolkit {
         virtual ~CComboboxElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CComboboxBuilder> rebuild();
-virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                   size();
         size_t                                              current();
         void                                                setCurrent(size_t current);
 

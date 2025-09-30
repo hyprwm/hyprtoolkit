@@ -40,13 +40,13 @@ namespace Hyprtoolkit {
         virtual ~CRectangleElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CRectangleBuilder> rebuild();
-        virtual Hyprutils::Math::Vector2D                 size();
+        virtual Hyprutils::Math::Vector2D                    size();
 
       private:
         static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data);
         CRectangleElement(const SRectangleData& data);
 
-        void replaceData(const SRectangleData& data);
+        void                                              replaceData(const SRectangleData& data);
 
         virtual void                                      paint();
         virtual void                                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});

@@ -69,6 +69,18 @@ Vector2D CScrollAreaElement::size() {
     return impl->position.size();
 }
 
+Vector2D CScrollAreaElement::getCurrentScroll() {
+    return m_impl->data.currentScroll;
+}
+
+void CScrollAreaElement::setScroll(const Hyprutils::Math::Vector2D& x) {
+    m_impl->data.currentScroll = x;
+    m_impl->clampMaxScroll();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 std::optional<Vector2D> CScrollAreaElement::preferredSize(const Vector2D& parent) {
     return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }

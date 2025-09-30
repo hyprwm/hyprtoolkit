@@ -42,7 +42,7 @@ namespace Hyprtoolkit {
         virtual ~CCheckboxElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder> rebuild();
-virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                   size();
         bool                                                state();
         void                                                setState(bool state);
 

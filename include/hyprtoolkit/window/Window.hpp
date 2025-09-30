@@ -25,7 +25,7 @@ namespace Hyprtoolkit {
 
             // user requested a close.
             Hyprutils::Signal::CSignalT<> closeRequest;
-            
+
             // popup closed
             Hyprutils::Signal::CSignalT<> popupClosed;
         } m_events;

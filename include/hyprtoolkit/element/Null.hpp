@@ -36,7 +36,7 @@ namespace Hyprtoolkit {
         virtual ~CNullElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CNullBuilder> rebuild();
-virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D               size();
 
       private:
         CNullElement(const SNullData& data);

@@ -39,7 +39,7 @@ namespace Hyprtoolkit {
         virtual ~CTextboxElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder> rebuild();
-        virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                  size();
 
       private:
         static Hyprutils::Memory::CSharedPointer<CTextboxElement> create(const STextboxData& data);

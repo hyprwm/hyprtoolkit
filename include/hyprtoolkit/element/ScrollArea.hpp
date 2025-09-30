@@ -34,11 +34,14 @@ namespace Hyprtoolkit {
         virtual ~CScrollAreaElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder> rebuild();
+        virtual Hyprutils::Math::Vector2D                     size();
+
+        Hyprutils::Math::Vector2D                             getCurrentScroll();
+        void                                                  setScroll(const Hyprutils::Math::Vector2D&);
 
       private:
         CScrollAreaElement(const SScrollAreaData& data);
         static Hyprutils::Memory::CSharedPointer<CScrollAreaElement> create(const SScrollAreaData& data);
-        virtual Hyprutils::Math::Vector2D                      size();
 
         void                                                         replaceData(const SScrollAreaData& data);
 

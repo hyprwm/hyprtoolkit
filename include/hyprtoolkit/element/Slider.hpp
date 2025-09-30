@@ -43,7 +43,7 @@ namespace Hyprtoolkit {
         virtual ~CSliderElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CSliderBuilder> rebuild();
-      virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                 size();
         bool                                              sliding();
 
       private:

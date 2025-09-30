@@ -34,7 +34,7 @@ namespace Hyprtoolkit {
         virtual ~CColumnLayoutElement() = default;
 
         Hyprutils::Memory::CSharedPointer<CColumnLayoutBuilder> rebuild();
-virtual Hyprutils::Math::Vector2D                      size();
+        virtual Hyprutils::Math::Vector2D                       size();
 
       private:
         CColumnLayoutElement(const SColumnLayoutData& data);
