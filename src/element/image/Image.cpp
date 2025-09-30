@@ -60,15 +60,19 @@ void CImageElement::renderTex() {
     m_impl->oldTex = m_impl->tex;
     m_impl->tex.reset();
 
-    m_impl->waitingForTex = true;
-
     if (!m_impl->data.icon) {
         m_impl->resource = makeAtomicShared<CImageResource>(m_impl->data.path);
         m_impl->lastPath = m_impl->data.path;
     } else {
         m_impl->lastPath = reinterpretPointerCast<CSystemIconDescription>(m_impl->data.icon)->m_bestPath;
-        m_impl->resource = makeAtomicShared<CImageResource>(m_impl->lastPath, m_impl->preferredSvgSize());
+        const auto SIZE  = m_impl->preferredSvgSize();
+        m_impl->resource = makeAtomicShared<CImageResource>(m_impl->lastPath, SIZE);
+
+        if (SIZE.x == 0 || SIZE.y == 0)
+            return;
     }
+
+    m_impl->waitingForTex = true;
 
     ASP<IAsyncResource> resourceGeneric(m_impl->resource);
 
@@ -109,6 +113,8 @@ SP<CImageBuilder> CImageElement::rebuild() {
 void CImageElement::replaceData(const SImageData& data) {
     m_impl->data = data;
 
+    renderTex();
+
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
 }
@@ -144,5 +150,5 @@ std::optional<Vector2D> CImageElement::maximumSize(const Hyprutils::Math::Vector
 Vector2D SImageImpl::preferredSvgSize() {
     auto max = std::max(self->impl->position.size().x, self->impl->position.size().y);
 
-    return Vector2D{max * lastScale, max * lastScale};
+    return Vector2D{max * lastScale, max * lastScale}.round();
 }
