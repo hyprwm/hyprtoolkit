@@ -186,6 +186,12 @@ void IElement::setGrouped(bool grouped) {
     impl->grouped = grouped;
 }
 
+Vector2D IElement::posFromParent() {
+    if (!impl->parent)
+        return impl->position.pos();
+    return impl->position.pos() - impl->parent->impl->position.pos();
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

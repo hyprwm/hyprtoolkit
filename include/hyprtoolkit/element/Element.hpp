@@ -36,6 +36,7 @@ namespace Hyprtoolkit {
 
         virtual void                      paint() = 0;
         virtual Hyprutils::Math::Vector2D size()  = 0;
+        virtual Hyprutils::Math::Vector2D posFromParent();
         virtual void                      reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
 
         // TODO: move this to builders, this is clunky
