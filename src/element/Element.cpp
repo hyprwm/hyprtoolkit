@@ -140,6 +140,9 @@ void IElement::setMargin(float thick) {
 
 void IElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     impl->setPosition(box);
+
+    if (impl->userFns.repositioned)
+        impl->userFns.repositioned();
 }
 
 void IElement::recheckColor() {
@@ -180,6 +183,10 @@ void IElement::setMouseButton(std::function<void(Input::eMouseButton, bool)>&& f
 
 void IElement::setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn) {
     impl->userFns.mouseAxis = std::move(fn);
+}
+
+void IElement::setRepositioned(std::function<void()>&& fn) {
+    impl->userFns.repositioned = std::move(fn);
 }
 
 void IElement::setGrouped(bool grouped) {

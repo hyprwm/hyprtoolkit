@@ -56,6 +56,8 @@ namespace Hyprtoolkit {
         virtual void setMouseButton(std::function<void(Input::eMouseButton, bool)>&& fn);
         virtual void setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn);
 
+        virtual void setRepositioned(std::function<void()>&& fn);
+
         /* Sizes for auto positioning in layouts */
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);

@@ -58,6 +58,7 @@ namespace Hyprtoolkit {
             std::function<void(const Hyprutils::Math::Vector2D&)> mouseMove;
             std::function<void(Input::eMouseButton, bool)>        mouseButton;
             std::function<void(Input::eAxisAxis, float)>          mouseAxis;
+            std::function<void()>                                 repositioned;
         } userFns;
 
         //
