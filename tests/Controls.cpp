@@ -1,5 +1,6 @@
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/window/Window.hpp>
+#include <hyprtoolkit/system/Icons.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/element/RowLayout.hpp>
 #include <hyprtoolkit/element/ColumnLayout.hpp>
@@ -191,6 +192,11 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(slider2);
     mainLayout->addChild(combo);
     mainLayout->addChild(textbox);
+
+    auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable");
+    if (iconDesc->exists()) {
+        mainLayout->addChild(CImageBuilder::begin()->icon(iconDesc)->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {40, 40}})->commence());
+    }
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

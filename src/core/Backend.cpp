@@ -11,6 +11,7 @@
 #include "../helpers/Timer.hpp"
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
+#include "../system/Icons.hpp"
 
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -59,7 +60,8 @@ SP<CBackend> CBackend::create() {
     g_logger  = SP<CBackendLogger>(new CBackendLogger());
     g_config  = makeShared<CConfigManager>();
     g_config->parse();
-    g_palette = CPalette::palette();
+    g_palette     = CPalette::palette();
+    g_iconFactory = SP<CSystemIconFactory>(new CSystemIconFactory());
     if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
         return nullptr;
@@ -119,6 +121,10 @@ void CBackend::terminate() {
         m_sLoopState.loopCV.notify_all();
         m_sLoopState.eventLoopMutex.unlock();
     }
+}
+
+SP<ISystemIconFactory> CBackend::systemIcons() {
+    return g_iconFactory;
 }
 
 static void reloadRecurse(SP<IElement> el) {

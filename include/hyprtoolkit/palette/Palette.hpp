@@ -28,11 +28,12 @@ namespace Hyprtoolkit {
         } m_colors;
 
         struct {
-            int h1Size        = 19;
-            int h2Size        = 15;
-            int h3Size        = 13;
-            int fontSize      = 11;
-            int smallFontSize = 10;
+            int         h1Size        = 19;
+            int         h2Size        = 15;
+            int         h3Size        = 13;
+            int         fontSize      = 11;
+            int         smallFontSize = 10;
+            std::string iconTheme     = ""; // first one found
         } m_vars;
 
       private:

@@ -24,6 +24,11 @@ SP<CImageBuilder> CImageBuilder::rounding(int x) {
     return m_self.lock();
 }
 
+SP<CImageBuilder> CImageBuilder::icon(const SP<ISystemIconDescription>& x) {
+    m_data->icon = x;
+    return m_self.lock();
+}
+
 SP<CImageBuilder> CImageBuilder::size(CDynamicSize&& s) {
     m_data->size = std::move(s);
     return m_self.lock();

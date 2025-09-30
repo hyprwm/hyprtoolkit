@@ -29,6 +29,7 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("h3_size", Hyprlang::INT{13});
     m_config->addConfigValue("font_size", Hyprlang::INT{11});
     m_config->addConfigValue("small_font_size", Hyprlang::INT{10});
+    m_config->addConfigValue("icon_theme", Hyprlang::STRING{""});
 
     m_config->commence();
 
@@ -68,6 +69,7 @@ SP<CPalette> CConfigManager::getPalette() {
     static auto H3SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
     static auto FONTSIZE      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
     static auto SMALLFONTSIZE = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
+    static auto ICONTHEME     = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "icon_theme");
 
     p->m_colors.background      = *BACKGROUND;
     p->m_colors.base            = *BASE;
@@ -82,6 +84,7 @@ SP<CPalette> CConfigManager::getPalette() {
     p->m_vars.h3Size        = *H3SIZE;
     p->m_vars.fontSize      = *FONTSIZE;
     p->m_vars.smallFontSize = *SMALLFONTSIZE;
+    p->m_vars.iconTheme     = *ICONTHEME;
 
     return p;
 }

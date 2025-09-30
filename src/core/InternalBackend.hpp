@@ -10,6 +10,7 @@ namespace Hyprtoolkit {
 
     class CPalette;
     class CConfigManager;
+    class CSystemIconFactory;
 
     class CBackendLogger {
       public:
@@ -41,4 +42,5 @@ namespace Hyprtoolkit {
     inline Hyprutils::Memory::CSharedPointer<Hyprgraphics::CAsyncResourceGatherer> g_asyncResourceGatherer;
     inline Hyprutils::Memory::CSharedPointer<CPalette>                             g_palette;
     inline Hyprutils::Memory::CSharedPointer<CConfigManager>                       g_config;
+    inline Hyprutils::Memory::CSharedPointer<CSystemIconFactory>                   g_iconFactory;
 }

@@ -4,6 +4,7 @@
 #include "../../renderer/Renderer.hpp"
 #include "../../core/InternalBackend.hpp"
 #include "../../window/ToolkitWindow.hpp"
+#include "../../system/Icons.hpp"
 
 #include "../Element.hpp"
 
@@ -21,35 +22,59 @@ CImageElement::CImageElement(const SImageData& data) : IElement(), m_impl(makeUn
 }
 
 void CImageElement::paint() {
-    if (!m_tex && m_waitingForTex)
+    if (m_impl->failed)
         return;
 
-    if (!m_tex) {
-        renderTex();
+    SP<IRendererTexture> textureToUse = m_impl->tex;
+
+    if (!m_impl->tex)
+        textureToUse = m_impl->oldTex;
+
+    if (!textureToUse) {
+        if (!m_impl->waitingForTex)
+            renderTex();
         return;
     }
 
+    if (impl->window)
+        m_impl->lastScale = impl->window->scale();
+
+    if (m_impl->data.icon && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
+        renderTex();
+        textureToUse = m_impl->oldTex;
+    }
+
+    if (!textureToUse)
+        return; // ???
+
     g_renderer->renderTexture({
         .box      = impl->position,
-        .texture  = m_tex,
-        .a        = m_impl->data.a,
-        .rounding = m_impl->data.rounding,
+        .texture  = textureToUse,
+        .a        = 1.F,
+        .rounding = 0,
     });
 }
 
 void CImageElement::renderTex() {
-    m_resource.reset();
-    m_tex.reset();
+    m_impl->resource.reset();
+    m_impl->oldTex = m_impl->tex;
+    m_impl->tex.reset();
 
-    m_waitingForTex = true;
+    m_impl->waitingForTex = true;
 
-    m_resource = makeAtomicShared<CImageResource>(m_impl->data.path);
+    if (!m_impl->data.icon) {
+        m_impl->resource = makeAtomicShared<CImageResource>(m_impl->data.path);
+        m_impl->lastPath = m_impl->data.path;
+    } else {
+        m_impl->lastPath = reinterpretPointerCast<CSystemIconDescription>(m_impl->data.icon)->m_bestPath;
+        m_impl->resource = makeAtomicShared<CImageResource>(m_impl->lastPath, m_impl->preferredSvgSize());
+    }
 
-    ASP<IAsyncResource> resourceGeneric(m_resource);
+    ASP<IAsyncResource> resourceGeneric(m_impl->resource);
 
     g_asyncResourceGatherer->enqueue(resourceGeneric);
 
-    m_resource->m_events.finished.listenStatic([this, self = impl->self] {
+    m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
         if (!self)
             return;
 
@@ -57,11 +82,18 @@ void CImageElement::renderTex() {
             if (!self)
                 return;
 
-            ASP<IAsyncResource> resourceGeneric(m_resource);
-            m_size = m_resource->m_asset.pixelSize;
-            m_tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+            if (m_impl->resource->m_asset.cairoSurface) {
+                ASP<IAsyncResource> resourceGeneric(m_impl->resource);
+                m_impl->size = m_impl->resource->m_asset.pixelSize;
+                m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+            } else {
+                m_impl->failed = true;
+                g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", m_impl->lastPath);
+            }
 
-            m_waitingForTex = false;
+            m_impl->oldTex.reset();
+
+            m_impl->waitingForTex = false;
         });
     });
 }
@@ -92,7 +124,7 @@ Hyprutils::Math::Vector2D CImageElement::size() {
 }
 
 std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 std::optional<Vector2D> CImageElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
@@ -107,4 +139,10 @@ std::optional<Vector2D> CImageElement::maximumSize(const Hyprutils::Math::Vector
     if (s.x != -1 && s.y != -1)
         return s;
     return std::nullopt;
+}
+
+Vector2D SImageImpl::preferredSvgSize() {
+    auto max = std::max(self->impl->position.size().x, self->impl->position.size().y);
+
+    return Vector2D{max * lastScale, max * lastScale};
 }

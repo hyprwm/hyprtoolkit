@@ -15,9 +15,12 @@
 namespace Hyprtoolkit {
     class IWindow;
     class CTimer;
+    class ISystemIconFactory;
 
     class CBackend {
       public:
+        ~CBackend();
+
         using LogFn = std::function<void(eLogLevel, const std::string&)>;
 
         /*
@@ -35,13 +38,17 @@ namespace Hyprtoolkit {
         */
         void destroy();
 
-        ~CBackend();
-
         void setLogFn(LogFn&& fn);
 
         /* These are non-owning. */
         void addFd(int fd, std::function<void()>&& callback);
         void removeFd(int fd);
+
+        /*
+            Get the system icon factory object,
+            from which you can lookup icons.
+        */
+        Hyprutils::Memory::CSharedPointer<ISystemIconFactory> systemIcons();
 
         /*
             Open a window. This opens a toplevel window. Each window has a root

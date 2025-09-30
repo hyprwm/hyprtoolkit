@@ -12,6 +12,7 @@ namespace Hyprtoolkit {
     struct SImageImpl;
     struct SImageData;
     class CImageElement;
+    class ISystemIconDescription;
 
     class CImageBuilder {
       public:
@@ -19,6 +20,7 @@ namespace Hyprtoolkit {
 
         static Hyprutils::Memory::CSharedPointer<CImageBuilder> begin();
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        path(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        icon(const Hyprutils::Memory::CSharedPointer<ISystemIconDescription>&);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        a(float);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        rounding(int);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        size(CDynamicSize&&);
@@ -49,21 +51,15 @@ namespace Hyprtoolkit {
         void                                                    replaceData(const SImageData& data);
 
         //
-        virtual void                                                          paint();
-        virtual void                                                          reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
-        virtual std::optional<Hyprutils::Math::Vector2D>                      preferredSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D>                      minimumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual std::optional<Hyprutils::Math::Vector2D>                      maximumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual void                                     paint();
+        virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
+        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
 
-        void                                                                  renderTex();
+        void                                             renderTex();
 
-        Hyprutils::Memory::CUniquePointer<SImageImpl>                         m_impl;
-
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                   m_tex;
-        Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CImageResource> m_resource;
-        Hyprutils::Math::Vector2D                                             m_size;
-
-        bool                                                                  m_waitingForTex = false;
+        Hyprutils::Memory::CUniquePointer<SImageImpl>    m_impl;
 
         friend class CImageBuilder;
     };
