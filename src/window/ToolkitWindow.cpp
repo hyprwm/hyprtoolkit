@@ -6,6 +6,8 @@
 #include "../element/Element.hpp"
 #include "../Macros.hpp"
 
+#include <algorithm>
+
 using namespace Hyprtoolkit;
 
 struct Hyprtoolkit::SToolkitWindowData {
@@ -88,6 +90,19 @@ void IToolkitWindow::onPreRender() {
             e = e->impl->parent.lock();
         }
 
+        return false;
+    });
+
+    // step 3: eliminate same-parent nodes
+    // since repositionNeeded will reposition the parent's children,
+    // we don't need to do it 200 times if the parent has 200 children and all need a reposition
+    std::vector<WP<IElement>> parents;
+    parents.reserve(m_needsReposition.size());
+    std::erase_if(m_needsReposition, [&parents](WP<IElement> e) {
+        if (std::ranges::contains(parents, e->impl->parent))
+            return true;
+
+        parents.emplace_back(e->impl->parent);
         return false;
     });
 
