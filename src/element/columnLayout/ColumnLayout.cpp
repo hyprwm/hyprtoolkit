@@ -202,3 +202,7 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::minimumSize(const
 
     return min;
 }
+
+bool CColumnLayoutElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

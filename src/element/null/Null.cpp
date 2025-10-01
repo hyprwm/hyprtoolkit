@@ -65,3 +65,7 @@ std::optional<Vector2D> CNullElement::maximumSize(const Hyprutils::Math::Vector2
         return s;
     return std::nullopt;
 }
+
+bool CNullElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

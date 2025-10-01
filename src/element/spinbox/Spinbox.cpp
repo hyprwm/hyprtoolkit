@@ -147,3 +147,7 @@ bool CSpinboxElement::acceptsMouseInput() {
 ePointerShape CSpinboxElement::pointerShape() {
     return HT_POINTER_POINTER;
 }
+
+bool CSpinboxElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

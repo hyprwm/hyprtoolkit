@@ -13,6 +13,7 @@
 #include "../types/PointerShape.hpp"
 #include "../palette/Color.hpp"
 #include "../core/Input.hpp"
+#include "../core/CoreMacros.hpp"
 
 namespace Hyprtoolkit {
 
@@ -58,12 +59,16 @@ namespace Hyprtoolkit {
 
         virtual void setRepositioned(std::function<void()>&& fn);
 
-        /* Sizes for auto positioning in layouts */
-        virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
+        virtual void setGrow(bool grow);
+        virtual void setGrow(bool growH, bool growV);
+
+        HT_HIDDEN :
+
+            /* Sizes for auto positioning in layouts */
+            virtual std::optional<Hyprutils::Math::Vector2D>
+                                                         preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
-        virtual void                                     setGrow(bool grow);
-        virtual void                                     setGrow(bool growH, bool growV);
 
         virtual bool                                     acceptsMouseInput();
         virtual bool                                     acceptsKeyboardInput();
@@ -73,6 +78,7 @@ namespace Hyprtoolkit {
         virtual void                                     imApplyText();
 
         virtual void                                     recheckColor();
+        virtual bool                                     positioningDependsOnChild();
 
         //
 

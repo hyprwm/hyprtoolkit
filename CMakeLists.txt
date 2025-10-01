@@ -59,6 +59,8 @@ else()
   message(STATUS "Configuring hyprtoolkit in Release")
 endif()
 
+add_compile_definitions(HT_HIDDEN=public)
+
 file(GLOB_RECURSE SRCFILES CONFIGURE_DEPENDS "src/*.cpp" "include/*.hpp")
 file(GLOB_RECURSE PUBLIC_HEADERS CONFIGURE_DEPENDS "include/*.hpp")
 

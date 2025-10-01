@@ -267,3 +267,7 @@ bool CComboboxElement::acceptsMouseInput() {
 ePointerShape CComboboxElement::pointerShape() {
     return HT_POINTER_ARROW;
 }
+
+bool CComboboxElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

@@ -46,6 +46,7 @@ namespace Hyprtoolkit {
         virtual void                                                   reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual std::optional<Hyprutils::Math::Vector2D>               preferredSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D>               minimumSize(const Hyprutils::Math::Vector2D& parent);
+        virtual bool                                                   positioningDependsOnChild();
 
         Hyprutils::Math::Vector2D                                      childSize(Hyprutils::Memory::CSharedPointer<IElement> child);
 

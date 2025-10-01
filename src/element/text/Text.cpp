@@ -169,3 +169,7 @@ std::optional<Vector2D> CTextElement::preferredSize(const Hyprutils::Math::Vecto
 std::optional<Vector2D> CTextElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
     return unscale();
 }
+
+bool CTextElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

@@ -204,3 +204,7 @@ bool CCheckboxElement::acceptsMouseInput() {
 ePointerShape CCheckboxElement::pointerShape() {
     return HT_POINTER_POINTER;
 }
+
+bool CCheckboxElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

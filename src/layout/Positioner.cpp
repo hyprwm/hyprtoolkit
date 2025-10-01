@@ -67,8 +67,22 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 }
 
 void CPositioner::repositionNeeded(SP<IElement> element) {
-    if (!element->impl->parent || !element->impl->parent->impl->positionerData || element->impl->parent->impl->positionerData->baseBox.empty())
+    if (!element->impl->parent) {
+        // root el likely, check
+        if (!element->impl->window || element != element->impl->window->m_rootElement)
+            return;
+
+        // otherwise, max box
+        position(element, {{}, (element->impl->window->pixelSize() / element->impl->window->scale()).round()});
         return;
+    }
+
+    if (!element->impl->parent->impl->positionerData || element->impl->parent->impl->positionerData->baseBox.empty()) {
+        // full reflow needed
+        if (element->impl->window)
+            element->impl->window->scheduleReposition(element->impl->window->m_rootElement);
+        return;
+    }
 
     position(element->impl->parent.lock(), element->impl->parent->impl->positionerData->baseBox);
 }

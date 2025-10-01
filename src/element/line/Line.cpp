@@ -74,3 +74,7 @@ std::optional<Vector2D> CLineElement::maximumSize(const Hyprutils::Math::Vector2
         return s;
     return std::nullopt;
 }
+
+bool CLineElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

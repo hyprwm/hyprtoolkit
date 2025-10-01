@@ -52,6 +52,7 @@ namespace Hyprtoolkit {
         virtual bool                                                 acceptsMouseInput();
         virtual bool                                                 alwaysGetMouseInput();
         virtual ePointerShape                                        pointerShape();
+        virtual bool                                                 positioningDependsOnChild();
 
         Hyprutils::Memory::CUniquePointer<SScrollAreaImpl>           m_impl;
 

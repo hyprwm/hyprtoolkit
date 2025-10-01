@@ -23,3 +23,7 @@ Hyprutils::Math::Vector2D CDynamicSize::calculate(Hyprutils::Math::Vector2D elSi
 
     return size;
 }
+
+bool CDynamicSize::hasAuto() {
+    return m_typeX == HT_SIZE_AUTO || m_typeY == HT_SIZE_AUTO;
+}

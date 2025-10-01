@@ -193,3 +193,7 @@ std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::minimumSize(const Hy
 
     return min;
 }
+
+bool CRowLayoutElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

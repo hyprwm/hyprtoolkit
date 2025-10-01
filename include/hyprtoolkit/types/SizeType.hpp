@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <hyprutils/math/Vector2D.hpp>
 
+#include "../core/CoreMacros.hpp"
+
 namespace Hyprtoolkit {
     class CDynamicSize {
       public:
@@ -15,6 +17,11 @@ namespace Hyprtoolkit {
         CDynamicSize(eSizingType typeX, eSizingType typeY, const Hyprutils::Math::Vector2D& size);
 
         Hyprutils::Math::Vector2D calculate(Hyprutils::Math::Vector2D elSize) const;
+
+        HT_HIDDEN :
+
+            bool
+            hasAuto();
 
       private:
         eSizingType               m_typeX = HT_SIZE_ABSOLUTE, m_typeY = HT_SIZE_ABSOLUTE;

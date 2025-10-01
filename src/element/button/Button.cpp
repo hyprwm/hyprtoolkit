@@ -183,3 +183,7 @@ bool CButtonElement::acceptsMouseInput() {
 ePointerShape CButtonElement::pointerShape() {
     return HT_POINTER_POINTER;
 }
+
+bool CButtonElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

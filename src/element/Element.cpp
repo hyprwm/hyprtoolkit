@@ -199,6 +199,10 @@ Vector2D IElement::posFromParent() {
     return impl->position.pos() - impl->parent->impl->position.pos();
 }
 
+bool IElement::positioningDependsOnChild() {
+    return false;
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

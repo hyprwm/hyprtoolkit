@@ -231,3 +231,7 @@ bool CSliderElement::acceptsMouseInput() {
 ePointerShape CSliderElement::pointerShape() {
     return HT_POINTER_POINTER;
 }
+
+bool CSliderElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

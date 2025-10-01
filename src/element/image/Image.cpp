@@ -150,6 +150,10 @@ std::optional<Vector2D> CImageElement::maximumSize(const Hyprutils::Math::Vector
     return std::nullopt;
 }
 
+bool CImageElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}
+
 Vector2D SImageImpl::preferredSvgSize() {
     auto max = std::max(self->impl->position.size().x, self->impl->position.size().y);
 

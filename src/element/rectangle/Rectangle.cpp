@@ -100,3 +100,7 @@ std::optional<Vector2D> CRectangleElement::maximumSize(const Hyprutils::Math::Ve
         return s;
     return std::nullopt;
 }
+
+bool CRectangleElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

@@ -101,6 +101,10 @@ bool CScrollAreaElement::alwaysGetMouseInput() {
     return true;
 }
 
+bool CScrollAreaElement::positioningDependsOnChild() {
+    return false;
+}
+
 void SScrollAreaImpl::clampMaxScroll() {
     // recheck limits
     if (self->impl->children.empty() || !self->impl->children.at(0)->impl->positionerData)

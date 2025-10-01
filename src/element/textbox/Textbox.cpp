@@ -296,3 +296,7 @@ ePointerShape CTextboxElement::pointerShape() {
 bool CTextboxElement::acceptsKeyboardInput() {
     return true;
 }
+
+bool CTextboxElement::positioningDependsOnChild() {
+    return m_impl->data.size.hasAuto();
+}

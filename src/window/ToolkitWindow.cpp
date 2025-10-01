@@ -68,26 +68,33 @@ void IToolkitWindow::scheduleFrame() {
 void IToolkitWindow::onPreRender() {
     g_animationManager->tick();
 
-    // FIXME: this doesn't recalc layout properly.
-    // simplify repositions: many will be repeated. Only calculate those that don't have any parent above
-    // std::erase_if(m_needsReposition, [this](WP<IElement> e) {
-    //     if (!e)
-    //         return false;
+    // simplify repositions: step 1, expand ancestors
+    for (auto& e : m_needsReposition) {
+        while (e->impl->parent && e->impl->parent->positioningDependsOnChild()) {
+            e = e->impl->parent;
+        }
+    }
 
-    //     while (e->impl->parent) {
-    //         if (std::ranges::find(m_needsReposition, e) != m_needsReposition.end())
-    //             return true;
+    // step 2: many will be repeated. Only calculate those that don't have any parent above already
+    // scheduled
+    std::erase_if(m_needsReposition, [this](WP<IElement> e) {
+        if (!e)
+            return false;
 
-    //         e = e->impl->parent.lock();
-    //     }
+        while (e->impl->parent) {
+            if (std::ranges::find(m_needsReposition, e->impl->parent) != m_needsReposition.end())
+                return true;
 
-    //     return false;
-    // });
+            e = e->impl->parent.lock();
+        }
 
-    // for (const auto& e : m_needsReposition) {
-    //     g_positioner->repositionNeeded(e.lock());
-    // }
-    // m_needsReposition.clear();
+        return false;
+    });
+
+    for (const auto& e : m_needsReposition) {
+        g_positioner->repositionNeeded(e.lock());
+    }
+    m_needsReposition.clear();
 
     if (m_needsReposition.empty())
         return;
@@ -96,7 +103,6 @@ void IToolkitWindow::onPreRender() {
 }
 
 void IToolkitWindow::scheduleReposition(WP<IElement> e) {
-    damageEntire();
     m_needsReposition.emplace_back(e);
     scheduleFrame();
 }

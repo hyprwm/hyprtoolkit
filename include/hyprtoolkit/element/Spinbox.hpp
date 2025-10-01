@@ -63,6 +63,7 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D>          maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual bool                                              acceptsMouseInput();
         virtual ePointerShape                                     pointerShape();
+        virtual bool                                              positioningDependsOnChild();
 
         Hyprutils::Memory::CUniquePointer<SSpinboxImpl>           m_impl;
 
