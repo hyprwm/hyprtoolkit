@@ -496,6 +496,8 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) {
     m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
     m_borderShader.roundingPower         = glGetUniformLocation(prog, "roundingPower");
 
+    m_polyRenderFb = makeShared<CFramebuffer>();
+
     RASSERT(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT), "Couldn't unset current EGL!");
 }
 
@@ -840,16 +842,15 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
 
     // We always do 4X MSAA on polygons, otherwise pixel galore
 
-    Vector2D     FB_SIZE = ROUNDEDBOX.size() * 2.F;
+    Vector2D FB_SIZE = ROUNDEDBOX.size() * 2.F;
 
-    Mat3x3       matrix = m_projMatrix.projectBox(CBox{{}, FB_SIZE}, HYPRUTILS_TRANSFORM_NORMAL, 0);
+    Mat3x3   matrix = m_projMatrix.projectBox(CBox{{}, FB_SIZE}, HYPRUTILS_TRANSFORM_NORMAL, 0);
 
-    auto         proj     = Mat3x3::outputProjection(FB_SIZE, HYPRUTILS_TRANSFORM_NORMAL);
-    Mat3x3       glMatrix = proj.copy().multiply(matrix);
+    auto     proj     = Mat3x3::outputProjection(FB_SIZE, HYPRUTILS_TRANSFORM_NORMAL);
+    Mat3x3   glMatrix = proj.copy().multiply(matrix);
 
-    CFramebuffer fb;
-    fb.alloc(FB_SIZE.x, FB_SIZE.y);
-    fb.bind();
+    m_polyRenderFb->alloc(FB_SIZE.x, FB_SIZE.y);
+    m_polyRenderFb->bind();
 
     glViewport(0, 0, FB_SIZE.x, FB_SIZE.y);
 
@@ -884,8 +885,7 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
     glDisableVertexAttribArray(m_rectShader.posAttrib);
 
     // bind back to our fbo and render
-    auto tex = fb.getTexture();
-    fb.release();
+    auto tex = m_polyRenderFb->getTexture();
     m_currentRBO->bind();
 
     glViewport(0, 0, m_currentViewport.x, m_currentViewport.y);

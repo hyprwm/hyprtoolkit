@@ -20,6 +20,7 @@ namespace Hyprtoolkit {
     class IElement;
     class CGLTexture;
     class CRenderbuffer;
+    class CFramebuffer;
 
     class COpenGLRenderer : public IRenderer {
       public:
@@ -88,6 +89,7 @@ namespace Hyprtoolkit {
         SP<IToolkitWindow>             m_window;
         CRegion                        m_damage;
         float                          m_scale = 1.F;
+        SP<CFramebuffer>               m_polyRenderFb;
 
         std::vector<SP<CGLTexture>>    m_glTextures;
         std::vector<SP<CRenderbuffer>> m_rbos;
