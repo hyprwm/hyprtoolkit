@@ -72,6 +72,8 @@ void IToolkitWindow::onPreRender() {
 
     // simplify repositions: step 1, expand ancestors
     for (auto& e : m_needsReposition) {
+        if (!e)
+            continue;
         while (e->impl->parent && e->impl->parent->positioningDependsOnChild()) {
             e = e->impl->parent;
         }
@@ -81,7 +83,7 @@ void IToolkitWindow::onPreRender() {
     // scheduled
     std::erase_if(m_needsReposition, [this](WP<IElement> e) {
         if (!e)
-            return false;
+            return true;
 
         while (e->impl->parent) {
             if (std::ranges::find(m_needsReposition, e->impl->parent) != m_needsReposition.end())
