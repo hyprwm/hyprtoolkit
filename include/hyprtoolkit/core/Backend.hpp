@@ -11,6 +11,8 @@
 #include "LogTypes.hpp"
 #include "../palette/Palette.hpp"
 
+#include "CoreMacros.hpp"
+
 namespace Hyprtoolkit {
     class IWindow;
     class CTimer;
