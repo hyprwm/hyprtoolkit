@@ -49,10 +49,11 @@ static void toggleVisibilityOfSecretSlider() {
 }
 
 static void openPopup() {
-    popup = window->openPopup(SPopupCreationData{
-        .pos  = {200, 200},
-        .size = {350, 600},
-    });
+    popup = CWindowBuilder::begin() //
+                ->type(Hyprtoolkit::HT_WINDOW_POPUP)
+                ->preferredSize({350, 600})
+                ->pos({200, 200})
+                ->commence();
 
     auto popbg = CRectangleBuilder::begin()
                      ->rounding(10)
@@ -104,13 +105,13 @@ int main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
 
     //
-    window = backend->openWindow(SWindowCreationData{
-        .preferredSize = Vector2D{480, 480},
-        .minSize       = Vector2D{480, 480},
-        .maxSize       = Vector2D{1280, 720},
-        .title         = "Controls",
-        .class_        = "hyprtoolkit-controls",
-    });
+    window = CWindowBuilder::begin() //
+                 ->preferredSize({480, 480})
+                 ->minSize({480, 480})
+                 ->maxSize({1280, 720})
+                 ->appTitle("Controls")
+                 ->appClass("hyprtoolkit-controls")
+                 ->commence();
 
     auto bg = CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence();
 

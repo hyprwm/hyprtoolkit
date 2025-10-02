@@ -11,6 +11,7 @@ namespace Hyprtoolkit {
         std::string                              text;
         std::string                              fontFamily = "Sans Serif";
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
+        eFontAlignment                           align = HT_FONT_ALIGN_LEFT;
         colorFn                                  color = [] { return g_backend->getPalette()->m_colors.text; };
         float                                    a     = 1.F;
         std::optional<Hyprutils::Math::Vector2D> clampSize;

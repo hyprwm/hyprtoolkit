@@ -11,6 +11,7 @@
 #include "../../renderer/Renderer.hpp"
 #include "../../window/ToolkitWindow.hpp"
 #include "../../core/AnimationManager.hpp"
+#include "../../window/Window.hpp"
 #include "../Element.hpp"
 
 #include "../../Macros.hpp"
@@ -126,9 +127,9 @@ void CComboboxElement::openDropdown() {
             ),
     };
 
-    m_impl->dropdown.popup = impl->window->openPopup(SPopupCreationData{
-        .pos  = impl->position.pos() - Vector2D{50.F, 0.F} + Vector2D{0.F, impl->position.size().y},
-        .size = POPUP_SIZE,
+    m_impl->dropdown.popup = impl->window->openPopup(SWindowCreationData{
+        .preferredSize = POPUP_SIZE,
+        .pos           = impl->position.pos() - Vector2D{50.F, 0.F} + Vector2D{0.F, impl->position.size().y},
     });
 
     m_impl->listeners.popupClosed = m_impl->dropdown.popup->m_events.popupClosed.listen([this, self = m_impl->self] {

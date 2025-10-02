@@ -38,11 +38,7 @@ int main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
 
     //
-    auto window = backend->openWindow(SWindowCreationData{
-        .preferredSize = Vector2D{640, 480},
-        .title         = "Hello World!",
-        .class_        = "hyprtoolkit",
-    });
+    auto window = CWindowBuilder::begin()->preferredSize({640, 480})->appTitle("Hello World!")->appClass("hyprtoolkit")->commence();
 
     window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return CHyprColor{0.1F, 0.1F, 0.1F}; })->commence());
 

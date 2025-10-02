@@ -10,12 +10,12 @@
 
 #include "LogTypes.hpp"
 #include "../palette/Palette.hpp"
-#include "../window/WindowTypes.hpp"
 
 namespace Hyprtoolkit {
     class IWindow;
     class CTimer;
     class ISystemIconFactory;
+    struct SWindowCreationData;
 
     class CBackend {
       public:
@@ -51,12 +51,6 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<ISystemIconFactory> systemIcons();
 
         /*
-            Open a window. This opens a toplevel window. Each window has a root
-            element from which you can start building your scene.
-        */
-        Hyprutils::Memory::CSharedPointer<IWindow> openWindow(const SWindowCreationData& data);
-
-        /*
             Add a timer func. This will return a pointer, but the pointer doesn't need
             to be kept.
         */
@@ -77,12 +71,13 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
 
-      private:
-        CBackend();
+        HT_HIDDEN : CBackend();
 
         void                                                    terminate();
         void                                                    reloadTheme();
         void                                                    rebuildPollfds();
+
+        Hyprutils::Memory::CSharedPointer<IWindow>              openWindow(const SWindowCreationData& data);
 
         std::vector<pollfd>                                     m_pollfds;
 
@@ -125,14 +120,5 @@ namespace Hyprtoolkit {
 
         std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
         std::vector<Hyprutils::Memory::CAtomicSharedPointer<std::function<void()>>> m_idles;
-
-        friend class CBackendLogger;
-        friend class CWaylandPlatform;
-        friend class CWaylandWindow;
-        friend class CGLTexture;
-        friend class CTextElement;
-        friend class CImageElement;
-        friend class CWaylandPopup;
-        friend class IWaylandWindow;
     };
 };

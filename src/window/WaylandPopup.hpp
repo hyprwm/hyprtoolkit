@@ -9,16 +9,16 @@ namespace Hyprtoolkit {
     // TODO: de-dup this shit
     class CWaylandPopup : public IWaylandWindow {
       public:
-        CWaylandPopup(const SPopupCreationData& data, SP<CWaylandWindow> parent);
+        CWaylandPopup(const SWindowCreationData& data, SP<CWaylandWindow> parent);
         virtual ~CWaylandPopup();
 
         virtual void                                       close();
         virtual void                                       open();
-        virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SPopupCreationData& data);
+        virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SWindowCreationData& data);
 
       private:
-        WP<CWaylandWindow> m_parent;
-        SPopupCreationData m_creationData;
+        WP<CWaylandWindow>  m_parent;
+        SWindowCreationData m_creationData;
 
         struct {
             SP<CCXdgPositioner> xdgPositioner;

@@ -139,7 +139,7 @@ void IWaylandWindow::setCursor(ePointerShape shape) {
     g_waylandPlatform->setCursor(shape);
 }
 
-SP<IWindow> IWaylandWindow::openPopup(const SPopupCreationData& data) {
+SP<IWindow> IWaylandWindow::openPopup(const SWindowCreationData& data) {
     auto x    = makeShared<CWaylandPopup>(data, reinterpretPointerCast<CWaylandWindow>(m_self.lock()));
     x->m_self = x;
     m_popups.emplace_back(x);

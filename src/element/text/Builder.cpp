@@ -30,6 +30,11 @@ SP<CTextBuilder> CTextBuilder::text(std::string&& x) {
     return m_self.lock();
 }
 
+SP<CTextBuilder> CTextBuilder::align(eFontAlignment x) {
+    m_data->align = x;
+    return m_self.lock();
+}
+
 SP<CTextBuilder> CTextBuilder::fontFamily(std::string&& x) {
     m_data->fontFamily = std::move(x);
     return m_self.lock();

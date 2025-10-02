@@ -15,7 +15,7 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-CWaylandPopup::CWaylandPopup(const SPopupCreationData& data, SP<CWaylandWindow> window) : m_parent(window), m_creationData(data) {
+CWaylandPopup::CWaylandPopup(const SWindowCreationData& data, SP<CWaylandWindow> window) : m_parent(window), m_creationData(data) {
     m_rootElement = CNullBuilder::begin()->commence();
 }
 
@@ -59,7 +59,7 @@ void CWaylandPopup::open() {
     m_wlPopupState.xdgPositioner->sendSetAnchorRect(m_creationData.pos.x, m_creationData.pos.y, 1, 1);
     m_wlPopupState.xdgPositioner->sendSetAnchor(XDG_POSITIONER_ANCHOR_TOP_LEFT);
     m_wlPopupState.xdgPositioner->sendSetGravity(XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
-    m_wlPopupState.xdgPositioner->sendSetSize(m_creationData.size.x, m_creationData.size.y);
+    m_wlPopupState.xdgPositioner->sendSetSize(m_creationData.preferredSize.value_or({200, 200}).x, m_creationData.preferredSize.value_or({200, 200}).y);
     m_wlPopupState.xdgPositioner->sendSetConstraintAdjustment(
         (xdgPositionerConstraintAdjustment)(XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X));
 
@@ -138,6 +138,6 @@ void CWaylandPopup::close() {
     m_events.popupClosed.emit();
 }
 
-SP<IWindow> CWaylandPopup::openPopup(const SPopupCreationData& data) {
+SP<IWindow> CWaylandPopup::openPopup(const SWindowCreationData& data) {
     return nullptr; //FIXME:
 }

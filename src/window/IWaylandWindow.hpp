@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hyprtoolkit/window/Window.hpp>
-#include <hyprtoolkit/window/WindowTypes.hpp>
 
 #include <hyprutils/math/Vector2D.hpp>
 
@@ -39,16 +38,16 @@ namespace Hyprtoolkit {
       public:
         virtual ~IWaylandWindow() = default;
 
-        virtual Hyprutils::Math::Vector2D                  pixelSize();
-        virtual float                                      scale();
-        virtual void                                       render();
-        virtual void                                       setCursor(ePointerShape shape);
-        virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SPopupCreationData& data);
-        virtual void                                       mouseMove(const Hyprutils::Math::Vector2D& local);
-        virtual void                                       mouseButton(const Input::eMouseButton button, bool state);
-        virtual void                                       mouseAxis(const Input::eAxisAxis axis, float delta);
-        virtual void                                       setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
-        virtual void                                       resetIM();
+        virtual Hyprutils::Math::Vector2D pixelSize();
+        virtual float                     scale();
+        virtual void                      render();
+        virtual void                      setCursor(ePointerShape shape);
+        virtual SP<IWindow>               openPopup(const SWindowCreationData& data);
+        virtual void                      mouseMove(const Hyprutils::Math::Vector2D& local);
+        virtual void                      mouseButton(const Input::eMouseButton button, bool state);
+        virtual void                      mouseAxis(const Input::eAxisAxis axis, float delta);
+        virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
+        virtual void                      resetIM();
 
       protected:
         virtual void onCallback();

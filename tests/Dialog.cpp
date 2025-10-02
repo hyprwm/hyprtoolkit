@@ -27,13 +27,7 @@ int                 main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
 
     //
-    auto window = backend->openWindow(SWindowCreationData{
-                        .preferredSize = Vector2D{480, 180},
-                        .minSize       = Vector2D{480, 180},
-                        .maxSize       = Vector2D{480, 180},
-                        .title         = "Dialog",
-                        .class_        = "hyprtoolkit-dialog",
-    });
+    auto window = CWindowBuilder::begin()->preferredSize({480, 180})->minSize({480, 180})->maxSize({480, 180})->appTitle("Dialog")->appClass("hyprtoolkit-dialog")->commence();
 
     window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence());
 

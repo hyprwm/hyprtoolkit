@@ -4,21 +4,50 @@
 #include <hyprutils/signal/Signal.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
-#include "WindowTypes.hpp"
-
 namespace Hyprtoolkit {
     class IElement;
+    class IWindow;
+    struct SWindowCreationData;
+
+    enum eWindowType : uint8_t {
+        HT_WINDOW_TOPLEVEL = 0,
+        HT_WINDOW_POPUP    = 1,
+    };
+
+    class CWindowBuilder {
+      public:
+        ~CWindowBuilder() = default;
+
+        static Hyprutils::Memory::CSharedPointer<CWindowBuilder> begin();
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        type(eWindowType);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        appTitle(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        appClass(std::string&&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        preferredSize(const Hyprutils::Math::Vector2D&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
+
+        // only for HT_WINDOW_POPUP
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> parent(const Hyprutils::Memory::CSharedPointer<IWindow>& parent);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> pos(const Hyprutils::Math::Vector2D&);
+
+        Hyprutils::Memory::CSharedPointer<IWindow>        commence();
+
+      private:
+        Hyprutils::Memory::CWeakPointer<CWindowBuilder>        m_self;
+        Hyprutils::Memory::CUniquePointer<SWindowCreationData> m_data;
+
+        CWindowBuilder() = default;
+    };
 
     class IWindow {
       public:
         virtual ~IWindow() = default;
 
-        virtual Hyprutils::Math::Vector2D                  pixelSize()                               = 0;
-        virtual float                                      scale()                                   = 0;
-        virtual void                                       close()                                   = 0;
-        virtual void                                       open()                                    = 0;
-        virtual Hyprutils::Math::Vector2D                  cursorPos()                               = 0;
-        virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SPopupCreationData& data) = 0;
+        virtual Hyprutils::Math::Vector2D pixelSize() = 0;
+        virtual float                     scale()     = 0;
+        virtual void                      close()     = 0;
+        virtual void                      open()      = 0;
+        virtual Hyprutils::Math::Vector2D cursorPos() = 0;
 
         struct {
             // coordinates here are logical, meaning pixel size is this * scale()
@@ -33,10 +62,6 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;
 
-      private:
-        IWindow() = default;
-
-        friend class CWaylandWindow;
-        friend class IToolkitWindow;
+        HT_HIDDEN : IWindow() = default;
     };
 };

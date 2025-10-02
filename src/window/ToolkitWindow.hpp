@@ -7,6 +7,8 @@
 #include "../helpers/Memory.hpp"
 #include "../core/Input.hpp"
 
+#include "Window.hpp"
+
 namespace Hyprtoolkit {
 
     struct SToolkitFocusLock {
@@ -33,6 +35,8 @@ namespace Hyprtoolkit {
         virtual void                      onPreRender();
         virtual void                      render() = 0;
         virtual void                      scheduleReposition(WP<IElement> e);
+
+        virtual SP<IWindow>               openPopup(const SWindowCreationData& data) = 0;
 
         virtual void                      mouseEnter(const Hyprutils::Math::Vector2D& local);
         virtual void                      mouseMove(const Hyprutils::Math::Vector2D& local);
