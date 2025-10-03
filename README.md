@@ -1,11 +1,7 @@
 ## hyprtoolkit
 A modern C++ Wayland-native GUI toolkit
 
-> [!IMPORTANT]
-> hyprtoolkit is a very fresh project, and breaking changes are to be expected
-> almost daily, alongside bugs and missing features.
->
-> You have been warned.
+![](./assets/preview.png)
 
 ## What Hyprtoolkit is
 
@@ -22,7 +18,3 @@ a few goals:
 Hyprtoolkit is not:
 - cross-platform
 - packed with crazy features
-
-## State
-
-Hyprtoolkit is in a very early stage of development. I would expect bugs and missing features!
