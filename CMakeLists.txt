@@ -36,7 +36,7 @@ pkg_check_modules(
   xkbcommon
   pango
   hyprgraphics>=0.2.0
-  aquamarine
+  aquamarine>=0.9.5
 )
 
 configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
