@@ -28,14 +28,14 @@ pkg_check_modules(
   wayland-client
   wayland-protocols
   egl
-  hyprutils>=0.8.0
+  hyprutils>=0.9.0
   hyprlang>=0.6.0
   pixman-1
   libdrm
   gbm
   xkbcommon
   pango
-  hyprgraphics>=0.1.6
+  hyprgraphics>=0.2.0
   aquamarine
 )
 
