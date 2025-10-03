@@ -34,9 +34,6 @@ std::function<CHyprColor()> SCheckboxImpl::getFgColor() {
 CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_impl(makeUnique<SCheckboxImpl>()) {
     m_impl->data = data;
 
-    m_impl->layout =
-        CRowLayoutBuilder::begin()->gap(3)->size({data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
-
     m_impl->background = CRectangleBuilder::begin()
                              ->color([] { return g_palette->m_colors.base; })
                              ->rounding(4)
@@ -54,25 +51,9 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
 
     m_impl->foreground->setPositionMode(HT_POSITION_CENTER);
 
-    m_impl->label = CTextBuilder::begin()
-                        ->text(std::string{data.label})
-                        ->color([] { return g_palette->m_colors.text; })
-                        ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
-                        ->callback([this] {
-                            m_impl->labelChanged = true;
-                            impl->window->scheduleReposition(impl->self);
-                        })
-                        ->commence();
-
-    m_impl->spacer = CNullBuilder::begin()->commence();
-    m_impl->spacer->setGrow(true, true);
-
-    m_impl->layout->addChild(m_impl->label);
-    m_impl->layout->addChild(m_impl->spacer);
-    m_impl->layout->addChild(m_impl->background);
     m_impl->background->addChild(m_impl->foreground);
 
-    addChild(m_impl->layout);
+    addChild(m_impl->background);
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         m_impl->background
@@ -137,8 +118,6 @@ SP<CCheckboxBuilder> CCheckboxElement::rebuild() {
 void CCheckboxElement::replaceData(const SCheckboxData& data) {
     m_impl->data = data;
 
-    m_impl->label->rebuild()->text(std::string{data.label})->commence();
-
     CHyprColor col               = g_palette->m_colors.accent;
     col.a                        = m_impl->data.toggled ? 1.F : 0.F;
     *m_impl->foreground->m_color = col;
@@ -152,49 +131,15 @@ Hyprutils::Math::Vector2D CCheckboxElement::size() {
 }
 
 std::optional<Vector2D> CCheckboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 std::optional<Vector2D> CCheckboxElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 std::optional<Vector2D> CCheckboxElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
 }
 
 bool CCheckboxElement::acceptsMouseInput() {

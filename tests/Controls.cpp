@@ -152,8 +152,8 @@ int main(int argc, char** argv, char** envp) {
                        ->onMainClick([](SP<CButtonElement>) { openPopup(); })
                        ->commence();
 
-    auto checkbox  = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
-    auto checkbox2 = CCheckboxBuilder::begin()->label("Checkbox")->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->fill(true)->commence();
+    auto checkbox  = stretchLayout("checkbox 1", CCheckboxBuilder::begin()->commence());
+    auto checkbox2  = stretchLayout("checkbox 2", CCheckboxBuilder::begin()->commence());
 
     auto spinbox = CSpinboxBuilder::begin()
                        ->label("Spinbox")

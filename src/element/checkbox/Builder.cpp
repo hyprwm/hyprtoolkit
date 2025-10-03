@@ -9,11 +9,6 @@ SP<CCheckboxBuilder> CCheckboxBuilder::begin() {
     return p;
 }
 
-SP<CCheckboxBuilder> CCheckboxBuilder::label(std::string&& s) {
-    m_data->label = std::move(s);
-    return m_self.lock();
-}
-
 SP<CCheckboxBuilder> CCheckboxBuilder::onToggled(std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)>&& f) {
     m_data->onToggled = std::move(f);
     return m_self.lock();
@@ -21,11 +16,6 @@ SP<CCheckboxBuilder> CCheckboxBuilder::onToggled(std::function<void(Hyprutils::M
 
 SP<CCheckboxBuilder> CCheckboxBuilder::toggled(bool x) {
     m_data->toggled = x;
-    return m_self.lock();
-}
-
-SP<CCheckboxBuilder> CCheckboxBuilder::fill(bool x) {
-    m_data->fill = x;
     return m_self.lock();
 }
 

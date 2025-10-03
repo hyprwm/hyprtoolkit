@@ -19,10 +19,8 @@ namespace Hyprtoolkit {
         ~CCheckboxBuilder() = default;
 
         static Hyprutils::Memory::CSharedPointer<CCheckboxBuilder> begin();
-        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        onToggled(std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)>&&);
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        toggled(bool);
-        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        fill(bool);
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CCheckboxElement>        commence();
