@@ -4,6 +4,7 @@
   cmake,
   pkg-config,
   aquamarine,
+  cairo,
   hyprgraphics,
   hyprlang,
   hyprutils,
@@ -34,6 +35,7 @@ stdenv.mkDerivation {
 
   buildInputs = [
     aquamarine
+    cairo
     hyprgraphics
     hyprlang
     hyprutils

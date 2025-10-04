@@ -28,7 +28,6 @@ in {
           + (mkDate (inputs.self.lastModifiedDate or "19700101"))
           + "_"
           + (inputs.self.shortRev or "dirty");
-        inherit (final) hyprlang hyprutils;
       };
     })
   ];

@@ -35,6 +35,7 @@ pkg_check_modules(
   gbm
   xkbcommon
   pango
+  cairo
   hyprgraphics>=0.2.0
   aquamarine>=0.9.5
 )
