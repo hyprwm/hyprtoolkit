@@ -53,6 +53,7 @@ static void openPopup() {
                 ->type(Hyprtoolkit::HT_WINDOW_POPUP)
                 ->preferredSize({350, 600})
                 ->pos({200, 200})
+                ->parent(window)
                 ->commence();
 
     auto popbg = CRectangleBuilder::begin()
