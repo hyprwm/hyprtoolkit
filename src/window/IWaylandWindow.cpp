@@ -61,8 +61,6 @@ void IWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
     damageEntire();
 
     m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
-
-    render();
 }
 
 void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
@@ -90,6 +88,9 @@ void IWaylandWindow::render() {
     m_waylandState.bufIdx = (m_waylandState.bufIdx + 1) % 2;
 
     onPreRender();
+
+    if (!currentBuffer)
+        return;
 
     m_needsFrame = false;
 

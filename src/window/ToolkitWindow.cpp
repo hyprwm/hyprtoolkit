@@ -56,13 +56,14 @@ void IToolkitWindow::damageEntire() {
 }
 
 void IToolkitWindow::scheduleFrame() {
-    if (m_needsFrame)
+    if (m_scheduledRender)
         return;
 
-    m_needsFrame = true;
+    m_scheduledRender = true;
     g_backend->addIdle([this, self = m_self] {
         if (!self)
             return;
+        m_scheduledRender = false;
         render();
     });
 }
