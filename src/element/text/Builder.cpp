@@ -45,6 +45,11 @@ SP<CTextBuilder> CTextBuilder::clampSize(Hyprutils::Math::Vector2D&& x) {
     return m_self.lock();
 }
 
+SP<CTextBuilder> CTextBuilder::noEllipsize(bool x) {
+    m_data->noEllipsize = std::move(x);
+    return m_self.lock();
+}
+
 SP<CTextBuilder> CTextBuilder::callback(std::function<void()>&& x) {
     m_data->callback = std::move(x);
     return m_self.lock();

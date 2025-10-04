@@ -31,6 +31,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        fontFamily(std::string&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        clampSize(Hyprutils::Math::Vector2D&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        callback(std::function<void()>&&);
+        Hyprutils::Memory::CSharedPointer<CTextBuilder>        noEllipsize(bool);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CTextElement>        commence();
@@ -67,7 +68,6 @@ namespace Hyprtoolkit {
         virtual void                                           recheckColor();
 
         void                                                   renderTex();
-        Hyprutils::Math::Vector2D                              unscale();
 
         Hyprutils::Memory::CUniquePointer<STextImpl>           m_impl;
 

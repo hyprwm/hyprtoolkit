@@ -33,8 +33,14 @@ int                 main(int argc, char** argv, char** envp) {
 
     auto layout = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
     layout->setMargin(3);
+    
+    auto layoutInner = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.85F, 1.F}})->commence();
 
     window->m_rootElement->addChild(layout);
+
+    layout->addChild(layoutInner);
+    layoutInner->setGrow(true);
+    layoutInner->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_HCENTER);
 
     auto title = CTextBuilder::begin()->text("Hello World")->fontSize({CFontSize::HT_FONT_H2})->color([] { return backend->getPalette()->m_colors.text; })->commence();
 
@@ -65,18 +71,15 @@ int                 main(int argc, char** argv, char** envp) {
                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
                        ->commence();
 
-    auto null1 = CNullBuilder::begin()->commence();
     auto null2 = CNullBuilder::begin()->commence();
 
-    auto layout2 = CRowLayoutBuilder::begin()->gap(3)->commence();
+    auto layout2 = CRowLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
-    null1->setGrow(true);
     null2->setGrow(true);
 
-    layout->addChild(title);
-    layout->addChild(hr);
-    layout->addChild(content);
-    layout->addChild(null1);
+    layoutInner->addChild(title);
+    layoutInner->addChild(hr);
+    layoutInner->addChild(content);
 
     layout2->addChild(null2);
     layout2->addChild(button2);

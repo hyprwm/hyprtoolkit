@@ -45,6 +45,7 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                             if (impl->window)
                                 impl->window->scheduleReposition(impl->self);
                         })
+                        ->noEllipsize(true)
                         ->commence();
 
     m_impl->label->setPositionMode(m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_CENTER :

@@ -60,6 +60,7 @@ void IToolkitWindow::scheduleFrame() {
         return;
 
     m_scheduledRender = true;
+    m_needsFrame      = true;
     g_backend->addIdle([this, self = m_self] {
         if (!self)
             return;

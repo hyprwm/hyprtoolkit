@@ -61,27 +61,43 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
     for (i = 0; i < C.size(); ++i) {
         const auto& child = C.at(i);
 
-        if (MAX_Y <= usedY) {
-            // no more space
-            child->impl->setFailedPositioning(true);
-            continue;
-        }
-
-        Vector2D cSize = childSize(child);
+        Vector2D    cSize = childSize(child);
         if (cSize == Vector2D{-1, -1})
             cSize = {box.w, 1.F};
 
-        if (usedY + cSize.y > MAX_Y + 2 /* FIXME: WHERE THE FUCK IS THIS LOST??? */) {
-            // we exceeded our available space.
-            if (!child->minimumSize(box.size())) {
-                // doesn't fit: disable
-                child->impl->setFailedPositioning(true);
-                continue;
+        if (usedY + cSize.y > MAX_Y + 1) {
+            // doesn't fit: try to shrink any previous element if it allows to do so
+            // FIXME: if we resize and fail to fit, it will mess up the layout a bit
+            float needs = (usedY + cSize.y) - (MAX_Y + 1);
+            for (int j = i - 1; j >= 0; --j) {
+                const auto& prevChild = C.at(j);
+                const auto  MIN       = prevChild->minimumSize(impl->position.size());
+                if (!MIN.has_value()) {
+                    // we can shrink this child to zero
+                    if (needs > heights.at(j)) {
+                        heights.at(j) -= needs - heights.at(j);
+                        needs -= needs - heights.at(j);
+                        continue;
+                    }
+
+                    heights.at(j) -= needs;
+                    needs = 0;
+                    break; // done
+                } else if (MIN->y < heights.at(j)) {
+                    // we can shrink it a bit
+                    if (needs > (heights.at(j) - MIN->y)) {
+                        heights.at(j) -= needs - (heights.at(j) - MIN->y);
+                        needs -= needs - (heights.at(j) - MIN->y);
+                        continue;
+                    }
+
+                    heights.at(j) -= needs;
+                    needs = 0;
+                    break; // done
+                }
             }
 
-            cSize = *child->minimumSize(box.size());
-
-            if (usedY + cSize.y > MAX_Y) {
+            if (needs > 0) {
                 // doesn't fit: disable and expand the last if possible
                 child->impl->setFailedPositioning(true);
                 if (i != 0) {
@@ -94,11 +110,19 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
                     heights.at(i - 1) += MAX_Y - usedY;
                 }
                 continue;
-            }
+            } else {
 
-            // squeeze the last element in
-            heights.at(i) = MAX_Y - usedY;
-            continue;
+                child->impl->setFailedPositioning(false);
+                heights.at(i) = cSize.y;
+
+                // recalc usedX cuz we changed stuff
+                usedY = 0;
+                for (const auto& h : heights) {
+                    usedY += h + m_impl->data.gap;
+                }
+
+                continue;
+            }
         }
 
         // can fit: use preferred
@@ -132,20 +156,11 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
         if (child->impl->failedPositioning)
             continue;
 
-        Vector2D   cSize   = childSize(child);
-        const auto maxSize = child->maximumSize(box.size());
+        Vector2D cSize = childSize(child);
 
-        bool       EXPANDS_W = box.w > cSize.x;
+        cSize.x = std::clamp(cSize.x, 0.0, impl->position.w);
 
-        if (maxSize) {
-            cSize.x   = maxSize->x;
-            EXPANDS_W = box.w > cSize.x;
-        } else if (EXPANDS_W) {
-            cSize.x   = box.w;
-            EXPANDS_W = false;
-        }
-
-        CBox childBox = CBox{EXPANDS_W ? box.x + ((box.w - cSize.x) / 2) : box.x, box.y + currentY, cSize.x, (double)heights.at(i)};
+        CBox childBox = CBox{box.x + ((box.w - cSize.x) / 2), box.y + currentY, cSize.x, (double)heights.at(i)};
 
         g_positioner->position(child, childBox, Vector2D{box.w, -1.F});
 
