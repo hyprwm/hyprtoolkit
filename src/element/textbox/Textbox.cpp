@@ -185,6 +185,13 @@ void CTextboxElement::updateCursor() {
     g_positioner->repositionNeeded(m_impl->self.lock());
 }
 
+void CTextboxElement::focus(bool focus) {
+    if (!impl->window)
+        return;
+
+    impl->window->setKeyboardFocus(impl->self.lock());
+}
+
 void CTextboxElement::paint() {
     ;
 }

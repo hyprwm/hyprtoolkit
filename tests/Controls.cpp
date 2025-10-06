@@ -33,6 +33,7 @@ static SP<CSliderElement>       hiddenSlider;
 static SP<CColumnLayoutElement> mainLayout;
 static SP<IWindow>              window;
 static SP<IWindow>              popup;
+static SP<CTextboxElement>      textbox;
 
 constexpr float                 SLIDER_HEIGHT = 10.F;
 
@@ -76,6 +77,10 @@ static void openPopup() {
     popup->open();
 
     popup->m_events.popupClosed.listenStatic([] { popup.reset(); });
+}
+
+static void selectTextbox() {
+    textbox->focus();
 }
 
 static SP<IElement> stretchLayout(std::string&& label, SP<IElement> control) {
@@ -153,8 +158,14 @@ int main(int argc, char** argv, char** envp) {
                        ->onMainClick([](SP<CButtonElement>) { openPopup(); })
                        ->commence();
 
+    auto button3 = CButtonBuilder::begin()
+                       ->label("Select textbox")
+                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->onMainClick([](SP<CButtonElement>) { selectTextbox(); })
+                       ->commence();
+
     auto checkbox  = stretchLayout("checkbox 1", CCheckboxBuilder::begin()->commence());
-    auto checkbox2  = stretchLayout("checkbox 2", CCheckboxBuilder::begin()->commence());
+    auto checkbox2 = stretchLayout("checkbox 2", CCheckboxBuilder::begin()->commence());
 
     auto spinbox = CSpinboxBuilder::begin()
                        ->label("Spinbox")
@@ -177,9 +188,10 @@ int main(int argc, char** argv, char** envp) {
             ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.3F, 25.F}})
             ->commence());
 
-    auto textbox = stretchLayout(
-        "Textbox",
-        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence());
+    textbox =
+        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence();
+
+    auto textboxCont = stretchLayout("Textbox", textbox);
 
     hiddenSlider = CSliderBuilder::begin()->max(100)->val(69)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, SLIDER_HEIGHT}})->commence();
 
@@ -187,13 +199,14 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(hr);
     mainLayout->addChild(button1);
     mainLayout->addChild(button2);
+    mainLayout->addChild(button3);
     mainLayout->addChild(checkbox);
     mainLayout->addChild(checkbox2);
     mainLayout->addChild(spinbox);
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
     mainLayout->addChild(combo);
-    mainLayout->addChild(textbox);
+    mainLayout->addChild(textboxCont);
 
     auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable");
     if (iconDesc->exists()) {

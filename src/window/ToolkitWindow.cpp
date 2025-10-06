@@ -254,6 +254,16 @@ void IToolkitWindow::unfocusKeyboard() {
     m_keyboardFocus.reset();
 }
 
+void IToolkitWindow::setKeyboardFocus(SP<IElement> e) {
+    unfocusKeyboard();
+
+    if (!e->acceptsKeyboardInput())
+        return;
+
+    m_keyboardFocus = e;
+    e->impl->m_externalEvents.keyboardEnter.emit();
+}
+
 void IToolkitWindow::setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor) {
     ;
 }

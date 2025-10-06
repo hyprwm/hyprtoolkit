@@ -46,6 +46,7 @@ namespace Hyprtoolkit {
 
         virtual void                      keyboardKey(const Input::SKeyboardKeyEvent& e);
         virtual void                      unfocusKeyboard();
+        virtual void                      setKeyboardFocus(SP<IElement>);
 
         virtual void                      updateFocus(const Hyprutils::Math::Vector2D& coords);
         virtual void                      setCursor(ePointerShape shape) = 0;
