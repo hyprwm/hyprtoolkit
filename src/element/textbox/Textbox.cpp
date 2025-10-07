@@ -264,7 +264,12 @@ SP<CTextboxBuilder> CTextboxElement::rebuild() {
 }
 
 void CTextboxElement::replaceData(const STextboxData& data) {
+    const bool TEXTS_DIFFER = data.text != m_impl->data.text;
+
     m_impl->data = data;
+
+    if (TEXTS_DIFFER)
+        updateLabel();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
