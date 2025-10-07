@@ -7,6 +7,7 @@
 #include "./platforms/WaylandPlatform.hpp"
 #include "../renderer/gl/OpenGL.hpp"
 #include "../window/WaylandWindow.hpp"
+#include "../window/WaylandLayer.hpp"
 #include "../Macros.hpp"
 #include "../helpers/Timer.hpp"
 #include "../element/Element.hpp"
@@ -89,6 +90,17 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
             return nullptr;
         g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
         g_renderer = g_openGL;
+    }
+
+    if (data.type == HT_WINDOW_LAYER) {
+        if (!g_waylandPlatform->m_waylandState.layerShell)
+            return nullptr;
+
+        auto w                         = makeShared<CWaylandLayer>(data);
+        w->m_self                      = w;
+        w->m_rootElement->impl->window = w;
+        g_waylandPlatform->m_layers.emplace_back(w);
+        return w;
     }
 
     auto w                         = makeShared<CWaylandWindow>(data);

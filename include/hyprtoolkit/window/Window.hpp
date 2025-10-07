@@ -12,6 +12,7 @@ namespace Hyprtoolkit {
     enum eWindowType : uint8_t {
         HT_WINDOW_TOPLEVEL = 0,
         HT_WINDOW_POPUP    = 1,
+        HT_WINDOW_LAYER    = 2,
     };
 
     class CWindowBuilder {
@@ -25,6 +26,15 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        preferredSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
+
+        // only for HT_WINDOW_LAYER
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> marginTopLeft(const Hyprutils::Math::Vector2D&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> marginBottomRight(const Hyprutils::Math::Vector2D&);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> layer(uint32_t);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> anchor(uint32_t);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> exclusiveEdge(uint32_t);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> exclusiveZone(int32_t);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> kbInteractive(uint32_t);
 
         // only for HT_WINDOW_POPUP
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> parent(const Hyprutils::Memory::CSharedPointer<IWindow>& parent);
@@ -58,6 +68,9 @@ namespace Hyprtoolkit {
 
             // popup closed
             Hyprutils::Signal::CSignalT<> popupClosed;
+
+            // layer closed
+            Hyprutils::Signal::CSignalT<> layerClosed;
         } m_events;
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;

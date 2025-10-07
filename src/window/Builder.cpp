@@ -51,6 +51,41 @@ SP<CWindowBuilder> CWindowBuilder::pos(const Hyprutils::Math::Vector2D& x) {
     return m_self.lock();
 }
 
+SP<CWindowBuilder> CWindowBuilder::marginTopLeft(const Hyprutils::Math::Vector2D& x) {
+    m_data->marginTopLeft = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::marginBottomRight(const Hyprutils::Math::Vector2D& x) {
+    m_data->marginBottomRight = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::layer(uint32_t x) {
+    m_data->layer = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::anchor(uint32_t x) {
+    m_data->anchor = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::exclusiveEdge(uint32_t x) {
+    m_data->exclusiveEdge = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::exclusiveZone(int32_t x) {
+    m_data->exclusiveZone = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::kbInteractive(uint32_t x) {
+    m_data->kbInteractive = x;
+    return m_self.lock();
+}
+
 SP<IWindow> CWindowBuilder::commence() {
     switch (m_data->type) {
         case HT_WINDOW_POPUP:
@@ -58,7 +93,8 @@ SP<IWindow> CWindowBuilder::commence() {
                 return nullptr;
 
             return reinterpretPointerCast<IToolkitWindow>(m_data->parent)->openPopup(*m_data);
-        case HT_WINDOW_TOPLEVEL: return g_backend->openWindow(*m_data);
+        case HT_WINDOW_TOPLEVEL:
+        case HT_WINDOW_LAYER: return g_backend->openWindow(*m_data);
     }
     return nullptr;
 }

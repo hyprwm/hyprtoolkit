@@ -8,6 +8,7 @@
 #include "../Input.hpp"
 #include "../../element/Element.hpp"
 #include "../../window/WaylandWindow.hpp"
+#include "../../window/WaylandLayer.hpp"
 #include "../../Macros.hpp"
 
 #include <xf86drm.h>
@@ -78,6 +79,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.textInputManager =
                 makeShared<CCZwpTextInputManagerV3>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_text_input_manager_v3_interface, 1));
+        } else if (NAME == zwlr_layer_shell_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 5, id));
+            m_waylandState.layerShell =
+                makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwlr_layer_shell_v1_interface, 5));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             m_waylandState.dmabuf =
@@ -145,8 +150,20 @@ bool CWaylandPlatform::dispatchEvents() {
     return true;
 }
 
-SP<CWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
+SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
     for (const auto& w : m_windows) {
+        if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
+            return w.lock();
+
+        for (const auto& p : w->m_popups) {
+            if (!p)
+                continue;
+            auto pp = reinterpretPointerCast<CWaylandWindow>(p.lock());
+            if (pp->m_waylandState.surface && pp->m_waylandState.surface->resource() == proxy)
+                return pp;
+        }
+    }
+    for (const auto& w : m_layers) {
         if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
             return w.lock();
 

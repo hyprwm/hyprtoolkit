@@ -19,6 +19,7 @@
 #include <viewporter.hpp>
 #include <cursor-shape-v1.hpp>
 #include <text-input-unstable-v3.hpp>
+#include <wlr-layer-shell-unstable-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -27,6 +28,8 @@ namespace Hyprtoolkit {
     typedef std::function<void(void)> FIdleCallback;
 
     class CWaylandWindow;
+    class IWaylandWindow;
+    class CWaylandLayer;
 
     class CWaylandPlatform {
       public:
@@ -43,7 +46,7 @@ namespace Hyprtoolkit {
 
         bool               dispatchEvents();
 
-        SP<CWaylandWindow> windowForSurf(wl_proxy* proxy);
+        SP<IWaylandWindow> windowForSurf(wl_proxy* proxy);
 
         void               onKey(uint32_t keycode, bool state);
 
@@ -74,6 +77,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>      cursorShapeDev;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>      textInputManager;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputV3>             textInput;
+            Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
 
             // control
             bool dmabufFailed = false;
@@ -104,7 +108,8 @@ namespace Hyprtoolkit {
         } m_drmState;
 
         std::vector<WP<CWaylandWindow>> m_windows;
-        WP<CWaylandWindow>              m_currentWindow;
+        std::vector<WP<CWaylandLayer>>  m_layers;
+        WP<IWaylandWindow>              m_currentWindow;
         uint32_t                        m_lastEnterSerial = 0;
     };
 

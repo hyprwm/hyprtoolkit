@@ -16,5 +16,13 @@ namespace Hyprtoolkit {
         // popups
         Hyprutils::Math::Vector2D pos;
         SP<IWindow>               parent;
+
+        // layers
+        uint32_t                  layer         = 0;
+        uint32_t                  anchor        = 0;
+        int32_t                   exclusiveZone = 0;
+        uint32_t                  exclusiveEdge = 0;
+        Hyprutils::Math::Vector2D marginTopLeft, marginBottomRight;
+        uint32_t                  kbInteractive = 0;
     };
 };

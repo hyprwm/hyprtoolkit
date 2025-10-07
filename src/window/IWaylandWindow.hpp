@@ -55,7 +55,7 @@ namespace Hyprtoolkit {
         virtual void configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
         virtual void resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
-      private:
+      protected:
         float m_fractionalScale = 1.0;
 
         bool  m_open                  = false;

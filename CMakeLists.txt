@@ -123,6 +123,7 @@ protocolnew("stable/viewporter" "viewporter" false)
 protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
 protocolnew("unstable/text-input" "text-input-unstable-v3" false)
+protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
 
 # tests
 add_custom_target(tests)
