@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace Hyprtoolkit::Input {
     enum eMouseButton : uint8_t {
@@ -13,5 +14,11 @@ namespace Hyprtoolkit::Input {
     enum eAxisAxis : uint8_t {
         AXIS_AXIS_HORIZONTAL,
         AXIS_AXIS_VERTICAL,
+    };
+
+    struct SKeyboardKeyEvent {
+        uint32_t    xkbKeysym = 0;
+        bool        down      = true;
+        std::string utf8      = "";
     };
 }

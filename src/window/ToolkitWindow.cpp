@@ -240,6 +240,8 @@ void IToolkitWindow::mouseLeave() {
 }
 
 void IToolkitWindow::keyboardKey(const Input::SKeyboardKeyEvent& ev) {
+    m_events.keyboardKey.emit(ev);
+
     if (!m_keyboardFocus)
         return;
 

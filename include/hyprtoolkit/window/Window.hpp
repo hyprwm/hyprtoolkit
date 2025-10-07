@@ -4,6 +4,8 @@
 #include <hyprutils/signal/Signal.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
+#include "../core/Input.hpp"
+
 namespace Hyprtoolkit {
     class IElement;
     class IWindow;
@@ -71,6 +73,9 @@ namespace Hyprtoolkit {
 
             // layer closed
             Hyprutils::Signal::CSignalT<> layerClosed;
+
+            // (global) key events
+            Hyprutils::Signal::CSignalT<Input::SKeyboardKeyEvent> keyboardKey;
         } m_events;
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;
