@@ -297,6 +297,8 @@ void CWaylandPlatform::initSeat() {
                 m_lastEnterSerial = serial;
 
                 setCursor(HT_POINTER_ARROW);
+
+                m_waylandState.seatState.pressedKeys.clear();
             });
 
             m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
@@ -307,6 +309,8 @@ void CWaylandPlatform::initSeat() {
 
                 w->mouseLeave();
                 m_currentWindow.reset();
+
+                m_waylandState.seatState.pressedKeys.clear();
             });
 
             m_waylandState.pointer->setMotion([this](CCWlPointer* r, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
