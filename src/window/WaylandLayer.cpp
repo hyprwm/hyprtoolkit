@@ -39,12 +39,34 @@ void CWaylandLayer::open() {
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
 
-    m_waylandState.surface = makeShared<CCWlSurface>(g_waylandPlatform->m_waylandState.compositor->sendCreateSurface());
+    if (!m_waylandState.surface) {
+        m_waylandState.surface = makeShared<CCWlSurface>(g_waylandPlatform->m_waylandState.compositor->sendCreateSurface());
 
-    if (!m_waylandState.surface->resource()) {
-        g_logger->log(HT_LOG_ERROR, "layer opening failed: no surface given. Errno: {}", errno);
-        return;
-    }
+        if (!m_waylandState.surface->resource()) {
+            g_logger->log(HT_LOG_ERROR, "layer opening failed: no surface given. Errno: {}", errno);
+            return;
+        }
+
+        auto inputRegion = makeShared<CCWlRegion>(g_waylandPlatform->m_waylandState.compositor->sendCreateRegion());
+        inputRegion->sendAdd(0, 0, INT32_MAX, INT32_MAX);
+
+        m_waylandState.surface->sendSetInputRegion(inputRegion.get());
+
+        m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
+
+        m_waylandState.fractional->setPreferredScale([this](CCWpFractionalScaleV1*, uint32_t scale) {
+            const bool SAMESCALE = m_fractionalScale == scale / 120.0;
+            m_fractionalScale    = scale / 120.0;
+
+            g_logger->log(HT_LOG_DEBUG, "layer: got fractional scale: {:.1f}%", m_fractionalScale * 100.F);
+
+            if (!SAMESCALE && m_layerState.configured)
+                onScaleUpdate();
+        });
+
+        m_waylandState.viewport = makeShared<CCWpViewport>(g_waylandPlatform->m_waylandState.viewporter->sendGetViewport(m_waylandState.surface->resource()));
+    } else
+        m_waylandState.surface->sendAttach(nullptr, 0, 0);
 
     m_layerState.layerSurface = makeShared<CCZwlrLayerSurfaceV1>(g_waylandPlatform->m_waylandState.layerShell->sendGetLayerSurface(
         m_waylandState.surface->proxy(), nullptr, sc<zwlrLayerShellV1Layer>(m_creationData.layer), m_creationData.class_.c_str()));
@@ -53,11 +75,6 @@ void CWaylandLayer::open() {
         g_logger->log(HT_LOG_ERROR, "layer opening failed: no ls resource. Errno: {}", errno);
         return;
     }
-
-    auto inputRegion = makeShared<CCWlRegion>(g_waylandPlatform->m_waylandState.compositor->sendCreateRegion());
-    inputRegion->sendAdd(0, 0, INT32_MAX, INT32_MAX);
-
-    m_waylandState.surface->sendSetInputRegion(inputRegion.get());
 
     m_layerState.layerSurface->sendSetSize(m_creationData.preferredSize->x, m_creationData.preferredSize->y);
     m_layerState.layerSurface->sendSetAnchor(sc<zwlrLayerSurfaceV1Anchor>(m_creationData.anchor));
@@ -94,20 +111,6 @@ void CWaylandLayer::open() {
         m_events.resized.emit(m_waylandState.logicalSize);
     });
 
-    m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
-
-    m_waylandState.fractional->setPreferredScale([this](CCWpFractionalScaleV1*, uint32_t scale) {
-        const bool SAMESCALE = m_fractionalScale == scale / 120.0;
-        m_fractionalScale    = scale / 120.0;
-
-        g_logger->log(HT_LOG_DEBUG, "layer: got fractional scale: {:.1f}%", m_fractionalScale * 100.F);
-
-        if (!SAMESCALE && m_layerState.configured)
-            onScaleUpdate();
-    });
-
-    m_waylandState.viewport = makeShared<CCWpViewport>(g_waylandPlatform->m_waylandState.viewporter->sendGetViewport(m_waylandState.surface->resource()));
-
     m_layerState.layerSurface->setClosed([this](CCZwlrLayerSurfaceV1* r) {
         close();
         m_events.layerClosed.emit();
@@ -120,16 +123,11 @@ void CWaylandLayer::close() {
 
     m_open = false;
 
-    m_layerState.configured = false;
-
     m_waylandState.frameCallback.reset();
 
-    if (m_layerState.layerSurface)
-        m_layerState.layerSurface->sendDestroy();
-    if (m_waylandState.surface)
-        m_waylandState.surface->sendDestroy();
-
-    m_waylandState = {};
+    m_layerState.layerSurface.reset();
+    m_waylandState.logicalSize = {};
+    m_layerState.configured    = false;
 }
 
 void CWaylandLayer::render() {
