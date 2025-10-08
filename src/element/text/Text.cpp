@@ -197,7 +197,7 @@ bool CTextElement::positioningDependsOnChild() {
     return m_impl->data.size.hasAuto();
 }
 
-Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
+Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred(const std::optional<std::string> override) {
     auto                  CAIROSURFACE = makeUnique<CCairoSurface>(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1 /* dummy value */));
     auto                  CAIRO        = cairo_create(CAIROSURFACE->cairo());
 
@@ -213,11 +213,11 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
     PangoAttrList* attrList = nullptr;
     GError*        gError   = nullptr;
     char*          buf      = nullptr;
-    if (pango_parse_markup(data.text.c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
+    if (pango_parse_markup(override.value_or(data.text).c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
         pango_layout_set_text(layout, buf, -1);
     else {
         g_error_free(gError);
-        pango_layout_set_text(layout, data.text.c_str(), -1);
+        pango_layout_set_text(layout, override.value_or(data.text).c_str(), -1);
     }
 
     if (!attrList)

@@ -3,7 +3,7 @@
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/element/Null.hpp>
 #include <xkbcommon/xkbcommon-keysyms.h>
-#include <pango/pangoft2.h>
+#include <pango/pangocairo.h>
 
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
@@ -124,8 +124,8 @@ void CTextboxElement::init() {
         updateLabel();
     });
 
-    // m_impl->placeholder->setMargin(1);
-    // m_impl->text->setMargin(1);
+    m_impl->placeholder->setMargin(1);
+    m_impl->text->setMargin(1);
 
     addChild(m_impl->bg);
     m_impl->cursorCont->addChild(m_impl->cursor);
@@ -197,56 +197,7 @@ void CTextboxElement::paint() {
 }
 
 Vector2D STextboxImpl::estimateTextSize(const std::string& s) {
-    const auto            SCALE = text->m_impl->lastScale;
-
-    PangoFontMap*         fm     = pango_ft2_font_map_new();
-    PangoContext*         ctx    = pango_font_map_create_context(fm);
-    PangoLayout*          layout = pango_layout_new(ctx);
-
-    PangoFontDescription* fontDesc = pango_font_description_from_string("Sans Serif");
-    pango_font_description_set_size(fontDesc, text->m_impl->data.fontSize.ptSize() * SCALE * PANGO_SCALE);
-    pango_layout_set_font_description(layout, fontDesc);
-    pango_font_description_free(fontDesc);
-
-    PangoAlignment pangoAlign = PANGO_ALIGN_LEFT;
-
-    pango_layout_set_alignment(layout, pangoAlign);
-
-    PangoAttrList* attrList = nullptr;
-    GError*        gError   = nullptr;
-    char*          buf      = nullptr;
-    if (pango_parse_markup(s.c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
-        pango_layout_set_text(layout, buf, -1);
-    else {
-        g_error_free(gError);
-        pango_layout_set_text(layout, s.c_str(), -1);
-    }
-
-    if (!attrList)
-        attrList = pango_attr_list_new();
-
-    if (buf)
-        free(buf);
-
-    pango_attr_list_insert(attrList, pango_attr_scale_new(1));
-    pango_layout_set_attributes(layout, attrList);
-    pango_attr_list_unref(attrList);
-
-    int layoutWidth, layoutHeight;
-    pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
-
-    if (text->m_impl->data.clampSize) {
-        layoutWidth  = text->m_impl->data.clampSize->x > 0 ? std::min(layoutWidth, sc<int>(text->m_impl->data.clampSize->x * PANGO_SCALE)) : layoutWidth;
-        layoutHeight = text->m_impl->data.clampSize->y > 0 ? std::min(layoutHeight, sc<int>(text->m_impl->data.clampSize->y * PANGO_SCALE)) : layoutHeight;
-        if (text->m_impl->data.clampSize->x >= 0)
-            pango_layout_set_width(layout, layoutWidth);
-        if (text->m_impl->data.clampSize->y >= 0)
-            pango_layout_set_height(layout, layoutHeight);
-
-        pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
-    }
-
-    return Vector2D{layoutWidth / PANGO_SCALE, layoutHeight / PANGO_SCALE};
+    return text->m_impl->getTextSizePreferred(s) / text->m_impl->lastScale;
 }
 
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {

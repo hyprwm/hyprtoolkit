@@ -38,7 +38,7 @@ namespace Hyprtoolkit {
 
         bool                                                                 waitingForTex = false;
 
-        Hyprutils::Math::Vector2D                                            getTextSizePreferred();
+        Hyprutils::Math::Vector2D                                            getTextSizePreferred(const std::optional<std::string> override = std::nullopt);
         Hyprutils::Math::Vector2D                                            unscale(const Hyprutils::Math::Vector2D& x);
     };
 }
