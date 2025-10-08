@@ -40,6 +40,9 @@ void CTextElement::replaceData(const STextData& data) {
         m_impl->preferred            = m_impl->getTextSizePreferred();
         m_impl->needsTexRefresh      = true;
     }
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
 }
 
 SP<CTextBuilder> CTextElement::rebuild() {
