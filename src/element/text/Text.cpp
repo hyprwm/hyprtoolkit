@@ -11,6 +11,7 @@
 #include "../../helpers/Memory.hpp"
 
 #include "../Element.hpp"
+#include "../../helpers/UTF8.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -267,7 +268,7 @@ CBox STextImpl::getCharBox(size_t charIdxUTF8) {
 
     PangoRectangle rect;
 
-    pango_layout_index_to_pos(LAYOUT, charIdxUTF8, &rect);
+    pango_layout_index_to_pos(LAYOUT, UTF8::utf8ToOffset(data.text, charIdxUTF8), &rect);
 
     CBox charBox =
         CBox{
@@ -298,12 +299,12 @@ std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
     if (index == -1)
         return std::nullopt;
 
-    return index + trailing;
+    return UTF8::offsetToUTF8Len(data.text, index + trailing);
 }
 
 float STextImpl::getCursorPos(size_t charIdx) {
-    if (charIdx >= data.text.size() + 1)
-        return preferred.x / lastScale;
+    if (charIdx >= UTF8::length(data.text))
+        return preferred.x;
 
     if (charIdx == 0)
         return 0;
@@ -314,7 +315,7 @@ float STextImpl::getCursorPos(size_t charIdx) {
 }
 
 float STextImpl::getCursorPos(const Hyprutils::Math::Vector2D& click) {
-    return getCursorPos(vecToCharIdx(click).value_or(data.text.size() + 1));
+    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(data.text) + 1));
 }
 
 Vector2D STextImpl::unscale(const Vector2D& x) {

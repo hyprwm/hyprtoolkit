@@ -31,6 +31,37 @@ size_t UTF8::length(const std::string& s) {
     return len;
 }
 
+size_t UTF8::offsetToUTF8Len(const std::string& s, size_t offset) {
+    if (s.empty())
+        return 0;
+
+    const char* c    = s.c_str();
+    size_t      len  = 0;
+    auto        endp = std::min(s.c_str() + s.length(), s.c_str() + offset);
+    while (c < endp) {
+        c += codepointLen(c, (endp - c));
+        len++;
+    }
+    return len;
+}
+
+size_t UTF8::utf8ToOffset(const std::string& s, size_t utf8) {
+    if (s.empty())
+        return 0;
+
+    const char* c    = s.c_str();
+    size_t      len  = 0;
+    auto        endp = s.c_str() + s.length();
+    while (c < endp) {
+        if (len >= utf8)
+            return c - s.c_str();
+
+        c += codepointLen(c, (endp - c));
+        len++;
+    }
+    return s.size();
+}
+
 std::string UTF8::substr(const std::string& s, size_t start, size_t length) {
     if (s.empty() || length == 0)
         return "";
