@@ -29,6 +29,11 @@ SP<CTextboxBuilder> CTextboxBuilder::size(CDynamicSize&& s) {
     return m_self.lock();
 }
 
+SP<CTextboxBuilder> CTextboxBuilder::multiline(bool x) {
+    m_data->multiline = x;
+    return m_self.lock();
+}
+
 SP<CTextboxElement> CTextboxBuilder::commence() {
     if (m_element) {
         m_element->replaceData(*m_data);

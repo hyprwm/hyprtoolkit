@@ -119,6 +119,9 @@ void CTextboxElement::init() {
         if (ev.utf8.empty())
             return;
 
+        if (ev.utf8 == "\n" && !m_impl->data.multiline)
+            return;
+
         m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + ev.utf8 + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
         m_impl->inputState.cursor++;
         updateLabel();

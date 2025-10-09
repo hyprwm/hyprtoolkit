@@ -20,6 +20,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder>        placeholder(std::string&&);
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder>        defaultText(std::string&&);
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder>        onTextEdited(std::function<void(Hyprutils::Memory::CSharedPointer<CTextboxElement>, const std::string&)>&&);
+        Hyprutils::Memory::CSharedPointer<CTextboxBuilder>        multiline(bool);
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CTextboxElement>        commence();
