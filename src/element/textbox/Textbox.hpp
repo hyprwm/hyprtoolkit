@@ -39,6 +39,7 @@ namespace Hyprtoolkit {
             CHyprSignalListener enter;
             CHyprSignalListener leave;
             CHyprSignalListener mouseMove;
+            CHyprSignalListener mouseButton;
         } listeners;
 
         struct {

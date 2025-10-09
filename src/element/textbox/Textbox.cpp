@@ -77,6 +77,11 @@ void CTextboxElement::init() {
 
     m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) { m_impl->lastCursorPos = pos; });
 
+    m_impl->listeners.mouseButton = impl->m_externalEvents.mouseButton.listen([this](Input::eMouseButton button, bool down) {
+        if (down)
+            m_impl->focusCursorAtClickedChar();
+    });
+
     m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] {
         m_impl->bg->addChild(m_impl->cursorCont);
         impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);

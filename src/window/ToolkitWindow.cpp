@@ -206,7 +206,7 @@ void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
                 m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
             m_keyboardFocus = m_mainHoverElement->m_el;
             m_keyboardFocus->impl->m_externalEvents.keyboardEnter.emit();
-        } else if (m_keyboardFocus) {
+        } else if (m_keyboardFocus != m_mainHoverElement->m_el) {
             m_keyboardFocus->impl->m_externalEvents.keyboardLeave.emit();
             m_keyboardFocus.reset();
         }
