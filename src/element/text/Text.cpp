@@ -1,5 +1,6 @@
 #include "Text.hpp"
 
+#include <cmath>
 #include <hyprtoolkit/palette/Palette.hpp>
 #include <hyprgraphics/color/Color.hpp>
 #include <pango-1.0/pango/pangocairo.h>
@@ -146,7 +147,7 @@ void CTextElement::renderTex() {
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
         .text     = m_impl->data.text,
         .font     = m_impl->data.fontFamily,
-        .fontSize = sc<size_t>(m_impl->lastFontSizeUnscaled * m_impl->lastScale),
+        .fontSize = sc<size_t>(std::round(m_impl->lastFontSizeUnscaled * m_impl->lastScale)),
         .color    = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
         // .align
         .maxSize   = maxSize,
@@ -212,7 +213,7 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     PangoLayout*          layout = pango_cairo_create_layout(CAIRO);
 
     PangoFontDescription* fontDesc = pango_font_description_from_string("Sans Serif");
-    pango_font_description_set_size(fontDesc, lastFontSizeUnscaled * lastScale * PANGO_SCALE);
+    pango_font_description_set_size(fontDesc, std::round(lastFontSizeUnscaled * lastScale) * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);
 
@@ -276,13 +277,12 @@ CBox STextImpl::getCharBox(size_t charIdxUTF8) {
 
     CBox charBox =
         CBox{
-            rect.x / sc<float>(PANGO_SCALE),
-            rect.y / sc<float>(PANGO_SCALE),
-            rect.width / sc<float>(PANGO_SCALE),
-            rect.height / sc<float>(PANGO_SCALE),
+            sc<float>(rect.x) / sc<float>(PANGO_SCALE),
+            sc<float>(rect.y) / sc<float>(PANGO_SCALE),
+            sc<float>(rect.width) / sc<float>(PANGO_SCALE),
+            sc<float>(rect.height) / sc<float>(PANGO_SCALE),
         }
-            .scale(1 / lastScale)
-            .round();
+            .scale(1.F / lastScale);
 
     cairo_destroy(CAIRO);
 
@@ -319,7 +319,7 @@ float STextImpl::getCursorPos(size_t charIdx) {
 }
 
 float STextImpl::getCursorPos(const Hyprutils::Math::Vector2D& click) {
-    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(data.text) + 1));
+    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(data.text)));
 }
 
 Vector2D STextImpl::unscale(const Vector2D& x) {

@@ -65,12 +65,12 @@ void CTextboxElement::init() {
 
     m_impl->selectBgCont->addChild(m_impl->selectBg);
 
-    m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
+    m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.6F}})->commence();
     m_impl->cursor =
-        CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.75F}})->commence();
+        CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
 
-    m_impl->cursorCont->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->cursor->setPositionMode(HT_POSITION_CENTER);
+    m_impl->cursorCont->setPositionMode(HT_POSITION_VCENTER);
+    m_impl->cursor->setPositionMode(HT_POSITION_ABSOLUTE);
 
     m_impl->placeholder->setPositionMode(HT_POSITION_VCENTER);
     m_impl->text->setPositionMode(HT_POSITION_VCENTER);
@@ -274,7 +274,7 @@ void STextboxImpl::updateCursor() {
 
     const float WIDTH = text->m_impl->getCursorPos(inputState.cursor);
 
-    cursorCont->setAbsolutePosition({
+    cursor->setAbsolutePosition({
         WIDTH,
         0.F,
     });
@@ -282,7 +282,7 @@ void STextboxImpl::updateCursor() {
     if (self->impl->window)
         self->impl->window->setIMTo(self->impl->position.copy().translate({std::clamp(WIDTH, 0.F, sc<float>(self->impl->position.w)), 0.F}), data.text, inputState.cursor);
 
-    g_positioner->repositionNeeded(self.lock());
+    g_positioner->repositionNeeded(cursor);
 }
 
 void CTextboxElement::focus(bool focus) {
