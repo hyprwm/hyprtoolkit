@@ -75,10 +75,13 @@ void CTextboxElement::init() {
     m_impl->placeholder->setPositionMode(HT_POSITION_VCENTER);
     m_impl->text->setPositionMode(HT_POSITION_VCENTER);
 
+    m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) { m_impl->lastCursorPos = pos; });
+
     m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] {
         m_impl->bg->addChild(m_impl->cursorCont);
         impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
         m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })->commence();
+        m_impl->focusCursorAtClickedChar();
     });
 
     m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] {
@@ -94,7 +97,7 @@ void CTextboxElement::init() {
 
             if (m_impl->inputState.selectBegin >= 0) {
                 m_impl->removeSelectedText();
-                updateLabel();
+                m_impl->updateLabel();
                 return;
             }
 
@@ -104,13 +107,13 @@ void CTextboxElement::init() {
                 // TODO: make this remove until a newline?
                 m_impl->data.text         = UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
                 m_impl->inputState.cursor = 0;
-                updateLabel();
+                m_impl->updateLabel();
                 return;
             }
 
             m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor - 1) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
             m_impl->inputState.cursor--;
-            updateLabel();
+            m_impl->updateLabel();
             return;
         }
 
@@ -119,7 +122,7 @@ void CTextboxElement::init() {
                 return;
 
             m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor + 1);
-            updateLabel();
+            m_impl->updateLabel();
             return;
         }
 
@@ -131,7 +134,7 @@ void CTextboxElement::init() {
                 // go to beginning
                 // TODO: make this go back a word instead
                 m_impl->inputState.cursor = 0;
-                updateLabel();
+                m_impl->updateLabel();
                 return;
             }
 
@@ -153,7 +156,7 @@ void CTextboxElement::init() {
             }
 
             m_impl->inputState.cursor--;
-            updateCursor();
+            m_impl->updateCursor();
             return;
         }
 
@@ -179,7 +182,7 @@ void CTextboxElement::init() {
             }
 
             m_impl->inputState.cursor++;
-            updateCursor();
+            m_impl->updateCursor();
             return;
         }
 
@@ -199,7 +202,7 @@ void CTextboxElement::init() {
             m_impl->inputState.selectEnd   = UTF8::length(m_impl->data.text);
             m_impl->inputState.cursor      = m_impl->inputState.selectEnd + 1;
             m_impl->updateSelect();
-            updateCursor();
+            m_impl->updateCursor();
             return;
         }
 
@@ -213,7 +216,7 @@ void CTextboxElement::init() {
 
         m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + ev.utf8 + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
         m_impl->inputState.cursor++;
-        updateLabel();
+        m_impl->updateLabel();
     });
 
     m_impl->placeholder->setMargin(1);
@@ -223,58 +226,58 @@ void CTextboxElement::init() {
     m_impl->cursorCont->addChild(m_impl->cursor);
     m_impl->bg->impl->clipChildren = true;
 
-    updateLabel();
+    m_impl->updateLabel();
 
     impl->grouped = true;
 }
 
-void CTextboxElement::updateLabel() {
-    if (m_impl->data.text.empty()) {
-        m_impl->bg->removeChild(m_impl->text);
-        m_impl->bg->addChild(m_impl->placeholder);
+void STextboxImpl::updateLabel() {
+    if (data.text.empty()) {
+        bg->removeChild(text);
+        bg->addChild(placeholder);
     } else {
-        m_impl->bg->removeChild(m_impl->placeholder);
-        m_impl->bg->addChild(m_impl->text);
+        bg->removeChild(placeholder);
+        bg->addChild(text);
     }
 
-    auto fullLabel = m_impl->inputState.imText.empty() ? //
-        m_impl->data.text :                              //
-        UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + "<u>" + m_impl->inputState.imText + "</u>" + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
+    auto fullLabel = inputState.imText.empty() ? //
+        data.text :                              //
+        UTF8::substr(data.text, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(data.text, inputState.cursor);
 
-    m_impl->text->rebuild()->text(std::move(fullLabel))->commence();
+    text->rebuild()->text(std::move(fullLabel))->commence();
 
     updateCursor();
 
-    if (m_impl->data.onTextEdited)
-        m_impl->data.onTextEdited(m_impl->self.lock(), m_impl->data.text);
+    if (data.onTextEdited)
+        data.onTextEdited(self.lock(), data.text);
 }
 
 void CTextboxElement::imCommitNewText(const std::string& s) {
     m_impl->inputState.imText = s;
-    updateLabel();
+    m_impl->updateLabel();
 }
 
 void CTextboxElement::imApplyText() {
     m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + m_impl->inputState.imText + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
     m_impl->inputState.cursor += UTF8::length(m_impl->inputState.imText);
     m_impl->inputState.imText.clear();
-    updateLabel();
+    m_impl->updateLabel();
 }
 
-void CTextboxElement::updateCursor() {
-    m_impl->inputState.cursor = std::clamp(m_impl->inputState.cursor, sc<size_t>(0), sc<size_t>(UTF8::length(m_impl->data.text)));
+void STextboxImpl::updateCursor() {
+    inputState.cursor = std::clamp(inputState.cursor, sc<size_t>(0), sc<size_t>(UTF8::length(data.text)));
 
-    const float WIDTH = m_impl->estimateTextSize(UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor)).x;
+    const float WIDTH = text->m_impl->getCursorPos(inputState.cursor);
 
-    m_impl->cursorCont->setAbsolutePosition({
+    cursorCont->setAbsolutePosition({
         WIDTH,
         0.F,
     });
 
-    if (impl->window)
-        impl->window->setIMTo(impl->position.copy().translate({std::clamp(WIDTH, 0.F, sc<float>(impl->position.w)), 0.F}), m_impl->data.text, m_impl->inputState.cursor);
+    if (self->impl->window)
+        self->impl->window->setIMTo(self->impl->position.copy().translate({std::clamp(WIDTH, 0.F, sc<float>(self->impl->position.w)), 0.F}), data.text, inputState.cursor);
 
-    g_positioner->repositionNeeded(m_impl->self.lock());
+    g_positioner->repositionNeeded(self.lock());
 }
 
 void CTextboxElement::focus(bool focus) {
@@ -288,18 +291,14 @@ void CTextboxElement::paint() {
     ;
 }
 
-Vector2D STextboxImpl::estimateTextSize(const std::string& s) {
-    return text->m_impl->getTextSizePreferred(s) / text->m_impl->lastScale;
-}
-
 void STextboxImpl::updateSelect() {
     if (inputState.selectBegin < 0) {
         bg->removeChild(selectBgCont);
         return;
     }
 
-    float begin = estimateTextSize(UTF8::substr(data.text, 0, inputState.selectBegin)).x, //
-        end     = estimateTextSize(UTF8::substr(data.text, 0, inputState.selectEnd)).x;
+    float begin = text->m_impl->getCursorPos(inputState.selectBegin), //
+        end     = text->m_impl->getCursorPos(inputState.selectEnd);
 
     float width = end - begin;
 
@@ -317,6 +316,11 @@ void STextboxImpl::removeSelectedText() {
         inputState.selectEnd   = -1;
         updateSelect();
     }
+}
+
+void STextboxImpl::focusCursorAtClickedChar() {
+    inputState.cursor = text->m_impl->vecToCharIdx(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size()) + 1;
+    updateCursor();
 }
 
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
@@ -339,7 +343,7 @@ void CTextboxElement::replaceData(const STextboxData& data) {
     m_impl->data = data;
 
     if (TEXTS_DIFFER)
-        updateLabel();
+        m_impl->updateLabel();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

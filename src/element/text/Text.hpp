@@ -2,6 +2,7 @@
 #pragma once
 
 #include <hyprtoolkit/element/Text.hpp>
+#include <pango/pangocairo.h>
 
 #include "../../helpers/Memory.hpp"
 #include "../../core/InternalBackend.hpp"
@@ -21,24 +22,32 @@ namespace Hyprtoolkit {
     };
 
     struct STextImpl {
-        STextData                                                            data;
+        STextData                                                                                      data;
 
-        WP<CTextElement>                                                     self;
+        WP<CTextElement>                                                                               self;
 
-        size_t                                                               lastFontSizeUnscaled = 0;
-        float                                                                lastScale            = 1.F;
-        bool                                                                 needsTexRefresh = false, newTex = false;
+        size_t                                                                                         lastFontSizeUnscaled = 0;
+        float                                                                                          lastScale            = 1.F;
+        bool                                                                                           needsTexRefresh = false, newTex = false;
 
-        Hyprutils::Math::Vector2D                                            lastMaxSize;
+        Hyprutils::Math::Vector2D                                                                      lastMaxSize;
 
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                  tex;
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                  oldTex; // while loading a new one
-        Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CTextResource> resource;
-        Hyprutils::Math::Vector2D                                            size, preferred;
+        SP<IRendererTexture>                                                                           tex;
+        SP<IRendererTexture>                                                                           oldTex; // while loading a new one
+        ASP<Hyprgraphics::CTextResource>                                                               resource;
+        Hyprutils::Math::Vector2D                                                                      size, preferred;
 
-        bool                                                                 waitingForTex = false;
+        bool                                                                                           waitingForTex = false;
 
-        Hyprutils::Math::Vector2D                                            getTextSizePreferred(const std::optional<std::string> override = std::nullopt);
-        Hyprutils::Math::Vector2D                                            unscale(const Hyprutils::Math::Vector2D& x);
+        Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
+        Hyprutils::Math::CBox                                                                          getCharBox(size_t charIdxUTF8);
+        std::optional<size_t>                                                                          vecToCharIdx(const Hyprutils::Math::Vector2D& vec); // utf8
+        float                                                                                          getCursorPos(size_t charIdx);
+        float                                                                                          getCursorPos(const Hyprutils::Math::Vector2D& click);
+        Hyprutils::Math::Vector2D                                                                      unscale(const Hyprutils::Math::Vector2D& x);
+        std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Hyprutils::Math::Vector2D> prepPangoLayout();
+
+        friend class CTextboxElement;
+        friend struct STextboxImpl;
     };
 }

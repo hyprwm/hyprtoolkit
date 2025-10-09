@@ -62,9 +62,6 @@ namespace Hyprtoolkit {
         virtual void                                     imApplyText();
         virtual bool                                     positioningDependsOnChild();
 
-        void                                             updateLabel();
-        void                                             updateCursor();
-
         Hyprutils::Memory::CUniquePointer<STextboxImpl>  m_impl;
 
         friend class CTextboxBuilder;

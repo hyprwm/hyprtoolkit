@@ -98,7 +98,7 @@ void CTextElement::paint() {
 void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    const auto DESIRED = m_impl->unscale(m_impl->preferred);
+    const auto DESIRED = m_impl->preferred;
     if (DESIRED.x > 0 && DESIRED.y > 0 && !m_impl->data.noEllipsize) {
         const auto PREV     = m_impl->lastMaxSize;
         m_impl->lastMaxSize = {-1, -1};
@@ -189,7 +189,7 @@ std::optional<Vector2D> CTextElement::maximumSize(const Hyprutils::Math::Vector2
 }
 
 std::optional<Vector2D> CTextElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->unscale(m_impl->preferred);
+    return m_impl->preferred;
 }
 
 std::optional<Vector2D> CTextElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
@@ -200,7 +200,7 @@ bool CTextElement::positioningDependsOnChild() {
     return m_impl->data.size.hasAuto();
 }
 
-Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred(const std::optional<std::string> override) {
+std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> STextImpl::prepPangoLayout() {
     auto                  CAIROSURFACE = makeUnique<CCairoSurface>(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1 /* dummy value */));
     auto                  CAIRO        = cairo_create(CAIROSURFACE->cairo());
 
@@ -216,11 +216,11 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred(const std::optional<st
     PangoAttrList* attrList = nullptr;
     GError*        gError   = nullptr;
     char*          buf      = nullptr;
-    if (pango_parse_markup(override.value_or(data.text).c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
+    if (pango_parse_markup(data.text.c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
         pango_layout_set_text(layout, buf, -1);
     else {
         g_error_free(gError);
-        pango_layout_set_text(layout, override.value_or(data.text).c_str(), -1);
+        pango_layout_set_text(layout, data.text.c_str(), -1);
     }
 
     if (!attrList)
@@ -251,12 +251,70 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred(const std::optional<st
         pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
     }
 
-    // TODO: avoid this?
+    return std::make_tuple<>(std::move(CAIROSURFACE), CAIRO, layout, Vector2D{sc<float>(layoutWidth) / PANGO_SCALE, sc<float>(layoutHeight) / PANGO_SCALE});
+}
+
+Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+
     cairo_destroy(CAIRO);
 
-    CAIROSURFACE.reset();
+    return LAYOUTSIZE / lastScale;
+}
 
-    return Vector2D{layoutWidth / sc<float>(PANGO_SCALE), layoutHeight / sc<float>(PANGO_SCALE)};
+CBox STextImpl::getCharBox(size_t charIdxUTF8) {
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+
+    PangoRectangle rect;
+
+    pango_layout_index_to_pos(LAYOUT, charIdxUTF8, &rect);
+
+    CBox charBox =
+        CBox{
+            rect.x / sc<float>(PANGO_SCALE),
+            rect.y / sc<float>(PANGO_SCALE),
+            rect.width / sc<float>(PANGO_SCALE),
+            rect.height / sc<float>(PANGO_SCALE),
+        }
+            .scale(1 / lastScale)
+            .round();
+
+    cairo_destroy(CAIRO);
+
+    return charBox;
+}
+
+std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+
+    auto pangoX = sc<int>(vec.x * PANGO_SCALE), //
+        pangoY  = sc<int>(vec.y * PANGO_SCALE);
+
+    int index = 0, trailing = 0;
+    pango_layout_xy_to_index(LAYOUT, pangoX, pangoY, &index, &trailing);
+
+    cairo_destroy(CAIRO);
+
+    if (index == -1)
+        return std::nullopt;
+
+    return index + trailing;
+}
+
+float STextImpl::getCursorPos(size_t charIdx) {
+    if (charIdx >= data.text.size() + 1)
+        return preferred.x / lastScale;
+
+    if (charIdx == 0)
+        return 0;
+
+    auto box = getCharBox(charIdx - 1);
+
+    return (box.x + box.w);
+}
+
+float STextImpl::getCursorPos(const Hyprutils::Math::Vector2D& click) {
+    return getCursorPos(vecToCharIdx(click).value_or(data.text.size() + 1));
 }
 
 Vector2D STextImpl::unscale(const Vector2D& x) {

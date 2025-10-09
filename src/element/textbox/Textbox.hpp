@@ -38,6 +38,7 @@ namespace Hyprtoolkit {
             CHyprSignalListener key;
             CHyprSignalListener enter;
             CHyprSignalListener leave;
+            CHyprSignalListener mouseMove;
         } listeners;
 
         struct {
@@ -46,8 +47,12 @@ namespace Hyprtoolkit {
             ssize_t     selectBegin = -1, selectEnd = -1;
         } inputState;
 
-        Hyprutils::Math::Vector2D estimateTextSize(const std::string& s);
         void                      updateSelect();
         void                      removeSelectedText();
+        void                      focusCursorAtClickedChar();
+        void                      updateLabel();
+        void                      updateCursor();
+
+        Hyprutils::Math::Vector2D lastCursorPos;
     };
 }
