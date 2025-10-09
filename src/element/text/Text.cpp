@@ -83,8 +83,12 @@ void CTextElement::paint() {
 
     CBox     renderBox      = impl->position;
     Vector2D texSizeLogical = m_impl->size / impl->window->scale();
-    if (impl->positionMode == HT_POSITION_CENTER || impl->positionMode == HT_POSITION_HCENTER || impl->positionMode == HT_POSITION_VCENTER)
+    if (impl->positionMode == HT_POSITION_CENTER)
         renderBox.translate((renderBox.size() - texSizeLogical) / 2);
+    else if (impl->positionMode == HT_POSITION_HCENTER)
+        renderBox.translate({(renderBox.size() - texSizeLogical).x / 2, 0.F});
+    else if (impl->positionMode == HT_POSITION_VCENTER)
+        renderBox.translate({0.F, (renderBox.size() - texSizeLogical).y / 2});
     renderBox.w = texSizeLogical.x;
     renderBox.h = texSizeLogical.y;
 
