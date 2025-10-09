@@ -117,11 +117,6 @@ int main(int argc, char** argv, char** envp) {
                  ->maxSize({1280, 720})
                  ->appTitle("Controls")
                  ->appClass("hyprtoolkit-controls")
-                 ->type(HT_WINDOW_LAYER)
-                 ->anchor(1 | 2 | 4 | 8)
-                 ->layer(3)
-                 ->exclusiveZone(-1)
-                 ->kbInteractive(2)
                  ->commence();
 
     auto bg = CRectangleBuilder::begin()->color([] { return backend->getPalette()->m_colors.background; })->commence();

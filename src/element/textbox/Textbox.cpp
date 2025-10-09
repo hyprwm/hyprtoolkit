@@ -51,6 +51,20 @@ void CTextboxElement::init() {
                      ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                      ->commence();
 
+    m_impl->selectBgCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.7F}})->commence();
+    m_impl->selectBg     = CRectangleBuilder::begin()
+                           ->color([] {
+                               auto x = g_palette->m_colors.accent.darken(0.4F);
+                               x.a    = 0.5F;
+                               return x;
+                           })
+                           ->commence();
+
+    m_impl->selectBgCont->setPositionMode(HT_POSITION_VCENTER);
+    m_impl->selectBg->setPositionMode(HT_POSITION_ABSOLUTE);
+
+    m_impl->selectBgCont->addChild(m_impl->selectBg);
+
     m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
     m_impl->cursor =
         CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.75F}})->commence();
@@ -78,6 +92,22 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == 0)
                 return;
 
+            if (m_impl->inputState.selectBegin >= 0) {
+                m_impl->removeSelectedText();
+                updateLabel();
+                return;
+            }
+
+            if (ev.modMask & (Input::HT_MODIFIER_CTRL | Input::HT_MODIFIER_SHIFT)) {
+                // remove everything before
+                // TODO: make shift remove word?
+                // TODO: make this remove until a newline?
+                m_impl->data.text         = UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
+                m_impl->inputState.cursor = 0;
+                updateLabel();
+                return;
+            }
+
             m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor - 1) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
             m_impl->inputState.cursor--;
             updateLabel();
@@ -96,6 +126,32 @@ void CTextboxElement::init() {
         if (ev.xkbKeysym == XKB_KEY_Left) {
             if (m_impl->inputState.cursor == 0)
                 return;
+
+            if (ev.modMask & Input::HT_MODIFIER_CTRL) {
+                // go to beginning
+                // TODO: make this go back a word instead
+                m_impl->inputState.cursor = 0;
+                updateLabel();
+                return;
+            }
+
+            if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
+                if (m_impl->inputState.selectBegin == -1) {
+                    m_impl->inputState.selectBegin = m_impl->inputState.cursor - 1;
+                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor;
+                } else {
+                    if (sc<ssize_t>(m_impl->inputState.cursor) == m_impl->inputState.selectBegin)
+                        m_impl->inputState.selectBegin--;
+                    else
+                        m_impl->inputState.selectEnd--;
+                }
+                m_impl->updateSelect();
+            } else {
+                m_impl->inputState.selectBegin = -1;
+                m_impl->inputState.selectEnd   = -1;
+                m_impl->updateSelect();
+            }
+
             m_impl->inputState.cursor--;
             updateCursor();
             return;
@@ -104,6 +160,24 @@ void CTextboxElement::init() {
         if (ev.xkbKeysym == XKB_KEY_Right) {
             if (m_impl->inputState.cursor == m_impl->data.text.length())
                 return;
+
+            if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
+                if (m_impl->inputState.selectBegin == -1) {
+                    m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor + 1;
+                } else {
+                    if (sc<ssize_t>(m_impl->inputState.cursor) == m_impl->inputState.selectEnd)
+                        m_impl->inputState.selectEnd++;
+                    else
+                        m_impl->inputState.selectBegin++;
+                }
+                m_impl->updateSelect();
+            } else {
+                m_impl->inputState.selectBegin = -1;
+                m_impl->inputState.selectEnd   = -1;
+                m_impl->updateSelect();
+            }
+
             m_impl->inputState.cursor++;
             updateCursor();
             return;
@@ -113,6 +187,19 @@ void CTextboxElement::init() {
             if (impl->window)
                 impl->window->unfocusKeyboard();
 
+            m_impl->inputState.selectBegin = -1;
+            m_impl->inputState.selectEnd   = -1;
+            m_impl->updateSelect();
+
+            return;
+        }
+
+        if ((ev.xkbKeysym == XKB_KEY_A || ev.xkbKeysym == XKB_KEY_a) && ev.modMask & Input::HT_MODIFIER_CTRL) {
+            m_impl->inputState.selectBegin = 0;
+            m_impl->inputState.selectEnd   = UTF8::length(m_impl->data.text);
+            m_impl->inputState.cursor      = m_impl->inputState.selectEnd + 1;
+            m_impl->updateSelect();
+            updateCursor();
             return;
         }
 
@@ -121,6 +208,8 @@ void CTextboxElement::init() {
 
         if (ev.utf8 == "\n" && !m_impl->data.multiline)
             return;
+
+        m_impl->removeSelectedText();
 
         m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + ev.utf8 + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
         m_impl->inputState.cursor++;
@@ -201,6 +290,33 @@ void CTextboxElement::paint() {
 
 Vector2D STextboxImpl::estimateTextSize(const std::string& s) {
     return text->m_impl->getTextSizePreferred(s) / text->m_impl->lastScale;
+}
+
+void STextboxImpl::updateSelect() {
+    if (inputState.selectBegin < 0) {
+        bg->removeChild(selectBgCont);
+        return;
+    }
+
+    float begin = estimateTextSize(UTF8::substr(data.text, 0, inputState.selectBegin)).x, //
+        end     = estimateTextSize(UTF8::substr(data.text, 0, inputState.selectEnd)).x;
+
+    float width = end - begin;
+
+    selectBg->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {width, 1.F}})->commence();
+    selectBg->setAbsolutePosition(Vector2D{begin, 0.F});
+
+    bg->addChild(selectBgCont);
+}
+
+void STextboxImpl::removeSelectedText() {
+    if (inputState.selectBegin >= 0 && inputState.selectEnd >= 0 && inputState.selectBegin < inputState.selectEnd) {
+        data.text              = UTF8::substr(data.text, 0, inputState.selectBegin) + UTF8::substr(data.text, inputState.selectEnd);
+        inputState.cursor      = inputState.selectBegin;
+        inputState.selectBegin = -1;
+        inputState.selectEnd   = -1;
+        updateSelect();
+    }
 }
 
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {

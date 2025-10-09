@@ -27,6 +27,8 @@ namespace Hyprtoolkit {
         SP<CRectangleElement> bg;
         SP<CNullElement>      cursorCont;
         SP<CRectangleElement> cursor;
+        SP<CNullElement>      selectBgCont;
+        SP<CRectangleElement> selectBg;
         SP<CTextElement>      text;
         SP<CTextElement>      placeholder;
 
@@ -41,8 +43,11 @@ namespace Hyprtoolkit {
         struct {
             size_t      cursor = 0;
             std::string imText;
+            ssize_t     selectBegin = -1, selectEnd = -1;
         } inputState;
 
         Hyprutils::Math::Vector2D estimateTextSize(const std::string& s);
+        void                      updateSelect();
+        void                      removeSelectedText();
     };
 }

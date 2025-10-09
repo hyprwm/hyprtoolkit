@@ -272,6 +272,26 @@ void CWaylandPlatform::initSeat() {
                     m_waylandState.seatState.currentLayer = group;
 
                 xkb_state_update_mask(m_waylandState.seatState.xkbState, mods_depressed, mods_latched, mods_locked, 0, 0, group);
+
+                m_currentMods       = 0;
+                const auto XKB_MASK = mods_depressed | mods_latched | mods_locked;
+
+#define GET_MOD_STATE(xkb, ht)                                                                                                                                                     \
+    {                                                                                                                                                                              \
+        auto idx = xkb_map_mod_get_index(m_waylandState.seatState.xkbKeymap, xkb);                                                                                                 \
+        m_currentMods |= (XKB_MASK & (1 << idx)) ? ht : 0;                                                                                                                         \
+    }
+
+                GET_MOD_STATE(XKB_MOD_NAME_SHIFT, Input::HT_MODIFIER_SHIFT);
+                GET_MOD_STATE(XKB_MOD_NAME_CAPS, Input::HT_MODIFIER_CAPS);
+                GET_MOD_STATE(XKB_MOD_NAME_CTRL, Input::HT_MODIFIER_CTRL);
+                GET_MOD_STATE(XKB_MOD_NAME_ALT, Input::HT_MODIFIER_ALT);
+                GET_MOD_STATE(XKB_MOD_NAME_NUM, Input::HT_MODIFIER_MOD2);
+                GET_MOD_STATE("Mod3", Input::HT_MODIFIER_MOD3);
+                GET_MOD_STATE(XKB_MOD_NAME_LOGO, Input::HT_MODIFIER_META);
+                GET_MOD_STATE("Mod5", Input::HT_MODIFIER_MOD5);
+
+#undef GET_MOD_STATE
             });
 
             m_waylandState.keyboard->setKey([this](CCWlKeyboard* r, uint32_t serial, uint32_t time, uint32_t key, wl_keyboard_key_state state) { //
@@ -295,6 +315,7 @@ void CWaylandPlatform::initSeat() {
                 w->mouseEnter(local);
                 m_currentWindow   = w;
                 m_lastEnterSerial = serial;
+                m_currentMods     = 0;
 
                 setCursor(HT_POINTER_ARROW);
 
@@ -309,6 +330,7 @@ void CWaylandPlatform::initSeat() {
 
                 w->mouseLeave();
                 m_currentWindow.reset();
+                m_currentMods = 0;
 
                 m_waylandState.seatState.pressedKeys.clear();
             });
@@ -496,7 +518,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
 
         if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down) {
             // skip compose
-            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state});
+            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .modMask = m_currentMods});
             return;
         }
 
@@ -513,7 +535,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
                                         xkb_keysym_to_utf8(SYM, buf, sizeof(buf)) /* already includes a nullbyte */;
 
         if (len > 1)
-            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .utf8 = std::string{buf, sc<size_t>(len - 1)}});
+            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .utf8 = std::string{buf, sc<size_t>(len - 1)}, .modMask = m_currentMods});
 
     } else if (m_waylandState.seatState.xkbComposeState && xkb_compose_state_get_status(m_waylandState.seatState.xkbComposeState) == XKB_COMPOSE_COMPOSED)
         xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
