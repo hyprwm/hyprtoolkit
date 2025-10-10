@@ -49,6 +49,8 @@ namespace Hyprtoolkit {
         virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
         virtual void                      resetIM();
 
+        std::vector<WP<IWindow>>          m_popups;
+
       protected:
         virtual void onCallback();
         virtual void onScaleUpdate();
@@ -80,8 +82,6 @@ namespace Hyprtoolkit {
         } m_waylandState;
 
         std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();
-
-        std::vector<WP<IWindow>>              m_popups;
 
         friend class CWaylandPlatform;
         friend class CWaylandPopup;

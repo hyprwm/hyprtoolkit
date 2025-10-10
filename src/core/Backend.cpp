@@ -159,6 +159,27 @@ void CBackend::reloadTheme() {
             continue;
 
         reloadRecurse(w->m_rootElement);
+
+        for (const auto& p : w->m_popups) {
+            if (!p)
+                continue;
+
+            reloadRecurse(p->m_rootElement);
+        }
+    }
+
+    for (const auto& w : g_waylandPlatform->m_layers) {
+        if (!w)
+            continue;
+
+        reloadRecurse(w->m_rootElement);
+
+        for (const auto& p : w->m_popups) {
+            if (!p)
+                continue;
+
+            reloadRecurse(p->m_rootElement);
+        }
     }
 }
 
