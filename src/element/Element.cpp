@@ -59,6 +59,15 @@ void IElement::setPositionMode(ePositionMode mode) {
         impl->window->scheduleReposition(impl->self);
 }
 
+void IElement::setPositionFlag(ePositionFlag flag, bool set) {
+    if (set)
+        impl->positionFlags |= flag;
+    else
+        impl->positionFlags &= ~flag;
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 void IElement::setAbsolutePosition(const Hyprutils::Math::Vector2D& offset) {
     impl->absoluteOffset = offset;
     if (impl->window)

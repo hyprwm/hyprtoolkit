@@ -69,7 +69,8 @@ static void openPopup() {
                        ->color([] { return backend->getPalette()->m_colors.text; })
                        ->commence();
 
-    poptext->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_CENTER);
+    poptext->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
+    poptext->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_CENTER, true);
 
     popup->m_rootElement->addChild(popbg);
     popbg->addChild(poptext);
@@ -128,7 +129,8 @@ int main(int argc, char** argv, char** envp) {
     mainLayout = CColumnLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.7F, 1.F}})->commence();
 
     mainLayout->setMargin(3);
-    mainLayout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_HCENTER);
+    mainLayout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
+    mainLayout->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_HCENTER, true);
 
     bg->addChild(scroll);
     scroll->addChild(mainLayout);

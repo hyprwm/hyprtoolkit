@@ -30,7 +30,8 @@ CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_paren
 void CSpinboxSpinner::init() {
     m_layout = CRowLayoutBuilder::begin()->gap(6)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
-    m_layout->setPositionMode(HT_POSITION_CENTER);
+    m_layout->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    m_layout->setPositionMode(HT_POSITION_ABSOLUTE);
     m_layout->setMargin(INNER_MARG);
 
     m_label = CTextBuilder::begin()
@@ -47,7 +48,8 @@ void CSpinboxSpinner::init() {
                        ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                        ->commence();
 
-    m_background->setPositionMode(HT_POSITION_CENTER);
+    m_background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    m_background->setPositionMode(HT_POSITION_ABSOLUTE);
 
     m_left = CSpinboxAngleElement::create(SSpinboxAngleData{
         .size        = {CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {ANGLE_SIZE, ANGLE_SIZE}},

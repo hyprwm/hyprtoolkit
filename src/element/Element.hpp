@@ -26,7 +26,8 @@ namespace Hyprtoolkit {
 
         std::vector<Hyprutils::Memory::CSharedPointer<IElement>> children;
 
-        IElement::ePositionMode                                  positionMode = IElement::HT_POSITION_AUTO;
+        IElement::ePositionMode                                  positionMode  = IElement::HT_POSITION_AUTO;
+        uint8_t                                                  positionFlags = 0;
         Hyprutils::Math::Vector2D                                absoluteOffset;
         bool                                                     growV                   = false;
         bool                                                     growH                   = false;

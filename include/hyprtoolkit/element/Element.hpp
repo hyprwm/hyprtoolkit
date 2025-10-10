@@ -25,12 +25,19 @@ namespace Hyprtoolkit {
       public:
         enum ePositionMode : uint8_t {
             HT_POSITION_ABSOLUTE = 0,
-            HT_POSITION_CENTER,
-            HT_POSITION_HCENTER,
-            HT_POSITION_VCENTER,
-            HT_POSITION_RIGHT,
-            HT_POSITION_LEFT,
             HT_POSITION_AUTO,
+        };
+
+        enum ePositionFlag : uint8_t {
+            HT_POSITION_FLAG_HCENTER = (1 << 0),
+            HT_POSITION_FLAG_VCENTER = (1 << 1),
+            HT_POSITION_FLAG_CENTER  = HT_POSITION_FLAG_HCENTER | HT_POSITION_FLAG_VCENTER,
+            HT_POSITION_FLAG_LEFT    = (1 << 2),
+            HT_POSITION_FLAG_RIGHT   = (1 << 3),
+            HT_POSITION_FLAG_TOP     = (1 << 4),
+            HT_POSITION_FLAG_BOTTOM  = (1 << 5),
+
+            HT_POSITION_FLAG_ALL = 0xFF,
         };
 
         virtual ~IElement();
@@ -42,6 +49,7 @@ namespace Hyprtoolkit {
 
         // TODO: move this to builders, this is clunky
         virtual void setPositionMode(ePositionMode mode);
+        virtual void setPositionFlag(ePositionFlag flag, bool set);
         virtual void setAbsolutePosition(const Hyprutils::Math::Vector2D& offset);
         virtual void addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
         virtual void removeChild(Hyprutils::Memory::CSharedPointer<IElement> child);

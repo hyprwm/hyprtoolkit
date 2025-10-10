@@ -44,18 +44,30 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 
         // it has a size, let's see what it wants.
         CBox itemBox = {BOX.pos(), *itemSize};
-        if (c->impl->positionMode == IElement::HT_POSITION_CENTER)
-            itemBox.translate((BOX.size() - itemBox.size()) / 2.F);
-        else if (c->impl->positionMode == IElement::HT_POSITION_HCENTER)
-            itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
-        else if (c->impl->positionMode == IElement::HT_POSITION_VCENTER || c->impl->positionMode == IElement::HT_POSITION_LEFT ||
-                 c->impl->positionMode == IElement::HT_POSITION_RIGHT)
-            itemBox.translate(Vector2D{0.F, ((BOX.size() - itemBox.size()) / 2.F).y});
 
-        if (c->impl->positionMode == IElement::HT_POSITION_RIGHT && BOX.w > itemBox.w)
-            itemBox.translate(Vector2D{(BOX.size() - itemBox.size()).x, 0.F});
+        if (c->impl->positionMode == IElement::HT_POSITION_ABSOLUTE) {
 
-        itemBox.translate(c->impl->absoluteOffset);
+            // apply position first, then centering
+
+            if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_LEFT)
+                ;
+            else if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_RIGHT) {
+                if (BOX.size().x > itemBox.size().x)
+                    itemBox.translate({(BOX.size() - itemBox.size()).x, 0.F});
+            } else if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_TOP)
+                ;
+            else if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_BOTTOM) {
+                if (BOX.size().y > itemBox.size().y)
+                    itemBox.translate({0.F, (BOX.size() - itemBox.size()).y});
+            }
+
+            if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_HCENTER)
+                itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
+            if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_VCENTER)
+                itemBox.translate(Vector2D{0.F, ((BOX.size() - itemBox.size()) / 2.F).y});
+
+            itemBox.translate(c->impl->absoluteOffset);
+        }
 
         if (data.growX)
             itemBox.w = 99999999;

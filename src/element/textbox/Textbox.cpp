@@ -60,7 +60,8 @@ void CTextboxElement::init() {
                            })
                            ->commence();
 
-    m_impl->selectBgCont->setPositionMode(HT_POSITION_VCENTER);
+    m_impl->selectBgCont->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->selectBgCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
     m_impl->selectBg->setPositionMode(HT_POSITION_ABSOLUTE);
 
     m_impl->selectBgCont->addChild(m_impl->selectBg);
@@ -69,11 +70,14 @@ void CTextboxElement::init() {
     m_impl->cursor =
         CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
 
-    m_impl->cursorCont->setPositionMode(HT_POSITION_VCENTER);
+    m_impl->cursorCont->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->cursorCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
     m_impl->cursor->setPositionMode(HT_POSITION_ABSOLUTE);
 
-    m_impl->placeholder->setPositionMode(HT_POSITION_VCENTER);
-    m_impl->text->setPositionMode(HT_POSITION_VCENTER);
+    m_impl->placeholder->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->placeholder->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
+    m_impl->text->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->text->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
 
     m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) { m_impl->lastCursorPos = pos; });
 

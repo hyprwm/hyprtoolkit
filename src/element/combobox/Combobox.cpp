@@ -40,7 +40,8 @@ CComboboxElement::CComboboxElement(const SComboboxData& data) : IElement(), m_im
 void CComboboxElement::init() {
     m_impl->layout = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1, 24}})->commence();
 
-    m_impl->layout->setPositionMode(HT_POSITION_CENTER);
+    m_impl->layout->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    m_impl->layout->setPositionMode(HT_POSITION_ABSOLUTE);
     m_impl->layout->setMargin(INNER_MARG);
 
     m_impl->label = CTextBuilder::begin()
@@ -60,7 +61,8 @@ void CComboboxElement::init() {
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                              ->commence();
 
-    m_impl->background->setPositionMode(HT_POSITION_CENTER);
+    m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
     m_impl->background->impl->clipChildren = true;
 
     m_impl->handle = CDropdownHandleElement::create(SDropdownHandleData{

@@ -48,8 +48,11 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->noEllipsize(true)
                         ->commence();
 
-    m_impl->label->setPositionMode(m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_CENTER :
-                                                                                    (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_RIGHT : HT_POSITION_LEFT));
+    m_impl->label->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->label->setPositionFlag(
+        m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_FLAG_CENTER : (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_FLAG_RIGHT : HT_POSITION_FLAG_LEFT),
+        true);
+    m_impl->label->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
 
     addChild(m_impl->background);
     m_impl->background->addChild(m_impl->label);
@@ -118,8 +121,10 @@ void CButtonElement::replaceData(const SButtonData& data) {
 
     m_impl->label->rebuild()->text(std::string{data.label})->commence();
 
-    m_impl->label->setPositionMode(m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_CENTER :
-                                                                                    (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_RIGHT : HT_POSITION_LEFT));
+    m_impl->label->setPositionFlag(HT_POSITION_FLAG_ALL, false);
+    m_impl->label->setPositionFlag(
+        m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_FLAG_CENTER : (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_FLAG_RIGHT : HT_POSITION_FLAG_LEFT),
+        true);
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

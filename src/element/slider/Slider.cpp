@@ -25,7 +25,8 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
 
     m_impl->layout = CRowLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
 
-    m_impl->layout->setPositionMode(HT_POSITION_CENTER);
+    m_impl->layout->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->layout->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
     m_impl->textContainer = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {m_impl->maxLabelSize(), 1.F}})->commence();
 
@@ -38,7 +39,8 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
                             })
                             ->commence();
 
-    m_impl->valueText->setPositionMode(HT_POSITION_CENTER);
+    m_impl->valueText->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->valueText->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
     m_impl->textContainer->addChild(m_impl->valueText);
 
     m_impl->background = CRectangleBuilder::begin()
@@ -49,7 +51,8 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                              ->commence();
 
-    m_impl->background->setPositionMode(HT_POSITION_CENTER);
+    m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
     m_impl->foreground = CRectangleBuilder::begin()
                              ->color([] { return g_palette->m_colors.accent; })

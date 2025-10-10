@@ -42,14 +42,16 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {14.F, 14.F}})
                              ->commence();
 
-    m_impl->background->setPositionMode(HT_POSITION_CENTER);
+    m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
     CHyprColor col = g_palette->m_colors.accent;
     col.a          = m_impl->data.toggled ? 1.F : 0.F;
     m_impl->foreground =
         CCheckmarkElement::create(SCheckmarkData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}}, .color = [col] { return col; }});
 
-    m_impl->foreground->setPositionMode(HT_POSITION_CENTER);
+    m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
+    m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
     m_impl->background->addChild(m_impl->foreground);
 

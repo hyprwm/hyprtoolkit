@@ -40,7 +40,8 @@ int                 main(int argc, char** argv, char** envp) {
 
     layout->addChild(layoutInner);
     layoutInner->setGrow(true);
-    layoutInner->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_HCENTER);
+    layoutInner->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
+    layoutInner->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_HCENTER, true);
 
     auto title = CTextBuilder::begin()->text("Hello World")->fontSize({CFontSize::HT_FONT_H2})->color([] { return backend->getPalette()->m_colors.text; })->commence();
 
