@@ -78,7 +78,6 @@ namespace Hyprtoolkit {
             Hyprutils::Signal::CSignalT<uint32_t> outputRemoved;
         } m_events;
 
-
         HT_HIDDEN : CBackend();
 
         void                                                    terminate();

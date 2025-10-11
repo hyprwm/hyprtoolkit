@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/window/Window.hpp>
+#include <ext-session-lock-v1.hpp>
 
 #include "../helpers/Memory.hpp"
 
