@@ -40,23 +40,24 @@ namespace Hyprtoolkit {
         CWaylandPlatform() = default;
         ~CWaylandPlatform();
 
-        bool               attempt();
+        bool                              attempt();
 
-        void               initSeat();
-        void               initShell();
-        bool               initDmabuf();
-        void               initIM();
-        void               setCursor(ePointerShape shape);
+        void                              initSeat();
+        void                              initShell();
+        bool                              initDmabuf();
+        void                              initIM();
+        void                              setCursor(ePointerShape shape);
 
-        bool               dispatchEvents();
+        bool                              dispatchEvents();
 
-        SP<IWaylandWindow> windowForSurf(wl_proxy* proxy);
+        SP<IWaylandWindow>                windowForSurf(wl_proxy* proxy);
+        std::optional<WP<CWaylandOutput>> outputForId(uint32_t id);
 
-        void               onKey(uint32_t keycode, bool state);
-        void               startRepeatTimer();
-        void               stopRepeatTimer();
+        void                              onKey(uint32_t keycode, bool state);
+        void                              startRepeatTimer();
+        void                              stopRepeatTimer();
 
-        void               onRepeatTimerFire();
+        void                              onRepeatTimerFire();
 
         //
         std::vector<FIdleCallback> m_idleCallbacks;

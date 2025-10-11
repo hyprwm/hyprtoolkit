@@ -113,6 +113,7 @@ bool CWaylandPlatform::attempt() {
             m_outputs.erase(outputIt);
 
         g_logger->log(HT_LOG_DEBUG, "Global {} removed", id);
+        g_backend->m_events.outputRemoved.emit(id);
     });
 
     wl_display_roundtrip(m_waylandState.display);
@@ -196,6 +197,15 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
         }
     }
     return nullptr;
+}
+
+std::optional<WP<CWaylandOutput>> CWaylandPlatform::outputForId(uint32_t id) {
+    for (const auto& o : m_outputs) {
+        if (o->m_id == id) {
+            return o;
+        }
+    }
+    return std::nullopt;
 }
 
 void CWaylandPlatform::initIM() {
