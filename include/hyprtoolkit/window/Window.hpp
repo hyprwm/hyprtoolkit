@@ -12,10 +12,10 @@ namespace Hyprtoolkit {
     struct SWindowCreationData;
 
     enum eWindowType : uint8_t {
-        HT_WINDOW_TOPLEVEL = 0,
-        HT_WINDOW_POPUP    = 1,
-        HT_WINDOW_LAYER    = 2,
-        HT_WINDOW_LOCK_SURFACE    = 3,
+        HT_WINDOW_TOPLEVEL     = 0,
+        HT_WINDOW_POPUP        = 1,
+        HT_WINDOW_LAYER        = 2,
+        HT_WINDOW_LOCK_SURFACE = 3,
     };
 
     class CWindowBuilder {
@@ -44,7 +44,6 @@ namespace Hyprtoolkit {
         // only for HT_WINDOW_POPUP
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> parent(const Hyprutils::Memory::CSharedPointer<IWindow>& parent);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> pos(const Hyprutils::Math::Vector2D&);
-
 
         Hyprutils::Memory::CSharedPointer<IWindow>        commence();
 
