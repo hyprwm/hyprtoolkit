@@ -28,7 +28,7 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                                      return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
                                  return g_palette->m_colors.base;
                              })
-                             ->rounding(5)
+                             ->rounding(g_palette->m_vars.smallRounding)
                              ->borderColor([] { return g_palette->m_colors.alternateBase; })
                              ->borderThickness(data.noBorder ? 0 : 1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})

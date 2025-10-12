@@ -36,7 +36,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
 
     m_impl->background = CRectangleBuilder::begin()
                              ->color([] { return g_palette->m_colors.base; })
-                             ->rounding(4)
+                             ->rounding(g_palette->m_vars.smallRounding)
                              ->borderColor([] { return g_palette->m_colors.alternateBase; })
                              ->borderThickness(1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {14.F, 14.F}})

@@ -34,6 +34,8 @@ namespace Hyprtoolkit {
             int         fontSize      = 11;
             int         smallFontSize = 10;
             std::string iconTheme     = ""; // first one found
+            int         bigRounding   = 10;
+            int         smallRounding = 5;
         } m_vars;
 
       private:
