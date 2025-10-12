@@ -25,6 +25,7 @@ namespace Hyprtoolkit {
         WP<CTextboxElement>   self;
 
         SP<CRectangleElement> bg;
+        SP<CNullElement>      bgInnerCont;
         SP<CNullElement>      cursorCont;
         SP<CRectangleElement> cursor;
         SP<CNullElement>      selectBgCont;

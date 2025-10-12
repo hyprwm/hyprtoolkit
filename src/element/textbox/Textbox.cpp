@@ -51,6 +51,9 @@ void CTextboxElement::init() {
                      ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                      ->commence();
 
+    m_impl->bgInnerCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
+    m_impl->bgInnerCont->setMargin(3);
+
     m_impl->selectBgCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.7F}})->commence();
     m_impl->selectBg     = CRectangleBuilder::begin()
                            ->color([] {
@@ -66,7 +69,7 @@ void CTextboxElement::init() {
 
     m_impl->selectBgCont->addChild(m_impl->selectBg);
 
-    m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.6F}})->commence();
+    m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.8F}})->commence();
     m_impl->cursor =
         CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
 
@@ -87,14 +90,14 @@ void CTextboxElement::init() {
     });
 
     m_impl->listeners.enter = impl->m_externalEvents.keyboardEnter.listen([this] {
-        m_impl->bg->addChild(m_impl->cursorCont);
+        m_impl->bgInnerCont->addChild(m_impl->cursorCont);
         impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
         m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })->commence();
         m_impl->focusCursorAtClickedChar();
     });
 
     m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] {
-        m_impl->bg->removeChild(m_impl->cursorCont);
+        m_impl->bgInnerCont->removeChild(m_impl->cursorCont);
         impl->window->resetIM();
         m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase; })->commence();
     });
@@ -232,6 +235,9 @@ void CTextboxElement::init() {
     m_impl->text->setMargin(1);
 
     addChild(m_impl->bg);
+
+    m_impl->bg->addChild(m_impl->bgInnerCont);
+
     m_impl->cursorCont->addChild(m_impl->cursor);
     m_impl->bg->impl->clipChildren = true;
 
@@ -242,11 +248,11 @@ void CTextboxElement::init() {
 
 void STextboxImpl::updateLabel() {
     if (data.text.empty()) {
-        bg->removeChild(text);
-        bg->addChild(placeholder);
+        bgInnerCont->removeChild(text);
+        bgInnerCont->addChild(placeholder);
     } else {
-        bg->removeChild(placeholder);
-        bg->addChild(text);
+        bgInnerCont->removeChild(placeholder);
+        bgInnerCont->addChild(text);
     }
 
     auto fullLabel = inputState.imText.empty() ? //
@@ -302,7 +308,7 @@ void CTextboxElement::paint() {
 
 void STextboxImpl::updateSelect() {
     if (inputState.selectBegin < 0) {
-        bg->removeChild(selectBgCont);
+        bgInnerCont->removeChild(selectBgCont);
         return;
     }
 
@@ -314,7 +320,7 @@ void STextboxImpl::updateSelect() {
     selectBg->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {width, 1.F}})->commence();
     selectBg->setAbsolutePosition(Vector2D{begin, 0.F});
 
-    bg->addChild(selectBgCont);
+    bgInnerCont->addChild(selectBgCont);
 }
 
 void STextboxImpl::removeSelectedText() {
