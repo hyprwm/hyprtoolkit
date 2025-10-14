@@ -15,6 +15,7 @@
 
 namespace Hyprtoolkit {
     class IWindow;
+    class IOutput;
     class CTimer;
     class ISystemIconFactory;
     struct SWindowCreationData;
@@ -72,6 +73,19 @@ namespace Hyprtoolkit {
         virtual void                                        enterLoop() = 0;
 
         virtual Hyprutils::Memory::CSharedPointer<CPalette> getPalette() = 0;
+
+        /*
+            Get currently registered outputs.
+            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+        */
+        virtual std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs() = 0;
+
+        struct {
+            /*
+                Get notified when a new output was added.
+            */
+            Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
+        } m_events;
 
       protected:
         IBackend();

@@ -9,6 +9,8 @@
 #include "../../element/Element.hpp"
 #include "../../window/WaylandWindow.hpp"
 #include "../../window/WaylandLayer.hpp"
+#include "../../output/WaylandOutput.hpp"
+#include "../../sessionLock/WaylandSessionLock.hpp"
 #include "../../Macros.hpp"
 
 #include <xf86drm.h>
@@ -95,9 +97,23 @@ bool CWaylandPlatform::attempt() {
                 g_logger->log(HT_LOG_ERROR, "Wayland platform cannot start: zwp_linux_dmabuf_v1 init failed");
                 m_waylandState.dmabufFailed = true;
             }
+        } else if (NAME == wl_output_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
+            m_outputs.emplace_back(makeUnique<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id));
+            // FIXME: seems like m_idleCallbacks is not used and was moved to the loop state?
+            // probably move that there??
+            // We just need to deferre it a bit so that the globals are defined before we emit the event.
+            // But once they are defined, we probably don't want it to be a idle function.
+            m_idleCallbacks.emplace_back([id]() { g_backend->m_events.outputAdded.emit(id); });
         }
     });
-    m_waylandState.registry->setGlobalRemove([](CCWlRegistry* r, uint32_t id) { g_logger->log(HT_LOG_DEBUG, "Global {} removed", id); });
+    m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
+        auto outputIt = std::ranges::find_if(m_outputs, [id](const auto& other) { return other->m_id == id; });
+        if (outputIt != m_outputs.end())
+            m_outputs.erase(outputIt);
+
+        g_logger->log(HT_LOG_DEBUG, "Global {} removed", id);
+    });
 
     wl_display_roundtrip(m_waylandState.display);
 
