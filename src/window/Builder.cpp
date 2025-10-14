@@ -41,6 +41,11 @@ SP<CWindowBuilder> CWindowBuilder::maxSize(const Hyprutils::Math::Vector2D& x) {
     return m_self.lock();
 }
 
+SP<CWindowBuilder> CWindowBuilder::prefferedOutput(uint32_t x) {
+    m_data->prefferedOutputId = x;
+    return m_self.lock();
+}
+
 SP<CWindowBuilder> CWindowBuilder::parent(const SP<IWindow>& x) {
     m_data->parent = x;
     return m_self.lock();
@@ -94,7 +99,8 @@ SP<IWindow> CWindowBuilder::commence() {
 
             return reinterpretPointerCast<IToolkitWindow>(m_data->parent)->openPopup(*m_data);
         case HT_WINDOW_TOPLEVEL:
-        case HT_WINDOW_LAYER: return g_backend->openWindow(*m_data);
+        case HT_WINDOW_LAYER:
+        case HT_WINDOW_LOCK_SURFACE: return g_backend->openWindow(*m_data);
     }
     return nullptr;
 }
