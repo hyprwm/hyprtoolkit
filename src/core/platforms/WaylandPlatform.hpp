@@ -32,6 +32,7 @@ namespace Hyprtoolkit {
     class CWaylandWindow;
     class IWaylandWindow;
     class CWaylandLayer;
+    class CWaylandOutput;
 
     class CWaylandPlatform {
       public:
@@ -115,6 +116,8 @@ namespace Hyprtoolkit {
             int         fd       = -1;
             std::string nodeName = "";
         } m_drmState;
+
+        std::vector<UP<CWaylandOutput>> m_outputs;
 
         std::vector<WP<CWaylandWindow>> m_windows;
         std::vector<WP<CWaylandLayer>>  m_layers;

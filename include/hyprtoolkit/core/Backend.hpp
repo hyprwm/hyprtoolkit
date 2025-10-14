@@ -73,6 +73,12 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
 
+        struct {
+            Hyprutils::Signal::CSignalT<uint32_t> outputAdded;
+            Hyprutils::Signal::CSignalT<uint32_t> outputRemoved;
+        } m_events;
+
+
         HT_HIDDEN : CBackend();
 
         void                                                    terminate();
