@@ -36,6 +36,7 @@ pkg_check_modules(
   xkbcommon
   pango
   cairo
+  iniparser
   hyprgraphics>=0.2.0
   aquamarine>=0.9.5
 )

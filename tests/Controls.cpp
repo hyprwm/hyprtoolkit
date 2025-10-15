@@ -210,10 +210,11 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(combo);
     mainLayout->addChild(textboxCont);
 
-    auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable");
-    if (iconDesc->exists()) {
+    auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable-symbolic");
+    if (!iconDesc->exists())
+        iconDesc = backend->systemIcons()->lookupIcon("action-unavailable");
+    if (iconDesc->exists())
         mainLayout->addChild(CImageBuilder::begin()->icon(iconDesc)->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {40, 40}})->commence());
-    }
 
     window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
         w->close();

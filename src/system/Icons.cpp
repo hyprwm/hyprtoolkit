@@ -9,9 +9,15 @@
 
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/string/ConstVarList.hpp>
+#include <hyprutils/utils/ScopeGuard.hpp>
+
+extern "C" {
+#include "iniparser.h"
+}
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::String;
+using namespace Hyprutils::Utils;
 
 static std::optional<std::string> readFileAsString(const std::string& path) {
     std::error_code ec;
@@ -60,6 +66,46 @@ static std::optional<std::string> getThemeDir(const std::string& name) {
 }
 
 static std::optional<std::string> findAnyTheme() {
+    // first, try to find the default system theme
+    for (const auto& rawDir : ICON_THEME_DIRS) {
+        auto            path = fromDir(rawDir) + "/default/index.theme";
+
+        std::error_code ec;
+        if (!std::filesystem::exists(path) || ec) {
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: skipping file {} (no access)", path);
+            continue;
+        }
+
+        if (!std::filesystem::is_regular_file(path, ec) || ec) {
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: skipping file {} (not a file)", path);
+            continue;
+        }
+
+        dictionary* ini = iniparser_load(path.c_str());
+        CScopeGuard x([ini] { iniparser_freedict(ini); });
+
+        if (!ini) {
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: skipping file {} (iniparser failed)", path);
+            continue;
+        }
+
+        auto iconTheme = iniparser_getstring(ini, "Icon Theme:Inherits", nullptr);
+
+        if (iconTheme) {
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Theme {} has valid data", path);
+            // try to find it
+            auto themeDir = getThemeDir(iconTheme);
+            if (!themeDir->empty()) {
+                g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Found {} as default fallback", themeDir.value());
+                return themeDir;
+            }
+
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Skipping finding default theme, as {} inherits a non-existent theme", path);
+            break;
+        } else
+            g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Skipping {}, doesn't inherit an icon theme", path);
+    }
+
     for (const auto& rawDir : ICON_THEME_DIRS) {
         auto            path = fromDir(rawDir) + "/";
 
@@ -108,7 +154,7 @@ static std::optional<std::string> getIconThemeDir() {
     // we haven't found one, or it's unset. Use the first one we can.
     path = findAnyTheme();
     if (path)
-        g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Using theme dir {}, not set / missing, found first", *path);
+        g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Using theme dir {} (default fallback)", *path);
     else
         g_logger->log(HT_LOG_ERROR, "CSystemIconFactory: No theme found, icons will be broken");
 
