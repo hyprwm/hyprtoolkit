@@ -9,6 +9,7 @@
   hyprlang,
   hyprutils,
   hyprwayland-scanner,
+  iniparser,
   libGL,
   libdrm,
   libgbm,
@@ -39,6 +40,7 @@ stdenv.mkDerivation {
     hyprgraphics
     hyprlang
     hyprutils
+    iniparser
     libGL
     libdrm
     libgbm
