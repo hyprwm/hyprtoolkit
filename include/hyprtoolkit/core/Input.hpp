@@ -30,6 +30,7 @@ namespace Hyprtoolkit::Input {
     struct SKeyboardKeyEvent {
         uint32_t    xkbKeysym = 0;
         bool        down      = true;
+        bool        repeat    = false;
         std::string utf8      = "";
         uint32_t    modMask   = 0; // eKeyboardModifier
     };

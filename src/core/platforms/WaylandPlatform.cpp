@@ -298,6 +298,11 @@ void CWaylandPlatform::initSeat() {
                 onKey(key, state == WL_KEYBOARD_KEY_STATE_PRESSED);
             });
 
+            m_waylandState.keyboard->setRepeatInfo([this](CCWlKeyboard* r, uint32_t rate, uint32_t delay) { //
+                m_waylandState.seatState.repeatRate  = rate;
+                m_waylandState.seatState.repeatDelay = delay;
+            });
+
         } else if (!HAS_KEYBOARD && m_waylandState.keyboard)
             m_waylandState.keyboard.reset();
 
@@ -513,12 +518,19 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
     if (!m_currentWindow)
         return;
 
+    Input::SKeyboardKeyEvent e;
+    e.down    = state;
+    e.modMask = m_currentMods;
+
     if (state) {
         const auto SYM = xkb_state_key_get_one_sym(m_waylandState.seatState.xkbState, keycode + 8);
 
         if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down) {
             // skip compose
-            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .modMask = m_currentMods});
+            e.xkbKeysym = SYM;
+            m_currentWindow->keyboardKey(e);
+            m_waylandState.seatState.repeatKeyEvent = e;
+            startRepeatTimer();
             return;
         }
 
@@ -534,9 +546,50 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         int        len     = COMPOSED ? xkb_compose_state_get_utf8(m_waylandState.seatState.xkbComposeState, buf, sizeof(buf)) /* nullbyte */ + 1 :
                                         xkb_keysym_to_utf8(SYM, buf, sizeof(buf)) /* already includes a nullbyte */;
 
-        if (len > 1)
-            m_currentWindow->keyboardKey({.xkbKeysym = SYM, .down = state, .utf8 = std::string{buf, sc<size_t>(len - 1)}, .modMask = m_currentMods});
+        if (len > 1) {
+            e.xkbKeysym = SYM;
+            e.utf8      = std::string{buf, sc<size_t>(len - 1)};
+            m_currentWindow->keyboardKey(e);
+            m_waylandState.seatState.repeatKeyEvent = e;
+        }
+
+        startRepeatTimer();
+
+        return;
 
     } else if (m_waylandState.seatState.xkbComposeState && xkb_compose_state_get_status(m_waylandState.seatState.xkbComposeState) == XKB_COMPOSE_COMPOSED)
         xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
+
+    m_waylandState.seatState.repeatKeyEvent = e;
+    m_currentWindow->keyboardKey(e);
+    stopRepeatTimer();
+}
+
+void CWaylandPlatform::onRepeatTimerFire() {
+    if (!m_currentWindow)
+        return;
+
+    m_currentWindow->keyboardKey(m_waylandState.seatState.repeatKeyEvent);
+
+    // add a repeat timer
+    m_waylandState.seatState.repeatTimer =
+        g_backend->addTimer(std::chrono::milliseconds(1000 / m_waylandState.seatState.repeatRate), [this](ASP<CTimer> self, void*) { onRepeatTimerFire(); }, nullptr);
+}
+
+void CWaylandPlatform::startRepeatTimer() {
+    if (m_waylandState.seatState.repeatDelay == 0 || m_waylandState.seatState.repeatRate == 0)
+        return;
+
+    if (m_waylandState.seatState.repeatTimer)
+        m_waylandState.seatState.repeatTimer->cancel();
+
+    m_waylandState.seatState.repeatKeyEvent.repeat = true;
+
+    m_waylandState.seatState.repeatTimer =
+        g_backend->addTimer(std::chrono::milliseconds(m_waylandState.seatState.repeatDelay), [this](ASP<CTimer> self, void*) { onRepeatTimerFire(); }, nullptr);
+}
+
+void CWaylandPlatform::stopRepeatTimer() {
+    m_waylandState.seatState.repeatTimer->cancel();
+    m_waylandState.seatState.repeatTimer.reset();
 }

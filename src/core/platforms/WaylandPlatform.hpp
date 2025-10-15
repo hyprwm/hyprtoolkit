@@ -1,8 +1,10 @@
 #pragma once
 
 #include <hyprtoolkit/types/PointerShape.hpp>
+#include <hyprtoolkit/core/Input.hpp>
 
 #include "../../helpers/Memory.hpp"
+#include "../../helpers/Timer.hpp"
 
 #include <vector>
 #include <functional>
@@ -49,6 +51,10 @@ namespace Hyprtoolkit {
         SP<IWaylandWindow> windowForSurf(wl_proxy* proxy);
 
         void               onKey(uint32_t keycode, bool state);
+        void               startRepeatTimer();
+        void               stopRepeatTimer();
+
+        void               onRepeatTimerFire();
 
         //
         std::vector<FIdleCallback> m_idleCallbacks;
@@ -83,12 +89,15 @@ namespace Hyprtoolkit {
             bool dmabufFailed = false;
 
             struct {
-                xkb_context*          xkbContext      = nullptr;
-                xkb_keymap*           xkbKeymap       = nullptr;
-                xkb_state*            xkbState        = nullptr;
-                xkb_compose_state*    xkbComposeState = nullptr;
-                uint32_t              currentLayer    = 0;
-                std::vector<uint32_t> pressedKeys;
+                xkb_context*             xkbContext      = nullptr;
+                xkb_keymap*              xkbKeymap       = nullptr;
+                xkb_state*               xkbState        = nullptr;
+                xkb_compose_state*       xkbComposeState = nullptr;
+                uint32_t                 currentLayer    = 0;
+                uint32_t                 repeatRate = 10, repeatDelay = 500;
+                std::vector<uint32_t>    pressedKeys;
+                Input::SKeyboardKeyEvent repeatKeyEvent;
+                ASP<CTimer>              repeatTimer;
             } seatState;
 
             struct {
