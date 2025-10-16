@@ -143,6 +143,11 @@ add_executable(controls "tests/Controls.cpp")
 target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
 add_dependencies(tests controls)
 
+add_executable(simpleSessionLock "tests/SimpleSessionLock.cpp")
+target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests simpleSessionLock)
+
+
 # Installation
 install(TARGETS hyprtoolkit)
 install(DIRECTORY "include/hyprtoolkit" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

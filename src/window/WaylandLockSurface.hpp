@@ -6,7 +6,7 @@
 namespace Hyprtoolkit {
     class CWaylandLockSurface : public IWaylandWindow {
       public:
-        CWaylandLockSurface(const SWindowCreationData& data, const SP<CCExtSessionLockV1>& lockObject);
+        CWaylandLockSurface(const SWindowCreationData& data);
         virtual ~CWaylandLockSurface();
 
         virtual void close();
@@ -14,8 +14,7 @@ namespace Hyprtoolkit {
         virtual void render();
 
       private:
-        uint32_t               m_outputId = 0;
-        WP<CCExtSessionLockV1> m_lockObject;
+        uint32_t m_outputId = 0;
 
         struct {
             SP<CCExtSessionLockSurfaceV1> lockSurface;

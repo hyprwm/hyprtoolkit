@@ -33,6 +33,13 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CBackend> create();
 
         /*
+            Attempt to initialize the platform.
+            Optional. Can be used in case the outputAdded/Removed events are used to create new windows.
+            In such a szenario the platform must be initialized before opening a window.
+        */
+        static bool attempt();
+
+        /*
             Destroy the backend.
             Backend will be destroyed once:
              - All refs YOU hold are dead
@@ -73,9 +80,10 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
 
+        void                                        unlockSession();
+
         struct {
             Hyprutils::Signal::CSignalT<uint32_t> outputAdded;
-            Hyprutils::Signal::CSignalT<uint32_t> outputRemoved;
         } m_events;
 
         HT_HIDDEN : CBackend();
