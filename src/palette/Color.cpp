@@ -1,8 +1,10 @@
 #include <hyprtoolkit/palette/Color.hpp>
 #include "../Macros.hpp"
 #include "../helpers/Memory.hpp"
+#include <hyprutils/memory/Casts.hpp>
 
 using namespace Hyprtoolkit;
+using namespace Hyprutils::Memory;
 
 #define ALPHA(c) ((double)(((c) >> 24) & 0xff) / 255.0)
 #define RED(c)   ((double)(((c) >> 16) & 0xff) / 255.0)
@@ -66,15 +68,15 @@ Hyprgraphics::CColor::SHSL CHyprColor::asHSL() const {
 }
 
 CHyprColor CHyprColor::stripA() const {
-    return {r, g, b, 1.F};
+    return {sc<float>(r), sc<float>(g), sc<float>(b), 1.F};
 }
 
 CHyprColor CHyprColor::brighten(float coeff) const {
-    return {r * (1.F + coeff), g * (1.F + coeff), b * (1.F + coeff), a};
+    return {sc<float>(r * (1.F + coeff)), sc<float>(g * (1.F + coeff)), sc<float>(b * (1.F + coeff)), sc<float>(a)};
 }
 
 CHyprColor CHyprColor::darken(float coeff) const {
-    return {r * (1.F - coeff), g * (1.F - coeff), b * (1.F - coeff), a};
+    return {sc<float>(r * (1.F - coeff)), sc<float>(g * (1.F - coeff)), sc<float>(b * (1.F - coeff)), sc<float>(a)};
 }
 
 CHyprColor CHyprColor::mix(const CHyprColor& with, float coeff) const {
