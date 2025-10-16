@@ -1,6 +1,8 @@
 #include "Window.hpp"
 #include "../core/InternalBackend.hpp"
 #include "ToolkitWindow.hpp"
+#include "core/platforms/WaylandPlatform.hpp"
+#include "hyprtoolkit/core/LogTypes.hpp"
 
 using namespace Hyprtoolkit;
 
