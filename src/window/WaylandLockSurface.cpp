@@ -16,7 +16,7 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-CWaylandLockSurface::CWaylandLockSurface(const SWindowCreationData& data, const SP<CCExtSessionLockV1>& lockObject) : m_creationData(data), m_lockObject(lockObject) {
+CWaylandLockSurface::CWaylandLockSurface(const SWindowCreationData& data) : m_outputId(data.prefferedOutputId) {
     m_rootElement = CNullBuilder::begin()->commence();
 }
 
@@ -28,17 +28,25 @@ void CWaylandLockSurface::open() {
     if (m_open)
         return;
 
-    m_open = true;
-
-    if (m_creationData.prefferedOutputId == 0) {
+    if (m_outputId == 0) {
         g_logger->log(HT_LOG_ERROR, "session lock missing prefferedOutputId.");
         return;
     }
 
     if (!g_waylandPlatform) {
-        g_logger->log(HT_LOG_ERROR, "wayland platform uninitialized!");
+        g_logger->log(HT_LOG_ERROR, "wayland platform not initialized.");
         return;
     }
+
+    auto lockObject = g_waylandPlatform->aquireSessionLock();
+    if (!lockObject)
+        return;
+
+    auto wlOutput = g_waylandPlatform->outputForId(m_outputId);
+    if (!wlOutput.has_value() || !wlOutput.value())
+        return;
+
+    m_open = true;
 
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
@@ -71,7 +79,8 @@ void CWaylandLockSurface::open() {
     } else
         m_waylandState.surface->sendAttach(nullptr, 0, 0);
 
-    m_lockSurfaceState.lockSurface = makeShared<CCExtSessionLockSurfaceV1>(m_lockObject->sendGetLockSurface(m_waylandState.surface->resource(), m_wlOutput));
+    m_lockSurfaceState.lockSurface =
+        makeShared<CCExtSessionLockSurfaceV1>(lockObject->sendGetLockSurface(m_waylandState.surface->resource(), wlOutput.value()->m_wlOutput.resource()));
     if (!m_lockSurfaceState.lockSurface->resource()) {
         g_logger->log(HT_LOG_ERROR, "lock surface opening failed: no lock surface. Errno: {}", errno);
         return;

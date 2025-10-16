@@ -1,6 +1,5 @@
 #include "WaylandOutput.hpp"
 #include "../core/InternalBackend.hpp"
-#include "../helpers/Memory.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -28,14 +27,14 @@ CWaylandOutput::CWaylandOutput(wl_proxy* wlResource, uint32_t id) : m_id(id), m_
     m_wlOutput.setName([this](CCWlOutput* r, const char* name) {
         m_configuration.name = std::string{name} + m_configuration.name;
         m_configuration.port = std::string{name};
-        g_logger->log(HT_LOG_DEBUG, "wayland output {}: name {}", name, name);
+        g_logger->log(HT_LOG_DEBUG, "wayland output {}: name {}", m_id, name);
     });
 
     m_wlOutput.setScale([this](CCWlOutput* r, int32_t sc) { m_configuration.scale = sc; });
 
     m_wlOutput.setDone([this](CCWlOutput* r) {
         m_configuration.done = true;
-        g_logger->log(HT_LOG_DEBUG, "wayland output {} done", m_id);
+        g_logger->log(HT_LOG_DEBUG, "wayland output {}: done", m_id);
     });
 
     m_wlOutput.setMode([this](CCWlOutput* r, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
@@ -45,13 +44,13 @@ CWaylandOutput::CWaylandOutput(wl_proxy* wlResource, uint32_t id) : m_id(id), m_
         else
             m_configuration.size = {width, height};
 
-        g_logger->log(HT_LOG_DEBUG, "wayland output {} dimensions {}", m_id);
+        g_logger->log(HT_LOG_DEBUG, "wayland output {}: dimensions {}", m_id, m_configuration.size);
     });
 
     m_wlOutput.setGeometry(
         [this](CCWlOutput* r, int32_t x, int32_t y, int32_t physical_width, int32_t physical_height, int32_t subpixel, const char* make, const char* model, int32_t transform_) {
             m_configuration.transform = wlTransformToHyprutils((wl_output_transform)transform_);
 
-            g_logger->log(HT_LOG_DEBUG, "wayland output {} make {} model {}", m_id, make ? make : "", model ? model : "");
+            g_logger->log(HT_LOG_DEBUG, "wayland output {}: make {} model {}", m_id, make ? make : "", model ? model : "");
         });
 }

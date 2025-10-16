@@ -166,6 +166,25 @@ protocolnew("unstable/text-input" "text-input-unstable-v3" false)
 protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
 
+ # tests
+add_custom_target(tests)
+
+add_executable(simpleWindow "tests/SimpleWindow.cpp")
+target_link_libraries(simpleWindow PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests simpleWindow)
+
+add_executable(dialog "tests/Dialog.cpp")
+target_link_libraries(dialog PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests dialog)
+
+add_executable(controls "tests/Controls.cpp")
+target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests controls)
+
+add_executable(simpleSessionLock "tests/SimpleSessionLock.cpp")
+target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests simpleSessionLock)
+
 # Installation
 install(TARGETS hyprtoolkit)
 install(DIRECTORY "include/hyprtoolkit" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

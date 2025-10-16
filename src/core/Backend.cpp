@@ -10,6 +10,7 @@
 #include "../renderer/gl/OpenGL.hpp"
 #include "../window/WaylandWindow.hpp"
 #include "../window/WaylandLayer.hpp"
+#include "../window/WaylandLockSurface.hpp"
 #include "../Macros.hpp"
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
@@ -78,6 +79,17 @@ SP<IBackend> IBackend::create() {
     return g_backend;
 };
 
+bool CBackend::attempt() {
+    g_waylandPlatform = makeUnique<CWaylandPlatform>();
+    if (!g_waylandPlatform->attempt()) {
+        g_waylandPlatform = nullptr;
+        return false;
+    }
+    g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
+    g_renderer = g_openGL;
+    return true;
+}
+
 void CBackend::destroy() {
     terminate();
 }
@@ -90,14 +102,16 @@ SP<CPalette> CBackend::getPalette() {
     return g_palette;
 }
 
+void CBackend::unlockSession() {
+    if (!g_waylandPlatform)
+        return;
+
+    g_waylandPlatform->unlockSessionLock();
+}
+
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
-    if (!g_waylandPlatform) {
-        g_waylandPlatform = makeUnique<CWaylandPlatform>();
-        if (!g_waylandPlatform->attempt())
-            return nullptr;
-        g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
-        g_renderer = g_openGL;
-    }
+    if (!g_waylandPlatform && !attempt())
+        return nullptr;
 
     if (data.type == HT_WINDOW_LAYER) {
         if (!g_waylandPlatform->m_waylandState.layerShell)
@@ -107,6 +121,17 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
         w->m_self                      = w;
         w->m_rootElement->impl->window = w;
         g_waylandPlatform->m_layers.emplace_back(w);
+        return w;
+    } else if (data.type == HT_WINDOW_LOCK_SURFACE) {
+        if (!g_waylandPlatform->m_waylandState.sessionLock) {
+            g_logger->log(HT_LOG_ERROR, "No session lock manager. Does your compositor support it?");
+            return nullptr;
+        }
+
+        auto w                         = makeShared<CWaylandLockSurface>(data);
+        w->m_self                      = w;
+        w->m_rootElement->impl->window = w;
+        g_waylandPlatform->m_lockSurfaces.emplace_back(w);
         return w;
     }
 

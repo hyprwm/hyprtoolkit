@@ -23,6 +23,7 @@
 #include <text-input-unstable-v3.hpp>
 #include <wlr-layer-shell-unstable-v1.hpp>
 #include <linux-drm-syncobj-v1.hpp>
+#include <ext-session-lock-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -34,6 +35,7 @@ namespace Hyprtoolkit {
     class IWaylandWindow;
     class CWaylandLayer;
     class CWaylandOutput;
+    class CWaylandLockSurface;
 
     class CWaylandPlatform {
       public:
@@ -58,6 +60,9 @@ namespace Hyprtoolkit {
         void                              stopRepeatTimer();
 
         void                              onRepeatTimerFire();
+
+        SP<CCExtSessionLockV1>            aquireSessionLock();
+        void                              unlockSessionLock();
 
         //
         std::vector<FIdleCallback> m_idleCallbacks;
@@ -88,6 +93,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputV3>             textInput;
             Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
             Hyprutils::Memory::CSharedPointer<CCWpLinuxDrmSyncobjManagerV1> syncobj;
+            Hyprutils::Memory::CSharedPointer<CCExtSessionLockManagerV1>    sessionLock;
 
             // control
             bool dmabufFailed = false;
@@ -113,6 +119,12 @@ namespace Hyprtoolkit {
 
                 std::string originalString;
             } imState;
+
+            struct {
+                SP<CCExtSessionLockV1> lock            = nullptr;
+                bool                   sessionLocked   = false;
+                bool                   sessionUnlocked = false;
+            } sessionLockState;
         } m_waylandState;
 
         struct {
@@ -120,13 +132,14 @@ namespace Hyprtoolkit {
             std::string nodeName = "";
         } m_drmState;
 
-        std::vector<UP<CWaylandOutput>> m_outputs;
+        std::vector<UP<CWaylandOutput>>      m_outputs;
 
-        std::vector<WP<CWaylandWindow>> m_windows;
-        std::vector<WP<CWaylandLayer>>  m_layers;
-        WP<IWaylandWindow>              m_currentWindow;
-        uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
-        uint32_t                        m_lastEnterSerial = 0;
+        std::vector<WP<CWaylandWindow>>      m_windows;
+        std::vector<WP<CWaylandLayer>>       m_layers;
+        std::vector<WP<CWaylandLockSurface>> m_lockSurfaces;
+        WP<IWaylandWindow>                   m_currentWindow;
+        uint32_t                             m_currentMods     = 0; // HT modifiers, not xkb
+        uint32_t                             m_lastEnterSerial = 0;
     };
 
     inline UP<CWaylandPlatform> g_waylandPlatform;

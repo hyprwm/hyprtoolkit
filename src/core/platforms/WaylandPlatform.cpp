@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <hyprutils/memory/Casts.hpp>
+#include <optional>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 #include "../InternalBackend.hpp"
@@ -9,6 +10,7 @@
 #include "../../element/Element.hpp"
 #include "../../window/WaylandWindow.hpp"
 #include "../../window/WaylandLayer.hpp"
+#include "../../window/WaylandLockSurface.hpp"
 #include "../../output/WaylandOutput.hpp"
 #include "../../sessionLock/WaylandSessionLock.hpp"
 #include "../../Macros.hpp"
@@ -105,15 +107,23 @@ bool CWaylandPlatform::attempt() {
             // We just need to deferre it a bit so that the globals are defined before we emit the event.
             // But once they are defined, we probably don't want it to be a idle function.
             m_idleCallbacks.emplace_back([id]() { g_backend->m_events.outputAdded.emit(id); });
+        } else if (NAME == ext_session_lock_manager_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
         }
     });
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
+        TRACE(g_logger->log(HT_LOG_TRACE, "Global {} removed", id));
+
+        auto lockSurfaceIt = std::ranges::find_if(m_lockSurfaces, [id](const auto& other) { return other->m_outputId == id; });
+        if (lockSurfaceIt != m_lockSurfaces.end()) {
+            (*lockSurfaceIt)->m_events.closeRequest.emit();
+            m_lockSurfaces.erase(lockSurfaceIt);
+        }
         auto outputIt = std::ranges::find_if(m_outputs, [id](const auto& other) { return other->m_id == id; });
         if (outputIt != m_outputs.end())
             m_outputs.erase(outputIt);
-
-        g_logger->log(HT_LOG_DEBUG, "Global {} removed", id);
-        g_backend->m_events.outputRemoved.emit(id);
     });
 
     wl_display_roundtrip(m_waylandState.display);
@@ -132,9 +142,7 @@ bool CWaylandPlatform::attempt() {
 }
 
 CWaylandPlatform::~CWaylandPlatform() {
-    const auto DPY = m_waylandState.display;
-    m_waylandState = {};
-    wl_display_disconnect(DPY);
+    m_outputs.clear();
 
     if (m_drmState.fd >= 0)
         close(m_drmState.fd);
@@ -145,6 +153,10 @@ CWaylandPlatform::~CWaylandPlatform() {
         xkb_keymap_unref(m_waylandState.seatState.xkbKeymap);
     if (m_waylandState.seatState.xkbContext)
         xkb_context_unref(m_waylandState.seatState.xkbContext);
+
+    const auto DPY = m_waylandState.display;
+    m_waylandState = {};
+    wl_display_disconnect(DPY);
 }
 
 bool CWaylandPlatform::dispatchEvents() {
@@ -625,4 +637,51 @@ void CWaylandPlatform::stopRepeatTimer() {
     if (m_waylandState.seatState.repeatTimer)
         m_waylandState.seatState.repeatTimer->cancel();
     m_waylandState.seatState.repeatTimer.reset();
+}
+
+SP<CCExtSessionLockV1> CWaylandPlatform::aquireSessionLock() {
+    if (m_waylandState.sessionLockState.sessionLocked && m_waylandState.sessionLockState.sessionUnlocked) {
+        g_logger->log(HT_LOG_ERROR, "We already unlocked. We shouldn't be calling aquireSessionLock?");
+        return nullptr;
+    }
+
+    if (!m_waylandState.sessionLockState.lock) {
+        m_waylandState.sessionLockState.lock = makeShared<CCExtSessionLockV1>(m_waylandState.sessionLock->sendLock());
+        if (!m_waylandState.sessionLockState.lock) {
+            g_logger->log(HT_LOG_ERROR, "Failed to create a session lock object!");
+            return nullptr;
+        }
+
+        m_waylandState.sessionLockState.lock->setLocked([this](CCExtSessionLockV1* r) { m_waylandState.sessionLockState.sessionLocked = true; });
+
+        m_waylandState.sessionLockState.lock->setFinished([](CCExtSessionLockV1* r) { //FIXME: we need to make sure the client can exit after this event
+        });
+
+        // roundtrip in case the compositor sends `finished` right away
+        wl_display_roundtrip(m_waylandState.display);
+
+        // FIXME: we need to test if finished was sent right here too!
+    }
+
+    return m_waylandState.sessionLockState.lock;
+}
+
+void CWaylandPlatform::unlockSessionLock() {
+    if (!m_waylandState.sessionLockState.lock)
+        return;
+
+    m_waylandState.sessionLockState.lock->sendUnlockAndDestroy();
+    m_waylandState.sessionLockState.lock            = nullptr;
+    m_waylandState.sessionLockState.sessionUnlocked = true;
+
+    // roundtrip in order to make sure we have unlocked before sending closeRequest
+    wl_display_roundtrip(m_waylandState.display);
+
+    for (const auto& sls : m_lockSurfaces) {
+        if (sls.expired())
+            continue;
+        sls->m_events.closeRequest.emit();
+    }
+
+    m_lockSurfaces.clear();
 }
