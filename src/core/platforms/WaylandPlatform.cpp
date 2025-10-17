@@ -103,11 +103,8 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             auto newOutput = makeShared<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id);
             m_outputs.emplace_back(newOutput);
-            // FIXME: seems like m_idleCallbacks is not used and was moved to the loop state?
-            // probably move that there??
-            // We just need to deferre it a bit so that the globals are defined before we emit the event.
-            // But once they are defined, we probably don't want it to be a idle function.
-            m_idleCallbacks.emplace_back([newOutput]() { g_backend->m_events.outputAdded.emit(newOutput); });
+            if (m_waylandState.initialized)
+                g_backend->m_events.outputAdded.emit(newOutput);
         } else if (NAME == ext_session_lock_manager_v1_interface.name) {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
@@ -140,6 +137,11 @@ bool CWaylandPlatform::attempt() {
         initIM();
 
     dispatchEvents();
+
+    m_waylandState.initialized = true;
+    for (const auto& o : m_outputs) {
+        g_backend->m_events.outputAdded.emit(o);
+    }
 
     return true;
 }
@@ -176,12 +178,6 @@ bool CWaylandPlatform::dispatchEvents() {
         ret = wl_display_dispatch_pending(m_waylandState.display);
         wl_display_flush(m_waylandState.display);
     } while (ret > 0);
-
-    // dispatch frames
-    for (auto const& f : m_idleCallbacks) {
-        f();
-    }
-    m_idleCallbacks.clear();
 
     return true;
 }

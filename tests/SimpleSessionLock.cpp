@@ -104,40 +104,32 @@ int main(int argc, char** argv, char** envp) {
      int unlockSecs = 1;
      if (argc == 2)
          unlockSecs = atoi(argv[1]);
-
+ 
      backend = IBackend::create();
      if (!backend) {
          std::println("Backend create failed!");
          return 1;
      }
-
+ 
      auto sessionLock = backend->aquireSessionLock();
      if (!sessionLock.has_value()) {
          std::println("Cloudn't lock");
          return 1;
      }
-
+ 
      sessionLock.value()->m_events.finished.listenStatic([] {
          std::println("Compositor kicked us");
          for (const auto& w : windows) {
              closeWindow(w);
          }
-
-    backend->m_events.outputAdded.listenStatic([](SP<IOutput> output) {
-        windows.emplace_back(CWindowBuilder::begin()->type(HT_WINDOW_LOCK_SURFACE)->prefferedOutput(output)->commence());
-         std::println("New surface {}!", (uintptr_t)windows.back().get());
-         WP<IWindow> window = windows.back();
-          window->m_events.closeRequest.listenStatic([window]() { onWindowClose(window); });
-
-         layout(window.lock());
     });
 
-    if (!CBackend::attempt()) {
+    if (!backend->attempt()) {
         std::println("Backend attempt failed!");
         return -1;
     }
 
-    backend->addTimer(std::chrono::seconds(5), [](auto, auto) { backend->unlockSession(); }, nullptr);
+    backend->addTimer(std::chrono::seconds(unlockSecs), [](auto, auto) { backend->unlockSession(); }, nullptr);
 
     backend->enterLoop();
 
