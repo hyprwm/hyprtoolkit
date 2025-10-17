@@ -63,9 +63,6 @@ namespace Hyprtoolkit {
         SP<CCExtSessionLockV1>            aquireSessionLock();
         void                              unlockSessionLock();
 
-        //
-        std::vector<FIdleCallback> m_idleCallbacks;
-
         // dmabuf formats
         std::vector<Aquamarine::SDRMFormat> m_dmabufFormats;
 
@@ -94,6 +91,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCExtSessionLockManagerV1>    sessionLock;
 
             // control
+            bool initialized  = false;
             bool dmabufFailed = false;
 
             struct {

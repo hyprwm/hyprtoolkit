@@ -35,10 +35,10 @@ namespace Hyprtoolkit {
 
         /*
             Attempt to initialize the platform.
-            Optional. Can be used in case the outputAdded/Removed events are used to create new windows.
+            Optional. Can be used in case the outputAdded event is used to create new windows.
             In such a szenario the platform must be initialized before opening a window.
         */
-        static bool attempt();
+        bool attempt();
 
         /*
             Destroy the backend.
