@@ -325,6 +325,7 @@ void CWaylandPlatform::initSeat() {
                 setCursor(HT_POINTER_ARROW);
 
                 m_waylandState.seatState.pressedKeys.clear();
+                stopRepeatTimer();
             });
 
             m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
@@ -338,6 +339,7 @@ void CWaylandPlatform::initSeat() {
                 m_currentMods = 0;
 
                 m_waylandState.seatState.pressedKeys.clear();
+                stopRepeatTimer();
             });
 
             m_waylandState.pointer->setMotion([this](CCWlPointer* r, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
@@ -590,6 +592,7 @@ void CWaylandPlatform::startRepeatTimer() {
 }
 
 void CWaylandPlatform::stopRepeatTimer() {
-    m_waylandState.seatState.repeatTimer->cancel();
+    if (m_waylandState.seatState.repeatTimer)
+        m_waylandState.seatState.repeatTimer->cancel();
     m_waylandState.seatState.repeatTimer.reset();
 }
