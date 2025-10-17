@@ -9,6 +9,7 @@
 namespace Hyprtoolkit {
     class IElement;
     class IWindow;
+    class IOutput;
     struct SWindowCreationData;
 
     enum eWindowType : uint8_t {
@@ -30,7 +31,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
         // FIXME: implement for window types other than HT_WINDOW_LOCK_SURFACE
-        Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(uint32_t);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
 
         // only for HT_WINDOW_LAYER
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> marginTopLeft(const Hyprutils::Math::Vector2D&);

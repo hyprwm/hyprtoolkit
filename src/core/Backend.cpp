@@ -6,9 +6,10 @@
 
 #include "./platforms/WaylandPlatform.hpp"
 #include "../renderer/gl/OpenGL.hpp"
-#include "../window/WaylandWindow.hpp"
+#include "../output/WaylandOutput.hpp"
 #include "../window/WaylandLayer.hpp"
 #include "../window/WaylandLockSurface.hpp"
+#include "../window/WaylandWindow.hpp"
 #include "../Macros.hpp"
 #include "../helpers/Timer.hpp"
 #include "../element/Element.hpp"
@@ -100,6 +101,13 @@ void CBackend::unlockSession() {
         return;
 
     g_waylandPlatform->unlockSessionLock();
+}
+
+std::vector<SP<IOutput>> CBackend::getOutputs() {
+    if (!g_waylandPlatform)
+        return {};
+
+    return std::vector<SP<IOutput>>(g_waylandPlatform->m_outputs.begin(), g_waylandPlatform->m_outputs.end());
 }
 
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {

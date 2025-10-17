@@ -1,8 +1,7 @@
 #include "Window.hpp"
 #include "../core/InternalBackend.hpp"
+#include <hyprtoolkit/core/Output.hpp>
 #include "ToolkitWindow.hpp"
-#include "core/platforms/WaylandPlatform.hpp"
-#include "hyprtoolkit/core/LogTypes.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -43,8 +42,8 @@ SP<CWindowBuilder> CWindowBuilder::maxSize(const Hyprutils::Math::Vector2D& x) {
     return m_self.lock();
 }
 
-SP<CWindowBuilder> CWindowBuilder::prefferedOutput(uint32_t x) {
-    m_data->prefferedOutputId = x;
+SP<CWindowBuilder> CWindowBuilder::prefferedOutput(const SP<IOutput>& x) {
+    m_data->prefferedOutputId = x->handle();
     return m_self.lock();
 }
 
