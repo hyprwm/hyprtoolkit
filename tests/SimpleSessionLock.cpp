@@ -1,4 +1,5 @@
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprtoolkit/core/Output.hpp>
 #include <hyprtoolkit/window/Window.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/element/RowLayout.hpp>
@@ -101,8 +102,8 @@ static void onWindowClose(WP<IWindow> window) {
 
 int main(int argc, char** argv, char** envp) {
     backend = CBackend::create();
-    backend->m_events.outputAdded.listenStatic([](uint32_t outputId) {
-        windows.emplace_back(CWindowBuilder::begin()->type(HT_WINDOW_LOCK_SURFACE)->prefferedOutput(outputId)->commence());
+    backend->m_events.outputAdded.listenStatic([](SP<IOutput> output) {
+        windows.emplace_back(CWindowBuilder::begin()->type(HT_WINDOW_LOCK_SURFACE)->prefferedOutput(output)->commence());
         std::println("New surface {}!", (uintptr_t)windows.back().get());
         WP<IWindow> window = windows.back();
         window->m_events.closeRequest.listenStatic([window]() { onWindowClose(window); });

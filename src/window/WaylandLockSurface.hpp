@@ -14,7 +14,7 @@ namespace Hyprtoolkit {
         virtual void render();
 
       private:
-        uint32_t m_outputId = 0;
+        uint32_t m_outputHandle = 0;
 
         struct {
             SP<CCExtSessionLockSurfaceV1> lockSurface;

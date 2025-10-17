@@ -15,6 +15,7 @@
 
 namespace Hyprtoolkit {
     class IWindow;
+    class IOutput;
     class CTimer;
     class ISystemIconFactory;
     struct SWindowCreationData;
@@ -82,8 +83,17 @@ namespace Hyprtoolkit {
 
         void                                        unlockSession();
 
+        /*
+            Get currently registered outputs.
+            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+        */
+        std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs();
+
         struct {
-            Hyprutils::Signal::CSignalT<uint32_t> outputAdded;
+            /*
+                Get notified when a new output was added.
+            */
+            Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
         } m_events;
 
         HT_HIDDEN : CBackend();
