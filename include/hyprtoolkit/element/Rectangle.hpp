@@ -55,6 +55,7 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D>  maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual bool                                      positioningDependsOnChild();
         virtual void                                      recheckColor();
+        virtual Hyprutils::Math::CBox                     opaqueBox();
 
         Hyprutils::Memory::CUniquePointer<SRectangleImpl> m_impl;
 

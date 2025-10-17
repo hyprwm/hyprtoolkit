@@ -48,6 +48,7 @@ namespace Hyprtoolkit {
         virtual void                      mouseAxis(const Input::eAxisAxis axis, float delta);
         virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
         virtual void                      resetIM();
+        virtual void                      onPreRender();
 
         std::vector<WP<IWindow>>          m_popups;
 
@@ -57,28 +58,29 @@ namespace Hyprtoolkit {
         virtual void configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
         virtual void resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
-      protected:
-        float m_fractionalScale = 1.0;
+        float        m_fractionalScale = 1.0;
 
-        bool  m_open                  = false;
-        bool  m_ignoreNextButtonEvent = false;
+        bool         m_open                  = false;
+        bool         m_ignoreNextButtonEvent = false;
 
         struct {
-            SP<CCWlSurface>                   surface;
-            SP<CCXdgSurface>                  xdgSurface;
-            SP<CCXdgToplevel>                 xdgToplevel;
-            SP<CCWlCallback>                  frameCallback;
+            SP<CCWlSurface>                         surface;
+            SP<CCXdgSurface>                        xdgSurface;
+            SP<CCXdgToplevel>                       xdgToplevel;
+            SP<CCWlCallback>                        frameCallback;
 
-            std::array<SP<CWaylandBuffer>, 2> wlBuffers;
-            SP<Aquamarine::CSwapchain>        swapchain;
-            size_t                            bufIdx = 0;
+            std::array<SP<CWaylandBuffer>, 2>       wlBuffers;
+            SP<Aquamarine::CSwapchain>              swapchain;
+            size_t                                  bufIdx = 0;
 
-            Hyprutils::Math::Vector2D         size;
-            Hyprutils::Math::Vector2D         logicalSize;
-            float                             appliedScale;
-            SP<CCWpFractionalScaleV1>         fractional = nullptr;
-            SP<CCWpViewport>                  viewport   = nullptr;
-            uint32_t                          serial     = 0;
+            Hyprutils::Math::Vector2D               size;
+            Hyprutils::Math::Vector2D               logicalSize;
+            float                                   appliedScale;
+            SP<CCWpFractionalScaleV1>               fractional = nullptr;
+            SP<CCWpViewport>                        viewport   = nullptr;
+            uint32_t                                serial     = 0;
+
+            std::optional<Hyprutils::Math::CRegion> lastOpaqueRegion;
         } m_waylandState;
 
         std::chrono::steady_clock::time_point m_lastFrame = std::chrono::steady_clock::now();

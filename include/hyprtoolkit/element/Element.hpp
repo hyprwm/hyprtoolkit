@@ -87,6 +87,7 @@ namespace Hyprtoolkit {
 
         virtual void                                     recheckColor();
         virtual bool                                     positioningDependsOnChild();
+        virtual Hyprutils::Math::CBox                    opaqueBox();
 
         //
 

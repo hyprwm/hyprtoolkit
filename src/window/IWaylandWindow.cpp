@@ -80,6 +80,44 @@ void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     }
 }
 
+void IWaylandWindow::onPreRender() {
+
+    const bool ANY_REPOSITION = !m_needsReposition.empty();
+
+    IToolkitWindow::onPreRender();
+
+    if (!m_waylandState.wlBuffers[0] || !m_waylandState.wlBuffers[1])
+        return;
+
+    if (!ANY_REPOSITION)
+        return;
+
+    // recheck opaque region
+    // TODO: maybe traverse the entire tree?
+
+    CRegion rg;
+    for (const auto& ch : m_rootElement->impl->children) {
+        auto opaque = ch->opaqueBox();
+
+        if (opaque.empty())
+            continue;
+
+        opaque.translate(ch->impl->position.pos());
+
+        rg.add(opaque);
+    }
+
+    m_waylandState.lastOpaqueRegion = std::move(rg);
+
+    if (!m_waylandState.lastOpaqueRegion->empty()) {
+        auto region = makeShared<CCWlRegion>(g_waylandPlatform->m_waylandState.compositor->sendCreateRegion());
+        m_waylandState.lastOpaqueRegion->forEachRect([&region](const pixman_box32_t rect) { region->sendAdd(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1); });
+
+        m_waylandState.surface->sendSetOpaqueRegion(region.get());
+    } else
+        m_waylandState.surface->sendSetOpaqueRegion(nullptr);
+}
+
 void IWaylandWindow::render() {
     if (m_waylandState.frameCallback)
         return;

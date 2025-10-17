@@ -104,3 +104,14 @@ std::optional<Vector2D> CRectangleElement::maximumSize(const Hyprutils::Math::Ve
 bool CRectangleElement::positioningDependsOnChild() {
     return m_impl->data.size.hasAuto();
 }
+
+CBox CRectangleElement::opaqueBox() {
+    if (m_impl->color->value().a != 1.F)
+        return {};
+
+    CBox opaque = impl->position;
+    opaque.x    = 0;
+    opaque.y    = 0;
+    opaque.expand(-(m_impl->data.rounding + m_impl->data.borderThickness));
+    return opaque;
+}

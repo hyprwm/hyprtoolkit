@@ -212,6 +212,10 @@ bool IElement::positioningDependsOnChild() {
     return false;
 }
 
+CBox IElement::opaqueBox() {
+    return {};
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)
