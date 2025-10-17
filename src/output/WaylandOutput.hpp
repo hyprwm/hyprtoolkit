@@ -1,20 +1,25 @@
 #pragma once
 
 #include "wayland.hpp"
+
+#include <hyprtoolkit/core/Output.hpp>
+
 #include <hyprutils/math/Misc.hpp>
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/WeakPtr.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
 namespace Hyprtoolkit {
-    class CWaylandOutput {
+    class CWaylandOutput : public IOutput {
       public:
         CWaylandOutput(wl_proxy* wlResource, uint32_t id);
         ~CWaylandOutput() = default;
 
-        uint32_t   m_id      = 0;
-        bool       m_focused = false;
-        CCWlOutput m_wlOutput;
+        virtual uint32_t                              handle();
+
+        uint32_t                                      m_id       = 0;
+        bool                                          m_focused  = false;
+        Hyprutils::Memory::CSharedPointer<CCWlOutput> m_wlOutput = nullptr;
 
         struct {
             bool                        done      = false;

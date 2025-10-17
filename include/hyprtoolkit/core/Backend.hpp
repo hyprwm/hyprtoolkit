@@ -87,6 +87,12 @@ namespace Hyprtoolkit {
         */
         virtual std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs() = 0;
 
+        /*
+            Get currently registered outputs.
+            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+        */
+        std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs();
+
         struct {
             /*
                 Get notified when a new output was added.

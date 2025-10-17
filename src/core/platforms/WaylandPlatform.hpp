@@ -53,7 +53,7 @@ namespace Hyprtoolkit {
         bool                              dispatchEvents();
 
         SP<IWaylandWindow>                windowForSurf(wl_proxy* proxy);
-        std::optional<WP<CWaylandOutput>> outputForId(uint32_t id);
+        std::optional<WP<CWaylandOutput>> outputForHandle(uint32_t handle);
 
         void                              onKey(uint32_t keycode, bool state);
         void                              startRepeatTimer();
@@ -132,7 +132,7 @@ namespace Hyprtoolkit {
             std::string nodeName = "";
         } m_drmState;
 
-        std::vector<UP<CWaylandOutput>>      m_outputs;
+        std::vector<SP<CWaylandOutput>>      m_outputs;
 
         std::vector<WP<CWaylandWindow>>      m_windows;
         std::vector<WP<CWaylandLayer>>       m_layers;

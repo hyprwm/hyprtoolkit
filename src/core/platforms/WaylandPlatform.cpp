@@ -101,12 +101,13 @@ bool CWaylandPlatform::attempt() {
             }
         } else if (NAME == wl_output_interface.name) {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
-            m_outputs.emplace_back(makeUnique<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id));
+            auto newOutput = makeShared<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id);
+            m_outputs.emplace_back(newOutput);
             // FIXME: seems like m_idleCallbacks is not used and was moved to the loop state?
             // probably move that there??
             // We just need to deferre it a bit so that the globals are defined before we emit the event.
             // But once they are defined, we probably don't want it to be a idle function.
-            m_idleCallbacks.emplace_back([id]() { g_backend->m_events.outputAdded.emit(id); });
+            m_idleCallbacks.emplace_back([newOutput]() { g_backend->m_events.outputAdded.emit(newOutput); });
         } else if (NAME == ext_session_lock_manager_v1_interface.name) {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
@@ -116,14 +117,16 @@ bool CWaylandPlatform::attempt() {
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
         TRACE(g_logger->log(HT_LOG_TRACE, "Global {} removed", id));
 
-        auto lockSurfaceIt = std::ranges::find_if(m_lockSurfaces, [id](const auto& other) { return other->m_outputId == id; });
+        auto lockSurfaceIt = std::ranges::find_if(m_lockSurfaces, [id](const auto& other) { return other->m_outputHandle == id; });
         if (lockSurfaceIt != m_lockSurfaces.end()) {
             (*lockSurfaceIt)->m_events.closeRequest.emit();
             m_lockSurfaces.erase(lockSurfaceIt);
         }
         auto outputIt = std::ranges::find_if(m_outputs, [id](const auto& other) { return other->m_id == id; });
-        if (outputIt != m_outputs.end())
+        if (outputIt != m_outputs.end()) {
+            (*outputIt)->m_events.removed.emit();
             m_outputs.erase(outputIt);
+        }
     });
 
     wl_display_roundtrip(m_waylandState.display);
@@ -211,9 +214,9 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
     return nullptr;
 }
 
-std::optional<WP<CWaylandOutput>> CWaylandPlatform::outputForId(uint32_t id) {
+std::optional<WP<CWaylandOutput>> CWaylandPlatform::outputForHandle(uint32_t handle) {
     for (const auto& o : m_outputs) {
-        if (o->m_id == id) {
+        if (o->m_id == handle) {
             return o;
         }
     }
