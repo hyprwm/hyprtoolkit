@@ -15,6 +15,7 @@
 
 namespace Hyprtoolkit {
     class IWindow;
+    class IOutput;
     class CTimer;
     class ISystemIconFactory;
     struct SWindowCreationData;
@@ -31,6 +32,13 @@ namespace Hyprtoolkit {
             it will fail.
         */
         static Hyprutils::Memory::CSharedPointer<CBackend> create();
+
+        /*
+            Attempt to initialize the platform.
+            Optional. Can be used in case the outputAdded event is used to create new windows.
+            In such a szenario the platform must be initialized before opening a window.
+        */
+        bool attempt();
 
         /*
             Destroy the backend.
@@ -72,6 +80,21 @@ namespace Hyprtoolkit {
         void                                        enterLoop();
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
+
+        void                                        unlockSession();
+
+        /*
+            Get currently registered outputs.
+            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+        */
+        std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs();
+
+        struct {
+            /*
+                Get notified when a new output was added.
+            */
+            Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
+        } m_events;
 
         HT_HIDDEN : CBackend();
 
