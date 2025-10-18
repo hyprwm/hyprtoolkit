@@ -207,6 +207,11 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
                 return pp;
         }
     }
+
+    for (const auto& w : m_lockSurfaces) {
+        if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
+            return w.lock();
+    }
     return nullptr;
 }
 
