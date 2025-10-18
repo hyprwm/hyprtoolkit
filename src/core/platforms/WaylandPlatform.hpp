@@ -2,9 +2,9 @@
 
 #include <hyprtoolkit/types/PointerShape.hpp>
 #include <hyprtoolkit/core/Input.hpp>
+#include <hyprtoolkit/core/Timer.hpp>
 
 #include "../../helpers/Memory.hpp"
-#include "../../helpers/Timer.hpp"
 
 #include <vector>
 #include <functional>

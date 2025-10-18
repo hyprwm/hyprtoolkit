@@ -1,4 +1,5 @@
-#include "Timer.hpp"
+#include <hyprtoolkit/core/Timer.hpp>
+#include "Memory.hpp"
 
 using namespace Hyprtoolkit;
 
