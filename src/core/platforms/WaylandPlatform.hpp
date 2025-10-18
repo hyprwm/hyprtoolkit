@@ -122,6 +122,7 @@ namespace Hyprtoolkit {
                 SP<CCExtSessionLockV1> lock            = nullptr;
                 bool                   sessionLocked   = false;
                 bool                   sessionUnlocked = false;
+                bool                   denied          = false; // set on the finished event
             } sessionLockState;
         } m_waylandState;
 

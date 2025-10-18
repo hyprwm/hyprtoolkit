@@ -645,11 +645,11 @@ void CWaylandPlatform::stopRepeatTimer() {
 
 SP<CCExtSessionLockV1> CWaylandPlatform::aquireSessionLock() {
     if (m_waylandState.sessionLockState.sessionLocked && m_waylandState.sessionLockState.sessionUnlocked) {
-        g_logger->log(HT_LOG_ERROR, "We already unlocked. We shouldn't be calling aquireSessionLock?");
+        g_logger->log(HT_LOG_ERROR, "We already unlocked. We shouldn't be calling aquireSessionLock.");
         return nullptr;
     }
 
-    if (!m_waylandState.sessionLockState.lock) {
+    if (!m_waylandState.sessionLockState.lock && !m_waylandState.sessionLockState.denied) {
         m_waylandState.sessionLockState.lock = makeShared<CCExtSessionLockV1>(m_waylandState.sessionLock->sendLock());
         if (!m_waylandState.sessionLockState.lock) {
             g_logger->log(HT_LOG_ERROR, "Failed to create a session lock object!");
@@ -658,13 +658,21 @@ SP<CCExtSessionLockV1> CWaylandPlatform::aquireSessionLock() {
 
         m_waylandState.sessionLockState.lock->setLocked([this](CCExtSessionLockV1* r) { m_waylandState.sessionLockState.sessionLocked = true; });
 
-        m_waylandState.sessionLockState.lock->setFinished([](CCExtSessionLockV1* r) { //FIXME: we need to make sure the client can exit after this event
+        m_waylandState.sessionLockState.lock->setFinished([this](CCExtSessionLockV1* r) {
+            g_logger->log(HT_LOG_ERROR, "We got denied by the compositor to be the exclusive lock screen client. Is there another lock screen active?");
+            for (const auto& w : m_lockSurfaces) {
+                if (w.expired())
+                    continue;
+                w->m_events.closeRequest.emit();
+            }
+
+            m_lockSurfaces.clear();
+            m_waylandState.sessionLockState.lock.reset();
+            m_waylandState.sessionLockState.denied = true;
         });
 
         // roundtrip in case the compositor sends `finished` right away
         wl_display_roundtrip(m_waylandState.display);
-
-        // FIXME: we need to test if finished was sent right here too!
     }
 
     return m_waylandState.sessionLockState.lock;
@@ -675,7 +683,7 @@ void CWaylandPlatform::unlockSessionLock() {
         return;
 
     m_waylandState.sessionLockState.lock->sendUnlockAndDestroy();
-    m_waylandState.sessionLockState.lock            = nullptr;
+    m_waylandState.sessionLockState.lock.reset();
     m_waylandState.sessionLockState.sessionUnlocked = true;
 
     // roundtrip in order to make sure we have unlocked before sending closeRequest
