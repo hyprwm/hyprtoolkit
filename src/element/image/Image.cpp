@@ -101,6 +101,8 @@ void CImageElement::renderTex() {
             m_impl->oldTex.reset();
 
             m_impl->waitingForTex = false;
+            if (!m_impl->failed)
+                impl->damageEntire();
         });
     });
 }
