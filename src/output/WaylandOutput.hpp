@@ -16,6 +16,8 @@ namespace Hyprtoolkit {
         ~CWaylandOutput() = default;
 
         virtual uint32_t                              handle();
+        virtual std::string                           port();
+        virtual std::string                           desc();
 
         uint32_t                                      m_id       = 0;
         bool                                          m_focused  = false;

@@ -69,7 +69,7 @@ void CWaylandLockSurface::open() {
             const bool SAMESCALE = m_fractionalScale == scale / 120.0;
             m_fractionalScale    = scale / 120.0;
 
-            g_logger->log(HT_LOG_DEBUG, "layer: got fractional scale: {:.1f}%", m_fractionalScale * 100.F);
+            g_logger->log(HT_LOG_DEBUG, "lock surface: got fractional scale: {:.1f}%", m_fractionalScale * 100.F);
 
             if (!SAMESCALE && m_lockSurfaceState.configured)
                 onScaleUpdate();

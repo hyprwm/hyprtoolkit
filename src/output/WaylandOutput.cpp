@@ -59,3 +59,11 @@ CWaylandOutput::CWaylandOutput(wl_proxy* wlResource, uint32_t id) : m_id(id), m_
 uint32_t CWaylandOutput::handle() {
     return m_id;
 }
+
+std::string CWaylandOutput::port() {
+    return m_configuration.port;
+}
+
+std::string CWaylandOutput::desc() {
+    return m_configuration.desc;
+}
