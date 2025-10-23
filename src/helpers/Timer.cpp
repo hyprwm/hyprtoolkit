@@ -4,30 +4,30 @@
 using namespace Hyprtoolkit;
 
 CTimer::CTimer(std::chrono::system_clock::duration timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data_, bool force) :
-    cb(cb_), data(data_), allowForceUpdate(force) {
-    expires = std::chrono::system_clock::now() + timeout;
+    m_cb(cb_), m_data(data_), m_allowForceUpdate(force) {
+    m_expires = std::chrono::system_clock::now() + timeout;
 }
 
 bool CTimer::passed() {
-    return std::chrono::system_clock::now() > expires;
+    return std::chrono::system_clock::now() > m_expires;
 }
 
 void CTimer::cancel() {
-    wasCancelled = true;
+    m_wasCancelled = true;
 }
 
 bool CTimer::cancelled() {
-    return wasCancelled;
+    return m_wasCancelled;
 }
 
 void CTimer::call(ASP<CTimer> self) {
-    cb(self, data);
+    m_cb(self, m_data);
 }
 
 float CTimer::leftMs() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(expires - std::chrono::system_clock::now()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(m_expires - std::chrono::system_clock::now()).count();
 }
 
 bool CTimer::canForceUpdate() {
-    return allowForceUpdate;
+    return m_allowForceUpdate;
 }

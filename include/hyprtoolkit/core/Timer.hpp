@@ -19,10 +19,10 @@ namespace Hyprtoolkit {
         void  call(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self);
 
       private:
-        std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb;
-        void*                                                                                 data = nullptr;
-        std::chrono::system_clock::time_point                                                 expires;
-        bool                                                                                  wasCancelled     = false;
-        bool                                                                                  allowForceUpdate = false;
+        std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> m_cb;
+        void*                                                                                 m_data = nullptr;
+        std::chrono::system_clock::time_point                                                 m_expires;
+        bool                                                                                  m_wasCancelled     = false;
+        bool                                                                                  m_allowForceUpdate = false;
     };
 }
