@@ -34,13 +34,6 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<IBackend> create();
 
         /*
-            Attempt to initialize the platform.
-            Optional. Can be used in case the outputAdded event is used to create new windows.
-            In such a szenario the platform must be initialized before opening a window.
-        */
-        bool attempt();
-
-        /*
             Destroy the backend.
             Backend will be destroyed once:
              - All refs YOU hold are dead

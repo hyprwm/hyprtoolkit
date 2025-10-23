@@ -51,7 +51,7 @@ static void layout(const SP<IWindow>& window) {
 
     auto rect4 = CRectangleBuilder::begin() //
                      ->color([] { return CHyprColor{0.4F, 0.2F, 0.4F}; })
-                     ->rounding(10)
+                     ->rounding(0)
                      ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}})
                      ->commence();
 
@@ -62,12 +62,12 @@ static void layout(const SP<IWindow>& window) {
                      ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {447, 447}})
                      ->commence();
 
-    auto text = CTextBuilder::begin()->text("world is a fuck")->color([] { return CHyprColor{0.4F, 0.4F, 0.4F}; })->commence();
+    auto text = CTextBuilder::begin()->text("never give up")->color([] { return CHyprColor{0.4F, 0.4F, 0.4F}; })->commence();
 
     auto button = CButtonBuilder::begin()
-                      ->label("Click me bitch")
-                      ->onMainClick([](SP<CButtonElement> el) { el->rebuild()->label(std::format("Clicked {} times bitch", buttonClicks++))->commence(); })
-                      ->onRightClick([](SP<CButtonElement> el) { el->rebuild()->label("Reset bitch")->commence(); })
+                      ->label("Click me kind person")
+                      ->onMainClick([](SP<CButtonElement> el) { el->rebuild()->label(std::format("Clicked {} times", buttonClicks++))->commence(); })
+                      ->onRightClick([](SP<CButtonElement> el) { el->rebuild()->label("Reset")->commence(); })
                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
                       ->commence();
 
@@ -100,33 +100,30 @@ static void onWindowClose(WP<IWindow> window) {
     }
 }
 
+static void createLockSurface(SP<IOutput> output) {
+    windows.emplace_back(CWindowBuilder::begin()->type(HT_WINDOW_LOCK_SURFACE)->prefferedOutput(output)->commence());
+    std::println("New surface {}!", (uintptr_t)windows.back().get());
+    WP<IWindow> weakWindow = windows.back();
+    weakWindow->m_events.closeRequest.listenStatic([weakWindow]() { onWindowClose(weakWindow); });
+
+    layout(weakWindow.lock());
+}
+
 int main(int argc, char** argv, char** envp) {
      int unlockSecs = 1;
      if (argc == 2)
          unlockSecs = atoi(argv[1]);
- 
+
      backend = IBackend::create();
      if (!backend) {
          std::println("Backend create failed!");
-         return 1;
+         return -1;
      }
- 
-     auto sessionLock = backend->aquireSessionLock();
-     if (!sessionLock.has_value()) {
-         std::println("Cloudn't lock");
-         return 1;
-     }
- 
-     sessionLock.value()->m_events.finished.listenStatic([] {
-         std::println("Compositor kicked us");
-         for (const auto& w : windows) {
-             closeWindow(w);
-         }
-    });
 
-    if (!backend->attempt()) {
-        std::println("Backend attempt failed!");
-        return -1;
+     backend->m_events.outputAdded.listenStatic(createLockSurface);
+
+     for (const auto& o: backend->getOutputs()) {
+         createLockSurface(o);
     }
 
     backend->addTimer(std::chrono::seconds(unlockSecs), [](auto, auto) { backend->unlockSession(); }, nullptr);
