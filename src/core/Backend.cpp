@@ -69,20 +69,16 @@ SP<CBackend> CBackend::create() {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
         return nullptr;
     }
-
-    return g_backend;
-};
-
-bool CBackend::attempt() {
     g_waylandPlatform = makeUnique<CWaylandPlatform>();
     if (!g_waylandPlatform->attempt()) {
         g_waylandPlatform = nullptr;
-        return false;
+        return nullptr;
     }
     g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
     g_renderer = g_openGL;
-    return true;
-}
+
+    return g_backend;
+};
 
 void CBackend::destroy() {
     terminate();
@@ -111,7 +107,7 @@ std::vector<SP<IOutput>> CBackend::getOutputs() {
 }
 
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
-    if (!g_waylandPlatform && !attempt())
+    if (!g_waylandPlatform)
         return nullptr;
 
     if (data.type == HT_WINDOW_LAYER) {
