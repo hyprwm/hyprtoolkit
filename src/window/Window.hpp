@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/window/Window.hpp>
+#include <ext-session-lock-v1.hpp>
 
 #include "../helpers/Memory.hpp"
 
@@ -12,6 +13,7 @@ namespace Hyprtoolkit {
         std::optional<Hyprutils::Math::Vector2D> maxSize;
         std::string                              title  = "Hyprtoolkit App";
         std::string                              class_ = "hyprtoolkit-app";
+        uint32_t                                 prefferedOutputId;
 
         // popups
         Hyprutils::Math::Vector2D pos;

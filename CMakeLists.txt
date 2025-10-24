@@ -123,6 +123,7 @@ protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
 protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
 protocolnew("stable/viewporter" "viewporter" false)
 protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
+protocolnew("staging/ext-session-lock" "ext-session-lock-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
 protocolnew("unstable/text-input" "text-input-unstable-v3" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
@@ -141,6 +142,11 @@ add_dependencies(tests dialog)
 add_executable(controls "tests/Controls.cpp")
 target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
 add_dependencies(tests controls)
+
+add_executable(simpleSessionLock "tests/SimpleSessionLock.cpp")
+target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
+add_dependencies(tests simpleSessionLock)
+
 
 # Installation
 install(TARGETS hyprtoolkit)

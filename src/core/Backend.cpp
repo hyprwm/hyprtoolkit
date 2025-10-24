@@ -7,8 +7,10 @@
 
 #include "./platforms/WaylandPlatform.hpp"
 #include "../renderer/gl/OpenGL.hpp"
-#include "../window/WaylandWindow.hpp"
+#include "../output/WaylandOutput.hpp"
 #include "../window/WaylandLayer.hpp"
+#include "../window/WaylandLockSurface.hpp"
+#include "../window/WaylandWindow.hpp"
 #include "../Macros.hpp"
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
@@ -67,6 +69,13 @@ SP<CBackend> CBackend::create() {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
         return nullptr;
     }
+    g_waylandPlatform = makeUnique<CWaylandPlatform>();
+    if (!g_waylandPlatform->attempt()) {
+        g_waylandPlatform = nullptr;
+        return nullptr;
+    }
+    g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
+    g_renderer = g_openGL;
 
     return g_backend;
 };
@@ -83,14 +92,23 @@ SP<CPalette> CBackend::getPalette() {
     return g_palette;
 }
 
+void CBackend::unlockSession() {
+    if (!g_waylandPlatform)
+        return;
+
+    g_waylandPlatform->unlockSessionLock();
+}
+
+std::vector<SP<IOutput>> CBackend::getOutputs() {
+    if (!g_waylandPlatform)
+        return {};
+
+    return std::vector<SP<IOutput>>(g_waylandPlatform->m_outputs.begin(), g_waylandPlatform->m_outputs.end());
+}
+
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
-    if (!g_waylandPlatform) {
-        g_waylandPlatform = makeUnique<CWaylandPlatform>();
-        if (!g_waylandPlatform->attempt())
-            return nullptr;
-        g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
-        g_renderer = g_openGL;
-    }
+    if (!g_waylandPlatform)
+        return nullptr;
 
     if (data.type == HT_WINDOW_LAYER) {
         if (!g_waylandPlatform->m_waylandState.layerShell)
@@ -100,6 +118,17 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
         w->m_self                      = w;
         w->m_rootElement->impl->window = w;
         g_waylandPlatform->m_layers.emplace_back(w);
+        return w;
+    } else if (data.type == HT_WINDOW_LOCK_SURFACE) {
+        if (!g_waylandPlatform->m_waylandState.sessionLock) {
+            g_logger->log(HT_LOG_ERROR, "No session lock manager. Does your compositor support it?");
+            return nullptr;
+        }
+
+        auto w                         = makeShared<CWaylandLockSurface>(data);
+        w->m_self                      = w;
+        w->m_rootElement->impl->window = w;
+        g_waylandPlatform->m_lockSurfaces.emplace_back(w);
         return w;
     }
 

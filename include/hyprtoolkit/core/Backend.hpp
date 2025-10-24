@@ -15,6 +15,7 @@
 
 namespace Hyprtoolkit {
     class IWindow;
+    class IOutput;
     class CTimer;
     class ISystemIconFactory;
     struct SWindowCreationData;
@@ -72,6 +73,26 @@ namespace Hyprtoolkit {
         void                                        enterLoop();
 
         Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
+
+        void                                        unlockSession();
+
+        /*
+            Get currently registered outputs.
+            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+        */
+        std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs();
+
+        struct {
+            /*
+                Get notified when a new output was added.
+            */
+            Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
+
+            /*
+                Sent when the compositor denies us as the exclusive lock screen client.
+            */
+            Hyprutils::Signal::CSignalT<> lockDenied;
+        } m_events;
 
         HT_HIDDEN : CBackend();
 
