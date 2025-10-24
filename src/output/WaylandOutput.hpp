@@ -2,6 +2,7 @@
 
 #include "wayland.hpp"
 
+#include <cstdint>
 #include <hyprtoolkit/core/Output.hpp>
 
 #include <hyprutils/math/Misc.hpp>
@@ -18,6 +19,7 @@ namespace Hyprtoolkit {
         virtual uint32_t                              handle();
         virtual std::string                           port();
         virtual std::string                           desc();
+        virtual uint32_t                              fps();
 
         uint32_t                                      m_id       = 0;
         bool                                          m_focused  = false;
@@ -27,7 +29,8 @@ namespace Hyprtoolkit {
             bool                        done      = false;
             Hyprutils::Math::eTransform transform = Hyprutils::Math::HYPRUTILS_TRANSFORM_NORMAL;
             Hyprutils::Math::Vector2D   size;
-            int                         scale = 1;
+            uint32_t                    fps   = 60;
+            uint32_t                    scale = 1;
             std::string                 name  = "";
             std::string                 port  = "";
             std::string                 desc  = "";

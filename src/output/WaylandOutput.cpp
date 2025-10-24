@@ -67,3 +67,7 @@ std::string CWaylandOutput::port() {
 std::string CWaylandOutput::desc() {
     return m_configuration.desc;
 }
+
+uint32_t CWaylandOutput::fps() {
+    return m_configuration.fps;
+}
