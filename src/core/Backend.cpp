@@ -1,4 +1,5 @@
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprtoolkit/core/Timer.hpp>
 #include <hyprtoolkit/palette/Palette.hpp>
 
 #include "InternalBackend.hpp"
@@ -9,7 +10,6 @@
 #include "../window/WaylandWindow.hpp"
 #include "../window/WaylandLayer.hpp"
 #include "../Macros.hpp"
-#include "../helpers/Timer.hpp"
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
 #include "../system/Icons.hpp"

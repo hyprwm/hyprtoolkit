@@ -33,7 +33,7 @@ int                 main(int argc, char** argv, char** envp) {
 
     auto layout = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
     layout->setMargin(3);
-    
+
     auto layoutInner = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.85F, 1.F}})->commence();
 
     window->m_rootElement->addChild(layout);
