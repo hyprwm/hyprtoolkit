@@ -91,6 +91,11 @@ namespace Hyprtoolkit {
                 Get notified when a new output was added.
             */
             Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
+
+            /*
+                Sent when the compositor denies us as the exclusive lock screen client.
+            */
+            Hyprutils::Signal::CSignalT<> lockDenied;
         } m_events;
 
       protected:

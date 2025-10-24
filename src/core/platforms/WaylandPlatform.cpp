@@ -660,6 +660,8 @@ SP<CCExtSessionLockV1> CWaylandPlatform::aquireSessionLock() {
 
         m_waylandState.sessionLockState.lock->setFinished([this](CCExtSessionLockV1* r) {
             g_logger->log(HT_LOG_ERROR, "We got denied by the compositor to be the exclusive lock screen client. Is there another lock screen active?");
+            g_backend->m_events.lockDenied.emit();
+
             for (const auto& w : m_lockSurfaces) {
                 if (w.expired())
                     continue;

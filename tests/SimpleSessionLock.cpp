@@ -121,6 +121,7 @@ int main(int argc, char** argv, char** envp) {
      }
 
      backend->m_events.outputAdded.listenStatic(createLockSurface);
+     backend->m_events.lockDenied.listenStatic([] { std::println("Lock denied!"); });
 
      for (const auto& o: backend->getOutputs()) {
          createLockSurface(o);
