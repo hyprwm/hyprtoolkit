@@ -7,6 +7,7 @@
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
 #include "../renderer/Renderer.hpp"
+#include "../renderer/sync/SyncTimeline.hpp"
 #include "../core/AnimationManager.hpp"
 
 #include "../Macros.hpp"
@@ -30,12 +31,15 @@ CWaylandBuffer::CWaylandBuffer(SP<Aquamarine::IBuffer> buffer) : m_buffer(buffer
 
     m_waylandState.buffer = makeShared<CCWlBuffer>(params->sendCreateImmed(attrs.size.x, attrs.size.y, attrs.format, (zwpLinuxBufferParamsV1Flags)0));
 
-    m_waylandState.buffer->setRelease([this](CCWlBuffer* r) { pendingRelease = false; });
+    m_waylandState.buffer->setRelease([this](CCWlBuffer* r) { m_pendingRelease = false; });
 
     params->sendDestroy();
 }
 
 CWaylandBuffer::~CWaylandBuffer() {
+    if (m_timeline)
+        m_timeline->signal(m_timeline->m_acquirePoint);
+
     if (m_waylandState.buffer && m_waylandState.buffer->resource())
         m_waylandState.buffer->sendDestroy();
 }
@@ -118,6 +122,43 @@ void IWaylandWindow::onPreRender() {
         m_waylandState.surface->sendSetOpaqueRegion(nullptr);
 }
 
+void IWaylandWindow::prepareExplicit(SP<CWaylandBuffer> buffer) {
+    if (!g_renderer->explicitSyncSupported() || !g_waylandPlatform->m_waylandState.syncobj)
+        return;
+
+    if (!m_waylandState.syncobjSurf)
+        m_waylandState.syncobjSurf = makeShared<CCWpLinuxDrmSyncobjSurfaceV1>(g_waylandPlatform->m_waylandState.syncobj->sendGetSurface(m_waylandState.surface->proxy()));
+
+    auto sync = g_renderer->exportSync(buffer->m_buffer.lock());
+
+    if (!buffer->m_waylandState.syncTimeline) {
+        buffer->m_waylandState.syncTimeline = makeShared<CCWpLinuxDrmSyncobjTimelineV1>(g_waylandPlatform->m_waylandState.syncobj->sendImportTimeline(sync->m_syncobjFD.get()));
+        buffer->m_timeline                  = sync;
+    }
+
+    sync->m_acquirePoint = sync->m_releasePoint + 1;
+}
+
+void IWaylandWindow::submitExplicit(SP<CWaylandBuffer> buffer) {
+    if (!m_waylandState.syncobjSurf)
+        return;
+
+    buffer->m_firstTimeIgnoreSync = false;
+
+    auto sync = g_renderer->exportSync(buffer->m_buffer.lock());
+
+    sync->m_releasePoint = sync->m_acquirePoint + 1;
+
+    TRACE(g_logger->log(HT_LOG_TRACE, "wayland: Submitting points acq: {}, rel: {} for ES", sync->m_acquirePoint, sync->m_releasePoint));
+
+    m_waylandState.syncobjSurf->sendSetAcquirePoint(buffer->m_waylandState.syncTimeline.get(), sc<uint32_t>(sync->m_acquirePoint >> 32),
+                                                    sc<uint32_t>(sync->m_acquirePoint & 0xFFFFFFFF));
+    m_waylandState.syncobjSurf->sendSetReleasePoint(buffer->m_waylandState.syncTimeline.get(), sc<uint32_t>(sync->m_releasePoint >> 32),
+                                                    sc<uint32_t>(sync->m_releasePoint & 0xFFFFFFFF));
+
+    g_renderer->signalRenderPoint(sync);
+}
+
 void IWaylandWindow::render() {
     if (m_waylandState.frameCallback)
         return;
@@ -134,12 +175,18 @@ void IWaylandWindow::render() {
 
     g_renderer->beginRendering(m_self.lock(), currentBuffer->m_buffer.lock());
 
+    prepareExplicit(currentBuffer);
+
+    g_renderer->render(currentBuffer->m_firstTimeIgnoreSync);
+
     m_waylandState.frameCallback = makeShared<CCWlCallback>(m_waylandState.surface->sendFrame());
     m_waylandState.frameCallback->setDone([this](CCWlCallback* r, uint32_t frameTime) { onCallback(); });
 
     m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN).forEachRect([this](const pixman_box32_t box) {
         m_waylandState.surface->sendDamageBuffer(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
     });
+
+    submitExplicit(currentBuffer);
 
     g_renderer->endRendering();
 

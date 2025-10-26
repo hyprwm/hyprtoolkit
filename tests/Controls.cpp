@@ -28,7 +28,7 @@ using namespace Hyprtoolkit;
 #define WP CWeakPointer
 #define UP CUniquePointer
 
-static SP<CBackend>             backend;
+static SP<IBackend>             backend;
 static SP<CSliderElement>       hiddenSlider;
 static SP<CColumnLayoutElement> mainLayout;
 static SP<IWindow>              window;
@@ -109,7 +109,7 @@ static SP<IElement> stretchLayout(std::string&& label, SP<IElement> control) {
 }
 
 int main(int argc, char** argv, char** envp) {
-    backend = CBackend::create();
+    backend = IBackend::create();
 
     //
     window = CWindowBuilder::begin() //

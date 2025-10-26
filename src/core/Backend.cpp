@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/core/Timer.hpp>
 #include <hyprtoolkit/palette/Palette.hpp>
@@ -54,7 +55,7 @@ CBackend::~CBackend() {
     close(m_sLoopState.exitfd[1]);
 }
 
-SP<CBackend> CBackend::create() {
+SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
@@ -194,6 +195,18 @@ void CBackend::addFd(int fd, std::function<void()>&& callback) {
 
 void CBackend::removeFd(int fd) {
     std::erase_if(m_sLoopState.userFds, [fd](const auto& e) { return e.fd == fd; });
+    rebuildPollfds();
+}
+
+void CBackend::doOnReadable(Hyprutils::OS::CFileDescriptor fd, std::function<void()>&& fn) {
+    int fdInt = fd.get();
+    m_sLoopState.userFds.emplace_back(SFDListener{
+        .fdOwned      = std::move(fd),
+        .fd           = fdInt,
+        .callback     = std::move(fn),
+        .removeOnFire = true,
+    });
+
     rebuildPollfds();
 }
 
@@ -375,12 +388,22 @@ void CBackend::enterLoop() {
         }
 
         // do user fds
+        std::vector<int> expiredFds;
+
         for (auto& uf : m_sLoopState.userFds) {
             if (!uf.needsDispatch)
                 continue;
 
             uf.needsDispatch = false;
             uf.callback();
+
+            if (uf.removeOnFire)
+                expiredFds.emplace_back(uf.fd);
+        }
+
+        if (!expiredFds.empty()) {
+            std::erase_if(m_sLoopState.userFds, [&expiredFds](const auto& e) { return std::ranges::contains(expiredFds, e.fd); });
+            rebuildPollfds();
         }
     }
 

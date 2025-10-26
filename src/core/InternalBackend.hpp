@@ -4,6 +4,7 @@
 #include <hyprutils/os/FileDescriptor.hpp>
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 
+#include "Backend.hpp"
 #include "../helpers/Env.hpp"
 
 namespace Hyprtoolkit {

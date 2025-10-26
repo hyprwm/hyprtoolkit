@@ -83,6 +83,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 5, id));
             m_waylandState.layerShell =
                 makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwlr_layer_shell_v1_interface, 5));
+        } else if (NAME == wp_linux_drm_syncobj_manager_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.syncobj = makeShared<CCWpLinuxDrmSyncobjManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_linux_drm_syncobj_manager_v1_interface, 1));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             m_waylandState.dmabuf =

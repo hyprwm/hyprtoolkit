@@ -4,9 +4,11 @@
 #include "../../Macros.hpp"
 #include "../../core/InternalBackend.hpp"
 #include "../../element/Element.hpp"
+#include "../sync/SyncTimeline.hpp"
 #include "./shaders/Shaders.hpp"
 #include "GLTexture.hpp"
 #include "Renderbuffer.hpp"
+#include "Sync.hpp"
 
 #include <cmath>
 #include <hyprutils/memory/Casts.hpp>
@@ -180,6 +182,7 @@ void COpenGLRenderer::initEGL(bool gbm) {
     m_exts.EXT_create_context_robustness      = EGLEXTENSIONS.contains("EXT_create_context_robustness");
     m_exts.EXT_image_dma_buf_import           = EGLEXTENSIONS.contains("EXT_image_dma_buf_import");
     m_exts.EXT_image_dma_buf_import_modifiers = EGLEXTENSIONS.contains("EXT_image_dma_buf_import_modifiers");
+    m_exts.EGL_ANDROID_native_fence_sync_ext  = EGLEXTENSIONS.contains("EGL_ANDROID_native_fence_sync");
 
     if (m_exts.IMG_context_priority) {
         g_logger->log(HT_LOG_DEBUG, "EGL: IMG_context_priority supported, requesting high");
@@ -357,7 +360,7 @@ static std::string processShader(const std::string& filename, const std::map<std
     return source;
 }
 
-COpenGLRenderer::COpenGLRenderer(int drmFD) {
+COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
     const std::string EGLEXTENSIONS = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
     g_logger->log(HT_LOG_DEBUG, "Supported EGL global extensions: ({}) {}", std::ranges::count(EGLEXTENSIONS, ' '), EGLEXTENSIONS);
@@ -429,6 +432,23 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) {
 
     auto* const EXTENSIONS = rc<const char*>(glGetString(GL_EXTENSIONS));
     RASSERT(EXTENSIONS, "Couldn't retrieve openGL extensions!");
+
+#if defined(__linux__)
+    auto syncObjSupport = [](auto fd) {
+        if (fd < 0)
+            return false;
+
+        uint64_t cap = 0;
+        int      ret = drmGetCap(fd, DRM_CAP_SYNCOBJ_TIMELINE, &cap);
+        return ret == 0 && cap != 0;
+    };
+
+    m_syncobjSupported = syncObjSupport(m_drmFD);
+
+    g_logger->log(HT_LOG_DEBUG, "DRM syncobj timeline support: {}", m_syncobjSupported ? "yes" : "no");
+#else
+    Debug::log(LOG, "DRM syncobj timeline support: no (not linux)");
+#endif
 
 #ifdef HYPRTOOLKIT_DEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -514,6 +534,10 @@ COpenGLRenderer::~COpenGLRenderer() {
         gbm_device_destroy(m_gbmDevice);
 }
 
+bool COpenGLRenderer::explicitSyncSupported() {
+    return !Env::envEnabled("HT_NO_EXPLICIT_SYNC") && m_syncobjSupported && m_exts.EGL_ANDROID_native_fence_sync_ext;
+}
+
 CBox COpenGLRenderer::logicalToGL(const CBox& box, bool transform) {
     auto b = box.copy();
     b.scale(m_scale).round();
@@ -539,6 +563,15 @@ void COpenGLRenderer::onRenderbufferDestroy(CRenderbuffer* p) {
     std::erase_if(m_rbos, [p](const auto& rbo) { return !rbo || rbo.get() == p; });
 }
 
+void COpenGLRenderer::waitOnSync() {
+    auto timeline = exportSync(m_currentRBO->m_hlBuffer.lock());
+
+    if (!timeline)
+        return;
+
+    timeline->check(timeline->m_releasePoint, DRM_SYNCOBJ_WAIT_FLAGS_WAIT_FOR_SUBMIT);
+}
+
 void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) {
     RASSERT(buf, "GL: null buffer passed to rendering");
 
@@ -553,11 +586,16 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
     m_scale           = window->scale();
     m_window          = window;
     m_damage          = window->m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN);
+}
 
+void COpenGLRenderer::render(bool ignoreSync) {
     if (m_damage.empty())
         return;
 
-    glViewport(0, 0, window->pixelSize().x, window->pixelSize().y);
+    if (!ignoreSync && explicitSyncSupported())
+        waitOnSync();
+
+    glViewport(0, 0, m_window->pixelSize().x, m_window->pixelSize().y);
 
     m_damage.forEachRect([this](const auto& RECT) {
         scissor(&RECT);
@@ -570,7 +608,7 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
 
     m_alreadyRendered.clear();
 
-    renderBreadthfirst(window->m_rootElement);
+    renderBreadthfirst(m_window->m_rootElement);
 
     m_alreadyRendered.clear();
 
@@ -944,4 +982,32 @@ void COpenGLRenderer::renderLine(const SLineRenderData& data) {
         .color = data.color,
         .poly  = CPolygon{polyPoints},
     });
+}
+
+SP<CSyncTimeline> COpenGLRenderer::exportSync(SP<Aquamarine::IBuffer> buf) {
+    if (!buf)
+        return nullptr;
+
+    auto rbo = getRBO(buf);
+
+    if (!rbo)
+        return nullptr;
+
+    if (!rbo->m_syncTimeline)
+        rbo->m_syncTimeline = CSyncTimeline::create(m_drmFD);
+
+    return rbo->m_syncTimeline;
+}
+
+void COpenGLRenderer::signalRenderPoint(SP<CSyncTimeline> timeline) {
+    auto sync = CEGLSync::create();
+
+    if (sync && sync->isValid()) {
+        g_backend->doOnReadable(sync->takeFd(), [ap = timeline->m_acquirePoint, tl = WP<CSyncTimeline>{timeline}]() {
+            if (!tl)
+                return;
+
+            tl->signal(ap);
+        });
+    }
 }
