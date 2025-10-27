@@ -15,20 +15,26 @@
 #include <fractional-scale-v1.hpp>
 #include <viewporter.hpp>
 #include <text-input-unstable-v3.hpp>
+#include <linux-drm-syncobj-v1.hpp>
 
 #include <chrono>
 
 namespace Hyprtoolkit {
+    class CSyncTimeline;
+
     class CWaylandBuffer {
       public:
-        CWaylandBuffer(Hyprutils::Memory::CSharedPointer<Aquamarine::IBuffer> buffer);
+        CWaylandBuffer(SP<Aquamarine::IBuffer> buffer);
         ~CWaylandBuffer();
-        bool good();
+        bool              good();
 
-        bool pendingRelease = false;
+        bool              m_pendingRelease = false;
+        SP<CSyncTimeline> m_timeline;
+        bool              m_firstTimeIgnoreSync = true;
 
         struct {
-            Hyprutils::Memory::CSharedPointer<CCWlBuffer> buffer;
+            SP<CCWlBuffer>                    buffer;
+            SP<CCWpLinuxDrmSyncobjTimelineV1> syncTimeline;
         } m_waylandState;
 
         Hyprutils::Memory::CWeakPointer<Aquamarine::IBuffer> m_buffer;
@@ -58,6 +64,9 @@ namespace Hyprtoolkit {
         virtual void configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
         virtual void resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
+        void         prepareExplicit(SP<CWaylandBuffer>);
+        void         submitExplicit(SP<CWaylandBuffer>);
+
         float        m_fractionalScale = 1.0;
 
         bool         m_open                  = false;
@@ -68,6 +77,7 @@ namespace Hyprtoolkit {
             SP<CCXdgSurface>                        xdgSurface;
             SP<CCXdgToplevel>                       xdgToplevel;
             SP<CCWlCallback>                        frameCallback;
+            SP<CCWpLinuxDrmSyncobjSurfaceV1>        syncobjSurf;
 
             std::array<SP<CWaylandBuffer>, 2>       wlBuffers;
             SP<Aquamarine::CSwapchain>              swapchain;

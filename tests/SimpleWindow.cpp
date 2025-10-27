@@ -20,7 +20,7 @@ using namespace Hyprtoolkit;
 #define WP CWeakPointer
 #define UP CUniquePointer
 
-static SP<CBackend> backend;
+static SP<IBackend> backend;
 static size_t       buttonClicks = 1;
 
 static void         addTimer(SP<CRectangleElement> rect) {
@@ -35,7 +35,7 @@ static void         addTimer(SP<CRectangleElement> rect) {
 }
 
 int main(int argc, char** argv, char** envp) {
-    backend = CBackend::create();
+    backend = IBackend::create();
 
     //
     auto window = CWindowBuilder::begin()->preferredSize({640, 480})->appTitle("Hello World!")->appClass("hyprtoolkit")->commence();

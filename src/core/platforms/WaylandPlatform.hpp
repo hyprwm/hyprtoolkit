@@ -22,6 +22,7 @@
 #include <cursor-shape-v1.hpp>
 #include <text-input-unstable-v3.hpp>
 #include <wlr-layer-shell-unstable-v1.hpp>
+#include <linux-drm-syncobj-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -84,6 +85,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>      textInputManager;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputV3>             textInput;
             Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
+            Hyprutils::Memory::CSharedPointer<CCWpLinuxDrmSyncobjManagerV1> syncobj;
 
             // control
             bool dmabufFailed = false;

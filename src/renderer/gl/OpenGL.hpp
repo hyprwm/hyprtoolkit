@@ -21,6 +21,7 @@ namespace Hyprtoolkit {
     class CGLTexture;
     class CRenderbuffer;
     class CFramebuffer;
+    class CEGLSync;
 
     class COpenGLRenderer : public IRenderer {
       public:
@@ -28,6 +29,7 @@ namespace Hyprtoolkit {
         virtual ~COpenGLRenderer();
 
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf);
+        virtual void                 render(bool ignoreSync);
         virtual void                 endRendering();
         virtual void                 renderRectangle(const SRectangleRenderData& data);
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data);
@@ -35,6 +37,10 @@ namespace Hyprtoolkit {
         virtual void                 renderBorder(const SBorderRenderData& data);
         virtual void                 renderPolygon(const SPolygonRenderData& data);
         virtual void                 renderLine(const SLineRenderData& data);
+        virtual SP<CSyncTimeline>    exportSync(SP<Aquamarine::IBuffer> buf);
+        virtual void                 signalRenderPoint(SP<CSyncTimeline> timeline);
+
+        virtual bool                 explicitSyncSupported();
 
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);
@@ -42,6 +48,7 @@ namespace Hyprtoolkit {
         void                           scissor(const CBox& box);
         void                           scissor(const pixman_box32_t* box);
         void                           renderBreadthfirst(SP<IElement> el);
+        void                           waitOnSync();
 
         void                           initEGL(bool gbm);
         EGLDeviceEXT                   eglDeviceFromDRMFD(int drmFD);
@@ -52,11 +59,13 @@ namespace Hyprtoolkit {
         void                           onRenderbufferDestroy(CRenderbuffer* p);
 
         Hyprutils::OS::CFileDescriptor m_gbmFD;
-        gbm_device*                    m_gbmDevice    = nullptr;
-        EGLContext                     m_eglContext   = nullptr;
-        EGLDisplay                     m_eglDisplay   = nullptr;
-        EGLDeviceEXT                   m_eglDevice    = nullptr;
-        bool                           m_hasModifiers = true;
+        gbm_device*                    m_gbmDevice        = nullptr;
+        EGLContext                     m_eglContext       = nullptr;
+        EGLDisplay                     m_eglDisplay       = nullptr;
+        EGLDeviceEXT                   m_eglDevice        = nullptr;
+        bool                           m_hasModifiers     = true;
+        int                            m_drmFD            = -1;
+        bool                           m_syncobjSupported = false;
 
         struct {
             PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC glEGLImageTargetRenderbufferStorageOES = nullptr;
@@ -109,6 +118,7 @@ namespace Hyprtoolkit {
 
         friend class CRenderbuffer;
         friend class CGLTexture;
+        friend class CEGLSync;
     };
 
     inline SP<COpenGLRenderer> g_openGL;

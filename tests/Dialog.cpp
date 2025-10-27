@@ -21,10 +21,10 @@ using namespace Hyprtoolkit;
 #define WP CWeakPointer
 #define UP CUniquePointer
 
-static SP<CBackend> backend;
+static SP<IBackend> backend;
 
 int                 main(int argc, char** argv, char** envp) {
-    backend = CBackend::create();
+    backend = IBackend::create();
 
     //
     auto window = CWindowBuilder::begin()->preferredSize({480, 180})->minSize({480, 180})->maxSize({480, 180})->appTitle("Dialog")->appClass("hyprtoolkit-dialog")->commence();

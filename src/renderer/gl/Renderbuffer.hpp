@@ -7,6 +7,9 @@
 
 namespace Hyprtoolkit {
 
+    class CSyncTimeline;
+    class CEGLSync;
+
     class CRenderbuffer {
       public:
         CRenderbuffer(SP<Aquamarine::IBuffer> buffer, uint32_t format);
@@ -20,6 +23,8 @@ namespace Hyprtoolkit {
         uint32_t                getFormat();
 
         WP<Aquamarine::IBuffer> m_hlBuffer;
+
+        SP<CSyncTimeline>       m_syncTimeline;
 
       private:
         void*        m_image = nullptr;

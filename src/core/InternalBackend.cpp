@@ -7,6 +7,9 @@
 
 using namespace Hyprtoolkit;
 
+IBackend::~IBackend() = default;
+IBackend::IBackend()  = default;
+
 void CBackendLogger::log(eLogLevel level, std::string str) {
     if (g_backend->m_logFn) {
         g_backend->m_logFn(level, str);

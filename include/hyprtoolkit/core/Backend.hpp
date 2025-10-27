@@ -19,9 +19,9 @@ namespace Hyprtoolkit {
     class ISystemIconFactory;
     struct SWindowCreationData;
 
-    class CBackend {
+    class IBackend {
       public:
-        ~CBackend();
+        virtual ~IBackend();
 
         using LogFn = std::function<void(eLogLevel, const std::string&)>;
 
@@ -30,7 +30,7 @@ namespace Hyprtoolkit {
             There can only be one backend per process: In case of another create(),
             it will fail.
         */
-        static Hyprutils::Memory::CSharedPointer<CBackend> create();
+        static Hyprutils::Memory::CSharedPointer<IBackend> create();
 
         /*
             Destroy the backend.
@@ -38,89 +38,42 @@ namespace Hyprtoolkit {
              - All refs YOU hold are dead
              - You call this fn
         */
-        void destroy();
+        virtual void destroy() = 0;
 
-        void setLogFn(LogFn&& fn);
+        virtual void setLogFn(LogFn&& fn) = 0;
 
         /* These are non-owning. */
-        void addFd(int fd, std::function<void()>&& callback);
-        void removeFd(int fd);
+        virtual void addFd(int fd, std::function<void()>&& callback) = 0;
+        virtual void removeFd(int fd)                                = 0;
 
         /*
             Get the system icon factory object,
             from which you can lookup icons.
         */
-        Hyprutils::Memory::CSharedPointer<ISystemIconFactory> systemIcons();
+        virtual Hyprutils::Memory::CSharedPointer<ISystemIconFactory> systemIcons() = 0;
 
         /*
             Add a timer func. This will return a pointer, but the pointer doesn't need
             to be kept.
         */
-        Hyprutils::Memory::CAtomicSharedPointer<CTimer> addTimer(const std::chrono::system_clock::duration&                                            timeout,
-                                                                 std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
-                                                                 bool force = false);
+        virtual Hyprutils::Memory::CAtomicSharedPointer<CTimer> addTimer(const std::chrono::system_clock::duration&                                            timeout,
+                                                                         std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
+                                                                         bool force = false) = 0;
 
         /*
             Add an idle func. This fn will be executed as soon as possible, but
             after every pending event
         */
-        void addIdle(const std::function<void()>& fn);
+        virtual void addIdle(const std::function<void()>& fn) = 0;
 
         /*
             Enter the loop.
         */
-        void                                        enterLoop();
+        virtual void                                        enterLoop() = 0;
 
-        Hyprutils::Memory::CSharedPointer<CPalette> getPalette();
+        virtual Hyprutils::Memory::CSharedPointer<CPalette> getPalette() = 0;
 
-        HT_HIDDEN : CBackend();
-
-        void                                                    terminate();
-        void                                                    reloadTheme();
-        void                                                    rebuildPollfds();
-
-        Hyprutils::Memory::CSharedPointer<IWindow>              openWindow(const SWindowCreationData& data);
-
-        std::vector<pollfd>                                     m_pollfds;
-
-        Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
-
-        LogFn                                                   m_logFn;
-
-        bool                                                    m_terminate         = false;
-        bool                                                    m_needsConfigReload = false;
-
-        struct SFDListener {
-            int                   fd = 0;
-            std::function<void()> callback;
-            bool                  needsDispatch = false;
-        };
-
-        struct {
-            std::mutex               timersMutex;
-            std::mutex               idlesMutex;
-            std::mutex               eventRequestMutex;
-            std::mutex               eventLoopMutex;
-            std::condition_variable  loopCV;
-            bool                     event = false;
-
-            std::condition_variable  wlDispatchCV;
-            bool                     wlDispatched = false;
-
-            std::condition_variable  timerCV;
-            std::mutex               timerRequestMutex;
-            bool                     timerEvent = false;
-
-            std::condition_variable  idleCV;
-            std::mutex               idleRequestMutex;
-            bool                     idleEvent = false;
-
-            int                      exitfd[2];
-
-            std::vector<SFDListener> userFds;
-        } m_sLoopState;
-
-        std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
-        std::vector<Hyprutils::Memory::CAtomicSharedPointer<std::function<void()>>> m_idles;
+      protected:
+        IBackend();
     };
 };
