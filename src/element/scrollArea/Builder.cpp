@@ -24,6 +24,11 @@ SP<CScrollAreaBuilder> CScrollAreaBuilder::size(CDynamicSize&& s) {
     return m_self.lock();
 }
 
+SP<CScrollAreaBuilder> CScrollAreaBuilder::blockUserScroll(bool x) {
+    m_data->blockUserScroll = x;
+    return m_self.lock();
+}
+
 SP<CScrollAreaElement> CScrollAreaBuilder::commence() {
     if (m_element) {
         m_element->replaceData(*m_data);

@@ -22,6 +22,9 @@ CScrollAreaElement::CScrollAreaElement(const SScrollAreaData& data) : IElement()
     impl->clipChildren = true;
 
     m_impl->listeners.axis = impl->m_externalEvents.mouseAxis.listen([this](Input::eAxisAxis axis, float delta) {
+        if (m_impl->data.blockUserScroll)
+            return;
+
         const bool SCROLLING_X = axis == Input::AXIS_AXIS_HORIZONTAL;
 
         if (SCROLLING_X && !m_impl->data.scrollX)

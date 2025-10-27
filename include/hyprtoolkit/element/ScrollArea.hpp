@@ -15,6 +15,7 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder> begin();
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        scrollX(bool);
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        scrollY(bool);
+        Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        blockUserScroll(bool);
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CScrollAreaElement>        commence();
