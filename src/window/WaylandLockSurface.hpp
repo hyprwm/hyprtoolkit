@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IWaylandWindow.hpp"
-#include "../lock/WaylandSessionLock.hpp"
 #include <ext-session-lock-v1.hpp>
 
 namespace Hyprtoolkit {

@@ -3,7 +3,7 @@
 #include "wayland.hpp"
 
 #include "../helpers/Memory.hpp"
-#include <hyprtoolkit/core/SystemLock.hpp>
+#include <hyprtoolkit/core/SessionLock.hpp>
 #include <ext-session-lock-v1.hpp>
 
 namespace Hyprtoolkit {

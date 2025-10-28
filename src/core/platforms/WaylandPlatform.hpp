@@ -3,9 +3,9 @@
 #include <hyprtoolkit/types/PointerShape.hpp>
 #include <hyprtoolkit/core/Input.hpp>
 #include <hyprtoolkit/core/Timer.hpp>
+#include <hyprtoolkit/core/SessionLock.hpp>
 
 #include "../../helpers/Memory.hpp"
-#include "lock/WaylandSessionLock.hpp"
 
 #include <vector>
 #include <functional>

@@ -15,8 +15,6 @@
 #include "../../output/WaylandOutput.hpp"
 #include "../../sessionLock/WaylandSessionLock.hpp"
 #include "../../Macros.hpp"
-#include "ext-session-lock-v1.hpp"
-#include "hyprtoolkit/core/SystemLock.hpp"
 
 #include <xf86drm.h>
 #include <cstring>

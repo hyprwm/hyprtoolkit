@@ -16,7 +16,7 @@
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
 #include "../system/Icons.hpp"
-#include "hyprtoolkit/core/SystemLock.hpp"
+#include "../sessionLock/WaylandSessionLock.hpp"
 
 #include <sys/wait.h>
 #include <sys/poll.h>
