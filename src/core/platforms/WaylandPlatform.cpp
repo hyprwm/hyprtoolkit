@@ -218,9 +218,8 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
 
 WP<CWaylandOutput> CWaylandPlatform::outputForHandle(uint32_t handle) {
     for (const auto& o : m_outputs) {
-        if (o->m_id == handle) {
+        if (o->m_id == handle)
             return o;
-        }
     }
     return SP<CWaylandOutput>{};
 }

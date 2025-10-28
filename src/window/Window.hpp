@@ -11,9 +11,9 @@ namespace Hyprtoolkit {
         std::optional<Hyprutils::Math::Vector2D> preferredSize;
         std::optional<Hyprutils::Math::Vector2D> minSize;
         std::optional<Hyprutils::Math::Vector2D> maxSize;
-        std::string                              title  = "Hyprtoolkit App";
-        std::string                              class_ = "hyprtoolkit-app";
-        uint32_t                                 prefferedOutputId;
+        std::string                              title             = "Hyprtoolkit App";
+        std::string                              class_            = "hyprtoolkit-app";
+        uint32_t                                 prefferedOutputId = 0;
 
         // popups
         Hyprutils::Math::Vector2D pos;

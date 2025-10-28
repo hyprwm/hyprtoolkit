@@ -13,7 +13,7 @@ namespace Hyprtoolkit {
         virtual uint32_t    fps()    = 0;
 
         struct {
-            // output removed
+            /* output removed */
             Hyprutils::Signal::CSignalT<> removed;
         } m_events;
     };

@@ -80,8 +80,7 @@ void CWaylandLockSurface::open() {
     } else
         m_waylandState.surface->sendAttach(nullptr, 0, 0);
 
-    m_lockSurfaceState.lockSurface =
-        makeShared<CCExtSessionLockSurfaceV1>(lockObject->sendGetLockSurface(m_waylandState.surface->resource(), wlOutput->m_wlOutput->resource()));
+    m_lockSurfaceState.lockSurface = makeShared<CCExtSessionLockSurfaceV1>(lockObject->sendGetLockSurface(m_waylandState.surface->resource(), wlOutput->m_wlOutput->resource()));
     if (!m_lockSurfaceState.lockSurface->resource()) {
         g_logger->log(HT_LOG_ERROR, "lock surface opening failed: no lock surface. Errno: {}", errno);
         return;

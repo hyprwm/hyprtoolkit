@@ -114,9 +114,9 @@ static void createLockSurface(SP<IOutput> output) {
 }
 
 int main(int argc, char** argv, char** envp) {
-     int unlockSecs = 10;
-     if (argc == 2)
-         unlockSecs = atoi(argv[1]);
+    int unlockSecs = 10;
+    if (argc == 2)
+        unlockSecs = atoi(argv[1]);
 
     backend = IBackend::create();
     if (!backend) {
@@ -140,10 +140,10 @@ int main(int argc, char** argv, char** envp) {
         }
     });
 
-     backend->m_events.outputAdded.listenStatic(createLockSurface);
+    backend->m_events.outputAdded.listenStatic(createLockSurface);
 
-     for (const auto& o: backend->getOutputs()) {
-         createLockSurface(o);
+    for (const auto& o : backend->getOutputs()) {
+        createLockSurface(o);
     }
 
     backend->addTimer(std::chrono::seconds(unlockSecs), [](auto, auto) { lockState->unlock(); }, nullptr);
