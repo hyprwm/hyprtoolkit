@@ -216,13 +216,13 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
     return nullptr;
 }
 
-std::optional<WP<CWaylandOutput>> CWaylandPlatform::outputForHandle(uint32_t handle) {
+WP<CWaylandOutput> CWaylandPlatform::outputForHandle(uint32_t handle) {
     for (const auto& o : m_outputs) {
         if (o->m_id == handle) {
             return o;
         }
     }
-    return std::nullopt;
+    return SP<CWaylandOutput>{};
 }
 
 void CWaylandPlatform::initIM() {

@@ -54,7 +54,7 @@ namespace Hyprtoolkit {
         bool                              dispatchEvents();
 
         SP<IWaylandWindow>                windowForSurf(wl_proxy* proxy);
-        std::optional<WP<CWaylandOutput>> outputForHandle(uint32_t handle);
+        WP<CWaylandOutput>                outputForHandle(uint32_t handle);
 
         void                              onKey(uint32_t keycode, bool state);
         void                              startRepeatTimer();

@@ -10,6 +10,7 @@
 #include "../element/Element.hpp"
 #include "../output/WaylandOutput.hpp"
 #include "../renderer/Renderer.hpp"
+#include "../sessionLock/WaylandSessionLock.hpp"
 
 #include "../Macros.hpp"
 
@@ -43,7 +44,7 @@ void CWaylandLockSurface::open() {
         return;
 
     auto wlOutput = g_waylandPlatform->outputForHandle(m_outputHandle);
-    if (!wlOutput.has_value() || !wlOutput.value())
+    if (!wlOutput)
         return;
 
     m_open = true;
@@ -80,7 +81,7 @@ void CWaylandLockSurface::open() {
         m_waylandState.surface->sendAttach(nullptr, 0, 0);
 
     m_lockSurfaceState.lockSurface =
-        makeShared<CCExtSessionLockSurfaceV1>(lockObject->sendGetLockSurface(m_waylandState.surface->resource(), wlOutput.value()->m_wlOutput->resource()));
+        makeShared<CCExtSessionLockSurfaceV1>(lockObject->sendGetLockSurface(m_waylandState.surface->resource(), wlOutput->m_wlOutput->resource()));
     if (!m_lockSurfaceState.lockSurface->resource()) {
         g_logger->log(HT_LOG_ERROR, "lock surface opening failed: no lock surface. Errno: {}", errno);
         return;
