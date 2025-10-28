@@ -29,16 +29,16 @@ void CWaylandLockSurface::open() {
         return;
 
     if (m_outputHandle == 0) {
-        g_logger->log(HT_LOG_ERROR, "session lock missing prefferedOutputId.");
+        g_logger->log(HT_LOG_ERROR, "session lock missing prefferedOutputId");
         return;
     }
 
-    if (!g_waylandPlatform) {
-        g_logger->log(HT_LOG_ERROR, "wayland platform not initialized.");
+    if (!g_waylandPlatform || !g_waylandPlatform->m_sessionLockState) {
+        g_logger->log(HT_LOG_ERROR, "wayland platform not initialized");
         return;
     }
 
-    auto lockObject = g_waylandPlatform->aquireSessionLock();
+    auto lockObject = g_waylandPlatform->m_sessionLockState->m_lock;
     if (!lockObject)
         return;
 

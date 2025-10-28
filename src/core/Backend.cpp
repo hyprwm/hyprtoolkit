@@ -16,6 +16,7 @@
 #include "../element/Element.hpp"
 #include "../palette/ConfigManager.hpp"
 #include "../system/Icons.hpp"
+#include "hyprtoolkit/core/SystemLock.hpp"
 
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -99,18 +100,22 @@ SP<CPalette> CBackend::getPalette() {
     return g_palette;
 }
 
-void CBackend::unlockSession() {
-    if (!g_waylandPlatform)
-        return;
-
-    g_waylandPlatform->unlockSessionLock();
-}
-
 std::vector<SP<IOutput>> CBackend::getOutputs() {
     if (!g_waylandPlatform)
         return {};
 
     return std::vector<SP<IOutput>>(g_waylandPlatform->m_outputs.begin(), g_waylandPlatform->m_outputs.end());
+}
+
+std::expected<SP<ISessionLockState>, eSessionLockError> CBackend::aquireSessionLock() {
+    if (!g_waylandPlatform)
+        return std::unexpected(PLATFORM_UNINTIALIZED);
+
+    auto lockState = g_waylandPlatform->aquireSessionLock();
+    if (!lockState || lockState->m_denied)
+        return std::unexpected(DENIED);
+
+    return lockState;
 }
 
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
@@ -132,10 +137,13 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
             return nullptr;
         }
 
+        if (!g_waylandPlatform->m_sessionLockState || g_waylandPlatform->m_sessionLockState->m_denied || g_waylandPlatform->m_sessionLockState->m_sessionUnlocked)
+            return nullptr;
+
         auto w                         = makeShared<CWaylandLockSurface>(data);
         w->m_self                      = w;
         w->m_rootElement->impl->window = w;
-        g_waylandPlatform->m_lockSurfaces.emplace_back(w);
+        g_waylandPlatform->m_sessionLockState->m_lockSurfaces.emplace_back(w);
         return w;
     }
 

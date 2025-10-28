@@ -1,6 +1,7 @@
 #include "WaylandPlatform.hpp"
 
 #include <algorithm>
+#include <expected>
 #include <hyprutils/memory/Casts.hpp>
 #include <optional>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -14,6 +15,8 @@
 #include "../../output/WaylandOutput.hpp"
 #include "../../sessionLock/WaylandSessionLock.hpp"
 #include "../../Macros.hpp"
+#include "ext-session-lock-v1.hpp"
+#include "hyprtoolkit/core/SystemLock.hpp"
 
 #include <xf86drm.h>
 #include <cstring>
@@ -114,11 +117,9 @@ bool CWaylandPlatform::attempt() {
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
         TRACE(g_logger->log(HT_LOG_TRACE, "Global {} removed", id));
 
-        auto lockSurfaceIt = std::ranges::find_if(m_lockSurfaces, [id](const auto& other) { return other->m_outputHandle == id; });
-        if (lockSurfaceIt != m_lockSurfaces.end()) {
-            (*lockSurfaceIt)->m_events.closeRequest.emit();
-            m_lockSurfaces.erase(lockSurfaceIt);
-        }
+        if (m_sessionLockState)
+            m_sessionLockState->onOutputRemoved(id);
+
         auto outputIt = std::ranges::find_if(m_outputs, [id](const auto& other) { return other->m_id == id; });
         if (outputIt != m_outputs.end()) {
             (*outputIt)->m_events.removed.emit();
@@ -208,9 +209,11 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
         }
     }
 
-    for (const auto& w : m_lockSurfaces) {
-        if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
-            return w.lock();
+    if (m_sessionLockState) {
+        for (const auto& w : m_sessionLockState->m_lockSurfaces) {
+            if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
+                return w.lock();
+        }
     }
     return nullptr;
 }
@@ -643,59 +646,16 @@ void CWaylandPlatform::stopRepeatTimer() {
     m_waylandState.seatState.repeatTimer.reset();
 }
 
-SP<CCExtSessionLockV1> CWaylandPlatform::aquireSessionLock() {
-    if (m_waylandState.sessionLockState.sessionLocked && m_waylandState.sessionLockState.sessionUnlocked) {
-        g_logger->log(HT_LOG_ERROR, "We already unlocked. We shouldn't be calling aquireSessionLock.");
-        return nullptr;
-    }
+SP<CWaylandSessionLockState> CWaylandPlatform::aquireSessionLock() {
+    if (m_sessionLockState)
+        return m_sessionLockState.lock();
 
-    if (!m_waylandState.sessionLockState.lock && !m_waylandState.sessionLockState.denied) {
-        m_waylandState.sessionLockState.lock = makeShared<CCExtSessionLockV1>(m_waylandState.sessionLock->sendLock());
-        if (!m_waylandState.sessionLockState.lock) {
-            g_logger->log(HT_LOG_ERROR, "Failed to create a session lock object!");
-            return nullptr;
-        }
+    auto sessionLock = makeShared<CWaylandSessionLockState>(makeShared<CCExtSessionLockV1>(m_waylandState.sessionLock->sendLock()));
 
-        m_waylandState.sessionLockState.lock->setLocked([this](CCExtSessionLockV1* r) { m_waylandState.sessionLockState.sessionLocked = true; });
-
-        m_waylandState.sessionLockState.lock->setFinished([this](CCExtSessionLockV1* r) {
-            g_logger->log(HT_LOG_ERROR, "We got denied by the compositor to be the exclusive lock screen client. Is there another lock screen active?");
-            g_backend->m_events.lockDenied.emit();
-
-            for (const auto& w : m_lockSurfaces) {
-                if (w.expired())
-                    continue;
-                w->m_events.closeRequest.emit();
-            }
-
-            m_lockSurfaces.clear();
-            m_waylandState.sessionLockState.lock.reset();
-            m_waylandState.sessionLockState.denied = true;
-        });
-
-        // roundtrip in case the compositor sends `finished` right away
-        wl_display_roundtrip(m_waylandState.display);
-    }
-
-    return m_waylandState.sessionLockState.lock;
-}
-
-void CWaylandPlatform::unlockSessionLock() {
-    if (!m_waylandState.sessionLockState.lock)
-        return;
-
-    m_waylandState.sessionLockState.lock->sendUnlockAndDestroy();
-    m_waylandState.sessionLockState.lock.reset();
-    m_waylandState.sessionLockState.sessionUnlocked = true;
-
-    // roundtrip in order to make sure we have unlocked before sending closeRequest
+    // roundtrip in case the compositor sends `finished` right away
     wl_display_roundtrip(m_waylandState.display);
 
-    for (const auto& sls : m_lockSurfaces) {
-        if (sls.expired())
-            continue;
-        sls->m_events.closeRequest.emit();
-    }
+    m_sessionLockState = sessionLock;
 
-    m_lockSurfaces.clear();
+    return sessionLock;
 }

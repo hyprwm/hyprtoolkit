@@ -5,10 +5,12 @@
 #include <aquamarine/backend/Null.hpp>
 #include <aquamarine/backend/Backend.hpp>
 #include <functional>
+#include <expected>
 #include <string>
 #include <sys/poll.h>
 
 #include "LogTypes.hpp"
+#include "SessionLock.hpp"
 #include "../palette/Palette.hpp"
 
 #include "CoreMacros.hpp"
@@ -81,21 +83,16 @@ namespace Hyprtoolkit {
         virtual std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs() = 0;
 
         /*
-            Get currently registered outputs.
-            Make sure you register the `removed` event to get rid of your reference once the output is removed.
+            Create and lock the graphical session.
+            It is required to call this before HT_WINDOW_LOCK_SURFACE can be used.
         */
-        std::vector<Hyprutils::Memory::CSharedPointer<IOutput>> getOutputs();
+        virtual std::expected<Hyprutils::Memory::CSharedPointer<ISessionLockState>, eSessionLockError> aquireSessionLock() = 0;
 
         struct {
             /*
                 Get notified when a new output was added.
             */
             Hyprutils::Signal::CSignalT<Hyprutils::Memory::CSharedPointer<IOutput>> outputAdded;
-
-            /*
-                Sent when the compositor denies us as the exclusive lock screen client.
-            */
-            Hyprutils::Signal::CSignalT<> lockDenied;
         } m_events;
 
       protected:

@@ -86,7 +86,7 @@ static void layout(const SP<IWindow>& window) {
     window->open();
 }
 
-static void onWindowClose(WP<IWindow> window) {
+static void closeWindow(WP<IWindow> window) {
     std::println("Remove surface {}!", (uintptr_t)windows.back().get());
     auto windowsIt = std::ranges::find_if(windows, [&window](const auto& w) { return w.get() == window.get(); });
     if (windowsIt == windows.end())
@@ -104,7 +104,7 @@ static void createLockSurface(SP<IOutput> output) {
     windows.emplace_back(CWindowBuilder::begin()->type(HT_WINDOW_LOCK_SURFACE)->prefferedOutput(output)->commence());
     std::println("New surface {}!", (uintptr_t)windows.back().get());
     WP<IWindow> weakWindow = windows.back();
-    weakWindow->m_events.closeRequest.listenStatic([weakWindow]() { onWindowClose(weakWindow); });
+    weakWindow->m_events.closeRequest.listenStatic([weakWindow]() { closeWindow(weakWindow); });
 
     layout(weakWindow.lock());
 }
@@ -114,20 +114,32 @@ int main(int argc, char** argv, char** envp) {
      if (argc == 2)
          unlockSecs = atoi(argv[1]);
 
-     backend = IBackend::create();
-     if (!backend) {
-         std::println("Backend create failed!");
-         return -1;
-     }
+    backend = IBackend::create();
+    if (!backend) {
+        std::println("Backend create failed!");
+        return 1;
+    }
+
+    auto sessionLock = backend->aquireSessionLock();
+    if (!sessionLock.has_value()) {
+        std::println("Cloudn't lock");
+        return 1;
+    }
+
+    sessionLock.value()->m_events.finished.listenStatic([] {
+        std::println("Compositor kicked us");
+        for (const auto& w : windows) {
+            closeWindow(w);
+        }
+    });
 
      backend->m_events.outputAdded.listenStatic(createLockSurface);
-     backend->m_events.lockDenied.listenStatic([] { std::println("Lock denied!"); });
 
      for (const auto& o: backend->getOutputs()) {
          createLockSurface(o);
     }
 
-    backend->addTimer(std::chrono::seconds(unlockSecs), [](auto, auto) { backend->unlockSession(); }, nullptr);
+    backend->addTimer(std::chrono::seconds(unlockSecs), [LOCK = sessionLock.value()](auto, auto) { LOCK->unlock(); }, nullptr);
 
     backend->enterLoop();
 

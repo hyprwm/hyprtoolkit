@@ -5,6 +5,7 @@
 #include <hyprtoolkit/core/Timer.hpp>
 
 #include "../../helpers/Memory.hpp"
+#include "lock/WaylandSessionLock.hpp"
 
 #include <vector>
 #include <functional>
@@ -35,34 +36,33 @@ namespace Hyprtoolkit {
     class IWaylandWindow;
     class CWaylandLayer;
     class CWaylandOutput;
-    class CWaylandLockSurface;
+    class CWaylandSessionLockState;
 
     class CWaylandPlatform {
       public:
         CWaylandPlatform() = default;
         ~CWaylandPlatform();
 
-        bool                              attempt();
+        bool                                                           attempt();
 
-        void                              initSeat();
-        void                              initShell();
-        bool                              initDmabuf();
-        void                              initIM();
-        void                              setCursor(ePointerShape shape);
+        void                                                           initSeat();
+        void                                                           initShell();
+        bool                                                           initDmabuf();
+        void                                                           initIM();
+        void                                                           setCursor(ePointerShape shape);
 
-        bool                              dispatchEvents();
+        bool                                                           dispatchEvents();
 
-        SP<IWaylandWindow>                windowForSurf(wl_proxy* proxy);
-        std::optional<WP<CWaylandOutput>> outputForHandle(uint32_t handle);
+        SP<IWaylandWindow>                                             windowForSurf(wl_proxy* proxy);
+        std::optional<WP<CWaylandOutput>>                              outputForHandle(uint32_t handle);
 
-        void                              onKey(uint32_t keycode, bool state);
-        void                              startRepeatTimer();
-        void                              stopRepeatTimer();
+        void                                                           onKey(uint32_t keycode, bool state);
+        void                                                           startRepeatTimer();
+        void                                                           stopRepeatTimer();
 
-        void                              onRepeatTimerFire();
+        void                                                           onRepeatTimerFire();
 
-        SP<CCExtSessionLockV1>            aquireSessionLock();
-        void                              unlockSessionLock();
+        SP<CWaylandSessionLockState>                                   aquireSessionLock();
 
         // dmabuf formats
         std::vector<Aquamarine::SDRMFormat> m_dmabufFormats;
@@ -117,13 +117,6 @@ namespace Hyprtoolkit {
 
                 std::string originalString;
             } imState;
-
-            struct {
-                SP<CCExtSessionLockV1> lock            = nullptr;
-                bool                   sessionLocked   = false;
-                bool                   sessionUnlocked = false;
-                bool                   denied          = false; // set on the finished event
-            } sessionLockState;
         } m_waylandState;
 
         struct {
@@ -131,14 +124,15 @@ namespace Hyprtoolkit {
             std::string nodeName = "";
         } m_drmState;
 
-        std::vector<SP<CWaylandOutput>>      m_outputs;
+        std::vector<SP<CWaylandOutput>> m_outputs;
 
-        std::vector<WP<CWaylandWindow>>      m_windows;
-        std::vector<WP<CWaylandLayer>>       m_layers;
-        std::vector<WP<CWaylandLockSurface>> m_lockSurfaces;
-        WP<IWaylandWindow>                   m_currentWindow;
-        uint32_t                             m_currentMods     = 0; // HT modifiers, not xkb
-        uint32_t                             m_lastEnterSerial = 0;
+        std::vector<WP<CWaylandWindow>> m_windows;
+        std::vector<WP<CWaylandLayer>>  m_layers;
+        WP<IWaylandWindow>              m_currentWindow;
+        uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
+        uint32_t                        m_lastEnterSerial = 0;
+
+        WP<CWaylandSessionLockState>    m_sessionLockState;
     };
 
     inline UP<CWaylandPlatform> g_waylandPlatform;
