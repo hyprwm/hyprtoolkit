@@ -30,9 +30,9 @@ namespace Hyprtoolkit {
         virtual SP<CPalette>                                            getPalette();
         virtual std::expected<SP<ISessionLockState>, eSessionLockError> aquireSessionLock();
 
-            // ======================= Internal fns ======================= //
+        // ======================= Internal fns ======================= //
 
-            void terminate();
+        void terminate();
         void reloadTheme();
         void rebuildPollfds(bool wakeup = true);
 

@@ -43,26 +43,26 @@ namespace Hyprtoolkit {
         CWaylandPlatform() = default;
         ~CWaylandPlatform();
 
-        bool                                                           attempt();
+        bool                              attempt();
 
-        void                                                           initSeat();
-        void                                                           initShell();
-        bool                                                           initDmabuf();
-        void                                                           initIM();
-        void                                                           setCursor(ePointerShape shape);
+        void                              initSeat();
+        void                              initShell();
+        bool                              initDmabuf();
+        void                              initIM();
+        void                              setCursor(ePointerShape shape);
 
-        bool                                                           dispatchEvents();
+        bool                              dispatchEvents();
 
-        SP<IWaylandWindow>                                             windowForSurf(wl_proxy* proxy);
-        std::optional<WP<CWaylandOutput>>                              outputForHandle(uint32_t handle);
+        SP<IWaylandWindow>                windowForSurf(wl_proxy* proxy);
+        std::optional<WP<CWaylandOutput>> outputForHandle(uint32_t handle);
 
-        void                                                           onKey(uint32_t keycode, bool state);
-        void                                                           startRepeatTimer();
-        void                                                           stopRepeatTimer();
+        void                              onKey(uint32_t keycode, bool state);
+        void                              startRepeatTimer();
+        void                              stopRepeatTimer();
 
-        void                                                           onRepeatTimerFire();
+        void                              onRepeatTimerFire();
 
-        SP<CWaylandSessionLockState>                                   aquireSessionLock();
+        SP<CWaylandSessionLockState>      aquireSessionLock();
 
         // dmabuf formats
         std::vector<Aquamarine::SDRMFormat> m_dmabufFormats;

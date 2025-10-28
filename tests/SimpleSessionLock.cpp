@@ -1,3 +1,4 @@
+#include "hyprtoolkit/core/SessionLock.hpp"
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/core/Output.hpp>
 #include <hyprtoolkit/window/Window.hpp>
@@ -22,8 +23,8 @@ using namespace Hyprtoolkit;
 #define UP CUniquePointer
 
 static SP<IBackend>             backend;
+static SP<ISessionLockState>    lockState;
 static std::vector<SP<IWindow>> windows;
-static size_t                   buttonClicks = 1;
 
 static void                     addTimer(SP<CRectangleElement> rect) {
     backend->addTimer(
@@ -65,8 +66,11 @@ static void layout(const SP<IWindow>& window) {
     auto text = CTextBuilder::begin()->text("never give up")->color([] { return CHyprColor{0.4F, 0.4F, 0.4F}; })->commence();
 
     auto button = CButtonBuilder::begin()
-                      ->label("Click me kind person")
-                      ->onMainClick([](SP<CButtonElement> el) { el->rebuild()->label(std::format("Clicked {} times", buttonClicks++))->commence(); })
+                      ->label("Click to unlock")
+                      ->onMainClick([](SP<CButtonElement> el) {
+                          el->rebuild()->label("Unlocking...")->commence();
+                          lockState->unlock();
+                      })
                       ->onRightClick([](SP<CButtonElement> el) { el->rebuild()->label("Reset")->commence(); })
                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
                       ->commence();
@@ -110,7 +114,7 @@ static void createLockSurface(SP<IOutput> output) {
 }
 
 int main(int argc, char** argv, char** envp) {
-     int unlockSecs = 1;
+     int unlockSecs = 10;
      if (argc == 2)
          unlockSecs = atoi(argv[1]);
 
@@ -120,13 +124,16 @@ int main(int argc, char** argv, char** envp) {
         return 1;
     }
 
-    auto sessionLock = backend->aquireSessionLock();
-    if (!sessionLock.has_value()) {
+    auto sessionLockState = backend->aquireSessionLock();
+    if (sessionLockState.has_value())
+        lockState = sessionLockState.value();
+
+    if (!lockState) {
         std::println("Cloudn't lock");
         return 1;
     }
 
-    sessionLock.value()->m_events.finished.listenStatic([] {
+    lockState->m_events.finished.listenStatic([] {
         std::println("Compositor kicked us");
         for (const auto& w : windows) {
             closeWindow(w);
@@ -139,7 +146,7 @@ int main(int argc, char** argv, char** envp) {
          createLockSurface(o);
     }
 
-    backend->addTimer(std::chrono::seconds(unlockSecs), [LOCK = sessionLock.value()](auto, auto) { LOCK->unlock(); }, nullptr);
+    backend->addTimer(std::chrono::seconds(unlockSecs), [](auto, auto) { lockState->unlock(); }, nullptr);
 
     backend->enterLoop();
 
