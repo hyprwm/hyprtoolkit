@@ -25,10 +25,10 @@
 }:
 let
   inherit (lib.attrsets) mapAttrsToList;
-  inherit (lib.strings) cmakeBool;
+  inherit (lib.strings) cmakeBool optionalString;
 in
 stdenv.mkDerivation {
-  pname = "hyprtoolkit";
+  pname = "hyprtoolkit" + optionalString doCheck "-with-tests";
   inherit version doCheck;
 
   src = ../.;
