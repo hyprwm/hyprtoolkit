@@ -5,6 +5,7 @@
   pkg-config,
   aquamarine,
   cairo,
+  gtest,
   hyprgraphics,
   hyprlang,
   hyprutils,
@@ -20,10 +21,15 @@
   wayland-protocols,
   wayland-scanner,
   version ? "git",
+  doCheck ? false,
 }:
+let
+  inherit (lib.attrsets) mapAttrsToList;
+  inherit (lib.strings) cmakeBool;
+in
 stdenv.mkDerivation {
   pname = "hyprtoolkit";
-  inherit version;
+  inherit version doCheck;
 
   src = ../.;
 
@@ -37,6 +43,7 @@ stdenv.mkDerivation {
   buildInputs = [
     aquamarine
     cairo
+    gtest
     hyprgraphics
     hyprlang
     hyprutils
@@ -50,6 +57,10 @@ stdenv.mkDerivation {
     wayland
     wayland-protocols
   ];
+
+  cmakeFlags = mapAttrsToList cmakeBool {
+    "DISABLE_TESTING" = !doCheck;
+  };
 
   meta = {
     homepage = "https://github.com/hyprwm/hyprtoolkit";

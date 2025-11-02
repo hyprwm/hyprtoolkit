@@ -2,15 +2,19 @@
   lib,
   inputs,
   self,
-}: let
-  mkDate = longDate: (lib.concatStringsSep "-" [
-    (builtins.substring 0 4 longDate)
-    (builtins.substring 4 2 longDate)
-    (builtins.substring 6 2 longDate)
-  ]);
+}:
+let
+  mkDate =
+    longDate:
+    (lib.concatStringsSep "-" [
+      (builtins.substring 0 4 longDate)
+      (builtins.substring 4 2 longDate)
+      (builtins.substring 6 2 longDate)
+    ]);
 
   version = lib.removeSuffix "\n" (builtins.readFile ../VERSION);
-in {
+in
+{
   default = inputs.self.overlays.hyprtoolkit;
 
   hyprtoolkit = lib.composeManyExtensions [
@@ -28,6 +32,10 @@ in {
           + (mkDate (inputs.self.lastModifiedDate or "19700101"))
           + "_"
           + (inputs.self.shortRev or "dirty");
+      };
+
+      hyprtoolkit-with-tests = final.hyprtoolkit.override {
+        doCheck = true;
       };
     })
   ];

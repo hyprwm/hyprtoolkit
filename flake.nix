@@ -70,7 +70,7 @@
 
     packages = eachSystem (system: {
       default = self.packages.${system}.hyprtoolkit;
-      inherit (pkgsFor.${system}) hyprtoolkit;
+      inherit (pkgsFor.${system}) hyprtoolkit hyprtoolkit-with-tests;
     });
 
     checks = eachSystem (system: self.packages.${system});
