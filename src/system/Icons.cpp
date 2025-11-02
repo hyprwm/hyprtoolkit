@@ -95,7 +95,7 @@ static std::optional<std::string> findAnyTheme() {
             g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Theme {} has valid data", path);
             // try to find it
             auto themeDir = getThemeDir(iconTheme);
-            if (!themeDir->empty()) {
+            if (themeDir && !themeDir->empty()) {
                 g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: Found {} as default fallback", themeDir.value());
                 return themeDir;
             }
