@@ -85,6 +85,36 @@ if(NOT HAS_TIMERFD AND epoll_FOUND)
   target_link_libraries(hyprtoolkit PkgConfig::epoll)
 endif()
 
+if (NOT DISABLE_TESTS)
+  enable_testing()
+
+  # test apps
+  add_custom_target(tests)
+
+  add_executable(simpleWindow "tests/SimpleWindow.cpp")
+  target_link_libraries(simpleWindow PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests simpleWindow)
+
+  add_executable(dialog "tests/Dialog.cpp")
+  target_link_libraries(dialog PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests dialog)
+
+  add_executable(controls "tests/Controls.cpp")
+  target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests controls)
+
+  # GTest
+  find_package(GTest CONFIG REQUIRED)
+  include(GoogleTest)
+  add_executable(hyprtoolkit_inline_tests ${SRCFILES})
+  target_compile_definitions(hyprtoolkit_inline_tests PRIVATE HT_UNIT_TESTS=1)
+  target_compile_options(hyprtoolkit_inline_tests PRIVATE --coverage)
+  target_link_options(hyprtoolkit_inline_tests PRIVATE --coverage)
+  target_include_directories(hyprtoolkit_inline_tests PUBLIC "./include" PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
+  target_link_libraries(hyprtoolkit_inline_tests PRIVATE GTest::gtest_main OpenGL::EGL OpenGL::OpenGL PkgConfig::deps)
+  gtest_discover_tests(hyprtoolkit_inline_tests)
+endif()
+
 # Protocols
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
@@ -105,6 +135,10 @@ function(protocolNew protoPath protoName external)
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   target_sources(hyprtoolkit PRIVATE protocols/${protoName}.cpp
                                     protocols/${protoName}.hpp)
+  if (NOT DISABLE_TESTS)
+    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/${protoName}.cpp
+                                    protocols/${protoName}.hpp)
+  endif()
 endfunction()
 function(protocolWayland)
   add_custom_command(
@@ -114,6 +148,9 @@ function(protocolWayland)
             ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   target_sources(hyprtoolkit PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
+  if (NOT DISABLE_TESTS)
+    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
+  endif()
 endfunction()
 
 protocolwayland()
@@ -127,21 +164,6 @@ protocolnew("stable/tablet" "tablet-v2" false)
 protocolnew("unstable/text-input" "text-input-unstable-v3" false)
 protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
-
-# tests
-add_custom_target(tests)
-
-add_executable(simpleWindow "tests/SimpleWindow.cpp")
-target_link_libraries(simpleWindow PRIVATE PkgConfig::deps hyprtoolkit)
-add_dependencies(tests simpleWindow)
-
-add_executable(dialog "tests/Dialog.cpp")
-target_link_libraries(dialog PRIVATE PkgConfig::deps hyprtoolkit)
-add_dependencies(tests dialog)
-
-add_executable(controls "tests/Controls.cpp")
-target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
-add_dependencies(tests controls)
 
 # Installation
 install(TARGETS hyprtoolkit)
