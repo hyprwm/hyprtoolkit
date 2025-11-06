@@ -38,7 +38,7 @@ pkg_check_modules(
   cairo
   pangocairo
   iniparser
-  hyprgraphics>=0.2.0
+  hyprgraphics>=0.3.0
   aquamarine>=0.9.5
 )
 
