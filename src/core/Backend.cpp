@@ -27,6 +27,9 @@ using namespace Hyprutils::Memory;
 #define WP CWeakPointer
 
 static void aqLog(Aquamarine::eBackendLogLevel level, std::string msg) {
+    if (Env::envEnabled("HT_QUIET"))
+        return;
+
     if (g_logger)
         g_logger->log(HT_LOG_DEBUG, "[AQ] {}", msg);
     else
