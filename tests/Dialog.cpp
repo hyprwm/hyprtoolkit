@@ -53,9 +53,11 @@ int                 main(int argc, char** argv, char** envp) {
     hr->setMargin(4);
 
     auto content = CTextBuilder::begin()
-                       ->text("This is an example dialog. This first line is long on purpose, so that we overflow.\n\nWoo!")
+                       ->text("This is an example dialog. This first line is long on purpose, so that we overflow. Amogus sussus biggus sussus.\n\nWoo!")
+                       ->align(Hyprtoolkit::HT_FONT_ALIGN_CENTER)
                        ->color([] { return backend->getPalette()->m_colors.text; })
                        ->commence();
+    content->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_HCENTER, true);
 
     auto button1 = CButtonBuilder::begin()
                        ->label("Exit")

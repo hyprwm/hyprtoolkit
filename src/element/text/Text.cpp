@@ -136,20 +136,23 @@ void CTextElement::renderTex() {
 
     impl->damageEntire();
 
-    std::optional<Vector2D> maxSize = m_impl->data.clampSize.value_or(m_impl->lastMaxSize);
+    std::optional<Vector2D> maxSize = m_impl->data.clampSize.value_or(m_impl->lastMaxSize).round();
     if (maxSize == Vector2D{0, 0})
         maxSize = std::nullopt;
 
     auto col = m_impl->data.color();
 
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-        .text     = m_impl->data.text,
-        .font     = m_impl->data.fontFamily,
-        .fontSize = sc<size_t>(std::round(m_impl->lastFontSizeUnscaled * m_impl->lastScale)),
-        .color    = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
-        // .align
+        .text      = m_impl->data.text,
+        .font      = m_impl->data.fontFamily,
+        .fontSize  = sc<size_t>(std::round(m_impl->lastFontSizeUnscaled * m_impl->lastScale)),
+        .color     = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
+        .align     = m_impl->data.align == HT_FONT_ALIGN_LEFT ?
+                Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
+                (m_impl->data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
         .maxSize   = maxSize,
         .ellipsize = maxSize.has_value() && maxSize->y != -1,
+        .wrap      = maxSize.has_value() && maxSize->x != -1,
     });
 
     ASP<IAsyncResource> resourceGeneric(m_impl->resource);
@@ -215,7 +218,12 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);
 
-    pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+    if (data.align == HT_FONT_ALIGN_LEFT)
+        pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+    else if (data.align == HT_FONT_ALIGN_CENTER)
+        pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+    else
+        pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
 
     PangoAttrList* attrList = nullptr;
     GError*        gError   = nullptr;
@@ -240,22 +248,25 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     int layoutWidth, layoutHeight;
     pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
 
+    PangoRectangle ink, logical;
+    pango_layout_get_pixel_extents(layout, &ink, &logical);
+
     if (data.clampSize) {
-        layoutWidth  = data.clampSize->x > 0 ? std::min(layoutWidth, sc<int>(data.clampSize->x * PANGO_SCALE)) : layoutWidth;
-        layoutHeight = data.clampSize->y > 0 ? std::min(layoutHeight, sc<int>(data.clampSize->y * PANGO_SCALE)) : layoutHeight;
         if (!data.noEllipsize)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
         if (data.clampSize->x >= 0)
-            pango_layout_set_width(layout, layoutWidth);
+            pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(data.clampSize->x * PANGO_SCALE)));
         if (data.clampSize->y >= 0)
-            pango_layout_set_height(layout, layoutHeight);
+            pango_layout_set_height(layout, std::min(logical.height * PANGO_SCALE, sc<int>(data.clampSize->y * PANGO_SCALE)));
+        if (data.clampSize->x >= 0)
+            pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
-        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
-
-        pango_layout_get_size(layout, &layoutWidth, &layoutHeight);
+        pango_layout_get_pixel_extents(layout, &ink, &logical);
     }
 
-    return std::make_tuple<>(std::move(CAIROSURFACE), CAIRO, layout, Vector2D{sc<float>(layoutWidth) / PANGO_SCALE, sc<float>(layoutHeight) / PANGO_SCALE});
+    pango_layout_get_pixel_extents(layout, &ink, &logical);
+
+    return std::make_tuple<>(std::move(CAIROSURFACE), CAIRO, layout, Vector2D{logical.width, logical.height});
 }
 
 Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
