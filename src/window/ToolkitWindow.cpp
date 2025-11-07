@@ -56,6 +56,8 @@ void IToolkitWindow::damageEntire() {
 }
 
 void IToolkitWindow::scheduleFrame() {
+    m_needsFrame = true;
+
     if (m_scheduledRender) {
         TRACE(g_logger->log(HT_LOG_TRACE, "scheduleFrame: skipping, already scheduled"));
         return;
@@ -64,7 +66,6 @@ void IToolkitWindow::scheduleFrame() {
     TRACE(g_logger->log(HT_LOG_TRACE, "scheduleFrame: scheduling frame"));
 
     m_scheduledRender = true;
-    m_needsFrame      = true;
     g_backend->addIdle([this, self = m_self] {
         if (!self)
             return;
