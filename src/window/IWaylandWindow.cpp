@@ -160,8 +160,10 @@ void IWaylandWindow::submitExplicit(SP<CWaylandBuffer> buffer) {
 }
 
 void IWaylandWindow::render() {
-    if (m_waylandState.frameCallback)
+    if (m_waylandState.frameCallback) {
+        TRACE(g_logger->log(HT_LOG_TRACE, "wayland: skipping render, frame callback present"));
         return;
+    }
 
     auto currentBuffer    = m_waylandState.wlBuffers[m_waylandState.bufIdx];
     m_waylandState.bufIdx = (m_waylandState.bufIdx + 1) % 2;

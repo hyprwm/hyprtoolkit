@@ -32,7 +32,7 @@ namespace Hyprtoolkit {
 
         void terminate();
         void reloadTheme();
-        void rebuildPollfds();
+        void rebuildPollfds(bool wakeup = true);
 
         // schedule function to when fd is readable (WL_EVENT_READABLE / POLLIN),
         // takes ownership of fd
@@ -79,6 +79,7 @@ namespace Hyprtoolkit {
             bool                     idleEvent = false;
 
             int                      exitfd[2];
+            int                      wakeupfd[2];
 
             std::vector<SFDListener> userFds;
         } m_sLoopState;

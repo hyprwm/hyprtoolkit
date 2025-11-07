@@ -38,6 +38,7 @@ static void aqLog(Aquamarine::eBackendLogLevel level, std::string msg) {
 
 CBackend::CBackend() {
     pipe(m_sLoopState.exitfd);
+    pipe(m_sLoopState.wakeupfd);
 
     Aquamarine::SBackendOptions options{};
     options.logFunction = ::aqLog;
@@ -56,6 +57,8 @@ CBackend::CBackend() {
 CBackend::~CBackend() {
     close(m_sLoopState.exitfd[0]);
     close(m_sLoopState.exitfd[1]);
+    close(m_sLoopState.wakeupfd[0]);
+    close(m_sLoopState.wakeupfd[1]);
 }
 
 SP<IBackend> IBackend::create() {
@@ -213,9 +216,9 @@ void CBackend::doOnReadable(Hyprutils::OS::CFileDescriptor fd, std::function<voi
     rebuildPollfds();
 }
 
-constexpr size_t INTERNAL_FDS = 3;
+constexpr size_t INTERNAL_FDS = 4;
 
-void             CBackend::rebuildPollfds() {
+void             CBackend::rebuildPollfds(bool wakeup) {
     m_pollfds.resize(INTERNAL_FDS + m_sLoopState.userFds.size());
 
     m_pollfds[0] = {
@@ -230,6 +233,10 @@ void             CBackend::rebuildPollfds() {
                     .fd     = g_config->m_inotifyFd.get(),
                     .events = POLLIN,
     };
+    m_pollfds[3] = {
+                    .fd     = m_sLoopState.wakeupfd[0],
+                    .events = POLLIN,
+    };
 
     int i = INTERNAL_FDS;
 
@@ -239,6 +246,9 @@ void             CBackend::rebuildPollfds() {
                         .events = POLLIN,
         };
     }
+
+    if (wakeup)
+        write(m_sLoopState.wakeupfd[1], "hello", 5);
 }
 
 void CBackend::enterLoop() {
@@ -277,7 +287,7 @@ void CBackend::enterLoop() {
                     m_sLoopState.userFds[i - INTERNAL_FDS].needsDispatch = true;
             }
 
-            if (events > 0 || !preparedToRead || m_needsConfigReload) {
+            if (events > 0 || !preparedToRead || m_needsConfigReload || (m_pollfds[3].revents & POLLIN) /* wakeup fd */) {
                 std::unique_lock lk(m_sLoopState.eventLoopMutex);
                 m_sLoopState.event = true;
                 m_sLoopState.loopCV.notify_all();
@@ -406,7 +416,7 @@ void CBackend::enterLoop() {
 
         if (!expiredFds.empty()) {
             std::erase_if(m_sLoopState.userFds, [&expiredFds](const auto& e) { return std::ranges::contains(expiredFds, e.fd); });
-            rebuildPollfds();
+            rebuildPollfds(false);
         }
     }
 
