@@ -4,8 +4,8 @@ SHADERS_SRC="./src/renderer/gl/shaders/glsl"
 
 echo "-- Generating shader includes"
 
-if [ ! -d ./src/render/shaders ]; then
-	mkdir ./src/render/shaders
+if [ ! -d ./src/renderer/shaders ]; then
+	mkdir ./src/renderer/shaders
 fi
 
 echo '#pragma once' > ./src/renderer/gl/shaders/Shaders.hpp
