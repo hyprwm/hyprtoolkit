@@ -4,7 +4,11 @@
 #include "../layout/Positioner.hpp"
 #include "../core/AnimationManager.hpp"
 #include "../element/Element.hpp"
+#include "../element/text/Text.hpp"
+#include "../element/rectangle/Rectangle.hpp"
 #include "../Macros.hpp"
+
+#include <hyprtoolkit/core/Timer.hpp>
 
 #include <algorithm>
 
@@ -176,6 +180,18 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
     } else
         m_mainHoverElement.reset();
     setCursor(m_mainHoverElement && m_mainHoverElement->m_el ? m_mainHoverElement->m_el->pointerShape() : HT_POINTER_ARROW);
+
+    if (m_mainHoverElement && m_mainHoverElement->m_el && m_mainHoverElement->m_el->impl->hasTooltip && !m_tooltip.hoverTooltipTimer) {
+        m_tooltip.hoverTooltipTimer = g_backend->addTimer(
+            std::chrono::milliseconds(1000),
+            [this, self = m_self](ASP<CTimer> s, void*) {
+                if (!self || !m_mainHoverElement || !m_mainHoverElement->m_el)
+                    return;
+                openTooltip(m_mainHoverElement->m_el->impl->tooltip, m_mousePos);
+            },
+            nullptr);
+    } else
+        m_tooltip.hoverTooltipTimer.reset();
 }
 
 void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {
@@ -193,6 +209,12 @@ void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {
 
 void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
     updateFocus(local);
+
+    if (m_tooltip.tooltipPopup)
+        closeTooltip();
+
+    if (m_tooltip.hoverTooltipTimer)
+        m_tooltip.hoverTooltipTimer->updateTimeout(std::chrono::seconds(1));
 
     if (m_mainHoverElement && m_mainHoverElement->m_el)
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseMove.emit(local - m_mainHoverElement->m_el->impl->position.pos());
@@ -285,4 +307,56 @@ void IToolkitWindow::resetIM() {
 
 Hyprutils::Math::Vector2D IToolkitWindow::cursorPos() {
     return m_mousePos;
+}
+
+void IToolkitWindow::openTooltip(const std::string& s, const Hyprutils::Math::Vector2D& pos) {
+    if (m_tooltip.tooltipPopup)
+        return;
+
+    m_tooltip.text = CTextBuilder::begin()->color([] { return g_palette->m_colors.text; })->text(std::string{s})->commence();
+    m_tooltip.bg   = CRectangleBuilder::begin()
+                       ->color([] { return g_palette->m_colors.base; })
+                       ->borderThickness(1)
+                       ->borderColor([] { return g_palette->m_colors.base.brighten(0.2F); })
+                       ->rounding(g_palette->m_vars.smallRounding)
+                       ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
+                       ->commence();
+    m_tooltip.bg->setReceivesMouse(true);
+    m_tooltip.bg->setMouseLeave([self = m_self, this]() {
+        if (!self)
+            return;
+
+        closeTooltip();
+    });
+
+    m_tooltip.text->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    m_tooltip.text->setPositionFlag(IElement::HT_POSITION_FLAG_CENTER, true);
+
+    m_tooltip.bg->addChild(m_tooltip.text);
+
+    const auto EXPECTED_TEXT_SIZE = m_tooltip.text->m_impl->getTextSizePreferred();
+
+    m_tooltip.tooltipPopup = reinterpretPointerCast<IToolkitWindow>(CWindowBuilder::begin()
+                                                                        ->type(eWindowType::HT_WINDOW_POPUP)
+                                                                        ->pos(pos)
+                                                                        ->preferredSize(EXPECTED_TEXT_SIZE + Hyprutils::Math::Vector2D{10, 10})
+                                                                        ->parent(m_self.lock())
+                                                                        ->commence());
+
+    if (!m_tooltip.tooltipPopup) {
+        g_logger->log(HT_LOG_ERROR, "IToolkitWindow: couldn't open tooltip");
+        return;
+    }
+
+    m_tooltip.tooltipPopup->m_rootElement->addChild(m_tooltip.bg);
+
+    m_tooltip.tooltipPopup->open();
+}
+
+void IToolkitWindow::closeTooltip() {
+    if (!m_tooltip.tooltipPopup)
+        return;
+
+    m_tooltip.tooltipPopup->close();
+    m_tooltip.tooltipPopup.reset();
 }

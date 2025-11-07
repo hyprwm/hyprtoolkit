@@ -11,6 +11,10 @@
 
 namespace Hyprtoolkit {
 
+    class CRectangleElement;
+    class CTextElement;
+    class CTimer;
+
     struct SToolkitFocusLock {
         SToolkitFocusLock(SP<IElement> e, const Hyprutils::Math::Vector2D& coord);
         ~SToolkitFocusLock();
@@ -54,6 +58,9 @@ namespace Hyprtoolkit {
         virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
         virtual void                      resetIM();
 
+        virtual void                      openTooltip(const std::string& s, const Hyprutils::Math::Vector2D& pos);
+        virtual void                      closeTooltip();
+
         void                              initElementIfNeeded(SP<IElement>);
 
         // Damage ring is in pixel coords
@@ -72,5 +79,12 @@ namespace Hyprtoolkit {
         bool                               m_scheduledRender = false;
 
         std::vector<WP<IElement>>          m_needsReposition;
+
+        struct {
+            SP<IToolkitWindow>    tooltipPopup;
+            SP<CRectangleElement> bg;
+            SP<CTextElement>      text;
+            ASP<CTimer>           hoverTooltipTimer;
+        } m_tooltip;
     };
 }

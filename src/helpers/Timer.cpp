@@ -3,13 +3,13 @@
 
 using namespace Hyprtoolkit;
 
-CTimer::CTimer(std::chrono::system_clock::duration timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data_, bool force) :
+CTimer::CTimer(std::chrono::steady_clock::duration timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data_, bool force) :
     m_cb(cb_), m_data(data_), m_allowForceUpdate(force) {
-    m_expires = std::chrono::system_clock::now() + timeout;
+    m_expires = std::chrono::steady_clock::now() + timeout;
 }
 
 bool CTimer::passed() {
-    return std::chrono::system_clock::now() > m_expires;
+    return std::chrono::steady_clock::now() > m_expires;
 }
 
 void CTimer::cancel() {
@@ -24,8 +24,12 @@ void CTimer::call(ASP<CTimer> self) {
     m_cb(self, m_data);
 }
 
+void CTimer::updateTimeout(std::chrono::steady_clock::duration timeout) {
+    m_expires = std::chrono::steady_clock::now() + timeout;
+}
+
 float CTimer::leftMs() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(m_expires - std::chrono::system_clock::now()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(m_expires - std::chrono::steady_clock::now()).count();
 }
 
 bool CTimer::canForceUpdate() {

@@ -74,6 +74,11 @@ void IElement::setAbsolutePosition(const Hyprutils::Math::Vector2D& offset) {
         impl->window->scheduleReposition(impl->self);
 }
 
+void IElement::setTooltip(std::string&& x) {
+    impl->tooltip    = std::move(x);
+    impl->hasTooltip = !impl->tooltip.empty();
+}
+
 std::optional<Hyprutils::Math::Vector2D> IElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
     return std::nullopt;
 }
@@ -132,7 +137,7 @@ void IElement::clearChildren() {
 }
 
 bool IElement::acceptsMouseInput() {
-    return impl->userRequestedMouseInput;
+    return impl->userRequestedMouseInput || impl->hasTooltip;
 }
 
 ePointerShape IElement::pointerShape() {

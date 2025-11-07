@@ -35,6 +35,10 @@ namespace Hyprtoolkit {
         bool                                                     userRequestedMouseInput = false;
         bool                                                     grouped                 = false;
 
+        // tooltip
+        std::string tooltip    = "";
+        bool        hasTooltip = false;
+
         // rendering: clip children to parent box
         bool         clipChildren = false;
 
