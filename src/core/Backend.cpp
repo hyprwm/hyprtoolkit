@@ -282,6 +282,13 @@ void CBackend::enterLoop() {
 
             m_needsConfigReload = m_pollfds[2].revents & POLLIN;
 
+            if (m_pollfds[3].revents & POLLIN) {
+                // clear the wakeup fd
+                static std::array<char, 1024> buf;
+                read(m_pollfds[3].fd, buf.data(), 1023);
+                m_pollfds[3].revents &= ~POLLIN;
+            }
+
             for (size_t i = INTERNAL_FDS; i < m_pollfds.size(); ++i) {
                 if (m_pollfds[i].revents & POLLIN)
                     m_sLoopState.userFds[i - INTERNAL_FDS].needsDispatch = true;
