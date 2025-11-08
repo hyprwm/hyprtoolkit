@@ -65,6 +65,8 @@ namespace Hyprtoolkit {
         virtual void setMouseButton(std::function<void(Input::eMouseButton, bool)>&& fn);
         virtual void setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn);
 
+        virtual void setTooltip(std::string&&);
+
         virtual void setRepositioned(std::function<void()>&& fn);
 
         virtual void setGrow(bool grow);

@@ -140,6 +140,7 @@ int main(int argc, char** argv, char** envp) {
                      ->fontSize({CFontSize::HT_FONT_H2})
                      ->color([] { return backend->getPalette()->m_colors.text; })
                      ->commence();
+    title->setTooltip("Example tooltip!! Woo!");
 
     auto hr = CRectangleBuilder::begin() //
                   ->color([] { return CHyprColor{backend->getPalette()->m_colors.text.darken(0.65)}; })
