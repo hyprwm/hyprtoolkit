@@ -140,6 +140,9 @@ void CTextElement::renderTex() {
     if (maxSize == Vector2D{0, 0})
         maxSize = std::nullopt;
 
+    if (maxSize.has_value())
+        (*maxSize) *= m_impl->lastScale;
+
     auto col = m_impl->data.color();
 
     m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
@@ -151,8 +154,8 @@ void CTextElement::renderTex() {
                 Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
                 (m_impl->data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
         .maxSize   = maxSize,
-        .ellipsize = maxSize.has_value() && maxSize->y != -1,
-        .wrap      = maxSize.has_value() && maxSize->x != -1,
+        .ellipsize = maxSize.has_value() && maxSize->y >= 0,
+        .wrap      = maxSize.has_value() && maxSize->x >= 0,
     });
 
     ASP<IAsyncResource> resourceGeneric(m_impl->resource);
@@ -252,12 +255,13 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     pango_layout_get_pixel_extents(layout, &ink, &logical);
 
     if (data.clampSize) {
+        const auto CLAMP_SIZE = data.clampSize.value() * lastScale;
         if (!data.noEllipsize)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
         if (data.clampSize->x >= 0)
-            pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(data.clampSize->x * PANGO_SCALE)));
+            pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(CLAMP_SIZE.x * PANGO_SCALE)));
         if (data.clampSize->y >= 0)
-            pango_layout_set_height(layout, std::min(logical.height * PANGO_SCALE, sc<int>(data.clampSize->y * PANGO_SCALE)));
+            pango_layout_set_height(layout, std::min(logical.height * PANGO_SCALE, sc<int>(CLAMP_SIZE.y * PANGO_SCALE)));
         if (data.clampSize->x >= 0)
             pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
