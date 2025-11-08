@@ -185,7 +185,7 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
         m_tooltip.hoverTooltipTimer = g_backend->addTimer(
             std::chrono::milliseconds(1000),
             [this, self = m_self](ASP<CTimer> s, void*) {
-                if (!self || !m_mainHoverElement || !m_mainHoverElement->m_el)
+                if (!self || !m_mainHoverElement || !m_mainHoverElement->m_el || !m_mainHoverElement->m_el->impl->hasTooltip)
                     return;
                 openTooltip(m_mainHoverElement->m_el->impl->tooltip, m_mousePos);
             },
