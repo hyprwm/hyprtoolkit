@@ -76,7 +76,7 @@ target_include_directories(
   PUBLIC "./include"
   PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
 set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
-                                            SOVERSION 2)
+                                            SOVERSION 3)
 target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL PkgConfig::deps)
 
 check_include_file("sys/timerfd.h" HAS_TIMERFD)
