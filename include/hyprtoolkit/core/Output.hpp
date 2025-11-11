@@ -10,7 +10,6 @@ namespace Hyprtoolkit {
         virtual uint32_t    handle() = 0;
         virtual std::string port()   = 0;
         virtual std::string desc()   = 0;
-        virtual uint32_t    fps()    = 0;
 
         struct {
             /* output removed */

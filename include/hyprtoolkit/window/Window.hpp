@@ -80,6 +80,9 @@ namespace Hyprtoolkit {
 
             // (global) key events
             Hyprutils::Signal::CSignalT<Input::SKeyboardKeyEvent> keyboardKey;
+
+            // emitted before rendering a new frame (sychronized to the current refresh rate)
+            Hyprutils::Signal::CSignalT<> frame;
         } m_events;
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;

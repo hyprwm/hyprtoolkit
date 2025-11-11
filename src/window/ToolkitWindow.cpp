@@ -84,6 +84,8 @@ void IToolkitWindow::scheduleFrame() {
 void IToolkitWindow::onPreRender() {
     g_animationManager->tick();
 
+    m_events.frame.emit();
+
     // simplify repositions: step 1, expand ancestors
     for (auto& e : m_needsReposition) {
         if (!e)
