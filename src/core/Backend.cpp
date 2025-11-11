@@ -109,11 +109,11 @@ std::vector<SP<IOutput>> CBackend::getOutputs() {
 
 std::expected<SP<ISessionLockState>, eSessionLockError> CBackend::aquireSessionLock() {
     if (!g_waylandPlatform)
-        return std::unexpected(PLATFORM_UNINTIALIZED);
+        return std::unexpected(LOCK_ERROR_PLATFORM_UNINITIALIZED);
 
     auto lockState = g_waylandPlatform->aquireSessionLock();
     if (!lockState || lockState->m_denied)
-        return std::unexpected(DENIED);
+        return std::unexpected(LOCK_ERROR_DENIED);
 
     return lockState;
 }

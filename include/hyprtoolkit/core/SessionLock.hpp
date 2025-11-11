@@ -5,8 +5,8 @@
 
 namespace Hyprtoolkit {
     enum eSessionLockError : uint8_t {
-        PLATFORM_UNINTIALIZED,
-        DENIED,
+        LOCK_ERROR_PLATFORM_UNINITIALIZED,
+        LOCK_ERROR_DENIED,
     };
 
     class ISessionLockState {
