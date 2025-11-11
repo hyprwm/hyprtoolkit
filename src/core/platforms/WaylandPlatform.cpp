@@ -1,9 +1,7 @@
 #include "WaylandPlatform.hpp"
 
 #include <algorithm>
-#include <expected>
 #include <hyprutils/memory/Casts.hpp>
-#include <optional>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 #include "../InternalBackend.hpp"
