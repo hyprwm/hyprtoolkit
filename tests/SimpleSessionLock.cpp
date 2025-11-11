@@ -41,6 +41,9 @@ static void layout(const SP<IWindow>& window) {
     window->m_rootElement->addChild(CRectangleBuilder::begin()->color([] { return CHyprColor{0.1F, 0.1F, 0.1F}; })->commence());
 
     auto layout = CRowLayoutBuilder::begin()->commence();
+    layout->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
+    layout->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_HCENTER, true);
+    layout->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_VCENTER, true);
 
     window->m_rootElement->addChild(layout);
 
