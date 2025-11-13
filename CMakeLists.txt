@@ -39,19 +39,13 @@ pkg_check_modules(
   pangocairo
   iniparser
   hyprgraphics>=0.3.0
-  aquamarine>=0.9.5
-)
+  aquamarine>=0.9.5)
 
 configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
 
 set(CMAKE_CXX_STANDARD 23)
-add_compile_options(
-  -Wall
-  -Wextra
-  -Wno-unused-parameter
-  -Wno-unused-value
-  -Wno-missing-field-initializers
-  -Wpedantic)
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value
+                    -Wno-missing-field-initializers -Wpedantic)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -76,8 +70,9 @@ target_include_directories(
   PUBLIC "./include"
   PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
 set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
-                                            SOVERSION 3)
-target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL PkgConfig::deps)
+                                             SOVERSION 3)
+target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL
+                                         PkgConfig::deps)
 
 check_include_file("sys/timerfd.h" HAS_TIMERFD)
 pkg_check_modules(epoll IMPORTED_TARGET epoll-shim)
@@ -91,7 +86,7 @@ if(NOT HAS_INOTIFY AND inotify_FOUND)
   target_link_libraries(hyprtoolkit PUBLIC PkgConfig::inotify)
 endif()
 
-if (NOT DISABLE_TESTS)
+if(NOT DISABLE_TESTS)
   enable_testing()
 
   # test apps
@@ -116,8 +111,20 @@ if (NOT DISABLE_TESTS)
   target_compile_definitions(hyprtoolkit_inline_tests PRIVATE HT_UNIT_TESTS=1)
   target_compile_options(hyprtoolkit_inline_tests PRIVATE --coverage)
   target_link_options(hyprtoolkit_inline_tests PRIVATE --coverage)
-  target_include_directories(hyprtoolkit_inline_tests PUBLIC "./include" PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
-  target_link_libraries(hyprtoolkit_inline_tests PRIVATE GTest::gtest_main OpenGL::EGL OpenGL::OpenGL PkgConfig::deps PkgConfig::epoll PkgConfig::inotify)
+  target_include_directories(
+    hyprtoolkit_inline_tests
+    PUBLIC "./include"
+    PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
+  target_link_libraries(
+    hyprtoolkit_inline_tests PRIVATE GTest::gtest_main OpenGL::EGL
+                                     OpenGL::OpenGL PkgConfig::deps)
+
+  if(NOT HAS_TIMERFD AND epoll_FOUND)
+    target_link_libraries(hyprtoolkit_inline_tests PUBLIC PkgConfig::epoll)
+  endif()
+  if(NOT HAS_INOTIFY AND inotify_FOUND)
+    target_link_libraries(hyprtoolkit_inline_tests PUBLIC PkgConfig::inotify)
+  endif()
   gtest_discover_tests(hyprtoolkit_inline_tests)
 endif()
 
@@ -125,7 +132,8 @@ endif()
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
 pkg_get_variable(WAYLAND_SCANNER_PKGDATA_DIR wayland-scanner pkgdatadir)
-message(STATUS "Found wayland-scanner pkgdatadir at ${WAYLAND_SCANNER_PKGDATA_DIR}")
+message(
+  STATUS "Found wayland-scanner pkgdatadir at ${WAYLAND_SCANNER_PKGDATA_DIR}")
 
 function(protocolNew protoPath protoName external)
   if(external)
@@ -140,22 +148,25 @@ function(protocolNew protoPath protoName external)
             ${CMAKE_SOURCE_DIR}/protocols/
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   target_sources(hyprtoolkit PRIVATE protocols/${protoName}.cpp
-                                    protocols/${protoName}.hpp)
-  if (NOT DISABLE_TESTS)
+                                     protocols/${protoName}.hpp)
+  if(NOT DISABLE_TESTS)
     target_sources(hyprtoolkit_inline_tests PRIVATE protocols/${protoName}.cpp
-                                    protocols/${protoName}.hpp)
+                                                    protocols/${protoName}.hpp)
   endif()
 endfunction()
 function(protocolWayland)
   add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
            ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
-    COMMAND hyprwayland-scanner --wayland-enums --client
-            ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
+    COMMAND
+      hyprwayland-scanner --wayland-enums --client
+      ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_sources(hyprtoolkit PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
-  if (NOT DISABLE_TESTS)
-    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
+  target_sources(hyprtoolkit PRIVATE protocols/wayland.cpp
+                                     protocols/wayland.hpp)
+  if(NOT DISABLE_TESTS)
+    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/wayland.cpp
+                                                    protocols/wayland.hpp)
   endif()
 endfunction()
 
