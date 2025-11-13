@@ -4,6 +4,8 @@
 
 #include "Color.hpp"
 
+#include <string>
+
 namespace Hyprtoolkit {
 
     class CPalette {

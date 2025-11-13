@@ -7,6 +7,8 @@
 #include "../window/ToolkitWindow.hpp"
 #include "../layout/Positioner.hpp"
 
+#include <algorithm>
+
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 

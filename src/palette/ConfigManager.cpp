@@ -4,6 +4,8 @@
 
 #include "../core/InternalBackend.hpp"
 
+#include <unistd.h>
+
 using namespace Hyprtoolkit;
 
 CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {

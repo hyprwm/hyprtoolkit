@@ -15,6 +15,7 @@
 #include <cstring>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;

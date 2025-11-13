@@ -5,6 +5,7 @@
   pkg-config,
   aquamarine,
   cairo,
+  epoll-shim,
   gtest,
   hyprgraphics,
   hyprlang,
@@ -25,6 +26,7 @@
 }:
 let
   inherit (lib.attrsets) mapAttrsToList;
+  inherit (lib.lists) optional;
   inherit (lib.strings) cmakeBool optionalString;
 in
 stdenv.mkDerivation {
@@ -56,7 +58,7 @@ stdenv.mkDerivation {
     pixman
     wayland
     wayland-protocols
-  ];
+  ] ++ (optional stdenv.isBSD epoll-shim);
 
   cmakeFlags = mapAttrsToList cmakeBool {
     "DISABLE_TESTING" = !doCheck;

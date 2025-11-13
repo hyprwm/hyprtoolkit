@@ -19,6 +19,7 @@
 #include <sys/poll.h>
 
 #include <print>
+#include <unistd.h>
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Memory;
