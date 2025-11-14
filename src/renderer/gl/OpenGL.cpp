@@ -522,6 +522,8 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
 }
 
 COpenGLRenderer::~COpenGLRenderer() {
+    m_glTextures.clear();
+
     if (m_eglDisplay && m_eglContext != EGL_NO_CONTEXT)
         eglDestroyContext(m_eglDisplay, m_eglContext);
 

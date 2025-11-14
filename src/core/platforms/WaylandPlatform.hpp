@@ -3,6 +3,7 @@
 #include <hyprtoolkit/types/PointerShape.hpp>
 #include <hyprtoolkit/core/Input.hpp>
 #include <hyprtoolkit/core/Timer.hpp>
+#include <hyprtoolkit/core/SessionLock.hpp>
 
 #include "../../helpers/Memory.hpp"
 
@@ -23,6 +24,7 @@
 #include <text-input-unstable-v3.hpp>
 #include <wlr-layer-shell-unstable-v1.hpp>
 #include <linux-drm-syncobj-v1.hpp>
+#include <ext-session-lock-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -33,32 +35,34 @@ namespace Hyprtoolkit {
     class CWaylandWindow;
     class IWaylandWindow;
     class CWaylandLayer;
+    class CWaylandOutput;
+    class CWaylandSessionLockState;
 
     class CWaylandPlatform {
       public:
         CWaylandPlatform() = default;
         ~CWaylandPlatform();
 
-        bool               attempt();
+        bool                         attempt();
 
-        void               initSeat();
-        void               initShell();
-        bool               initDmabuf();
-        void               initIM();
-        void               setCursor(ePointerShape shape);
+        void                         initSeat();
+        void                         initShell();
+        bool                         initDmabuf();
+        void                         initIM();
+        void                         setCursor(ePointerShape shape);
 
-        bool               dispatchEvents();
+        bool                         dispatchEvents();
 
-        SP<IWaylandWindow> windowForSurf(wl_proxy* proxy);
+        SP<IWaylandWindow>           windowForSurf(wl_proxy* proxy);
+        WP<CWaylandOutput>           outputForHandle(uint32_t handle);
 
-        void               onKey(uint32_t keycode, bool state);
-        void               startRepeatTimer();
-        void               stopRepeatTimer();
+        void                         onKey(uint32_t keycode, bool state);
+        void                         startRepeatTimer();
+        void                         stopRepeatTimer();
 
-        void               onRepeatTimerFire();
+        void                         onRepeatTimerFire();
 
-        //
-        std::vector<FIdleCallback> m_idleCallbacks;
+        SP<CWaylandSessionLockState> aquireSessionLock();
 
         // dmabuf formats
         std::vector<Aquamarine::SDRMFormat> m_dmabufFormats;
@@ -86,8 +90,10 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputV3>             textInput;
             Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
             Hyprutils::Memory::CSharedPointer<CCWpLinuxDrmSyncobjManagerV1> syncobj;
+            Hyprutils::Memory::CSharedPointer<CCExtSessionLockManagerV1>    sessionLock;
 
             // control
+            bool initialized  = false;
             bool dmabufFailed = false;
 
             struct {
@@ -118,11 +124,15 @@ namespace Hyprtoolkit {
             std::string nodeName = "";
         } m_drmState;
 
+        std::vector<SP<CWaylandOutput>> m_outputs;
+
         std::vector<WP<CWaylandWindow>> m_windows;
         std::vector<WP<CWaylandLayer>>  m_layers;
         WP<IWaylandWindow>              m_currentWindow;
         uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial = 0;
+
+        WP<CWaylandSessionLockState>    m_sessionLockState;
     };
 
     inline UP<CWaylandPlatform> g_waylandPlatform;

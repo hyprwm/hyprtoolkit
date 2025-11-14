@@ -9,6 +9,9 @@
 #include "../../element/Element.hpp"
 #include "../../window/WaylandWindow.hpp"
 #include "../../window/WaylandLayer.hpp"
+#include "../../window/WaylandLockSurface.hpp"
+#include "../../output/WaylandOutput.hpp"
+#include "../../sessionLock/WaylandSessionLock.hpp"
 #include "../../Macros.hpp"
 
 #include <xf86drm.h>
@@ -96,9 +99,30 @@ bool CWaylandPlatform::attempt() {
                 g_logger->log(HT_LOG_ERROR, "Wayland platform cannot start: zwp_linux_dmabuf_v1 init failed");
                 m_waylandState.dmabufFailed = true;
             }
+        } else if (NAME == wl_output_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
+            auto newOutput = makeShared<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id);
+            m_outputs.emplace_back(newOutput);
+            if (m_waylandState.initialized)
+                g_backend->m_events.outputAdded.emit(newOutput);
+        } else if (NAME == ext_session_lock_manager_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
         }
     });
-    m_waylandState.registry->setGlobalRemove([](CCWlRegistry* r, uint32_t id) { g_logger->log(HT_LOG_DEBUG, "Global {} removed", id); });
+    m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
+        TRACE(g_logger->log(HT_LOG_TRACE, "Global {} removed", id));
+
+        if (m_sessionLockState)
+            m_sessionLockState->onOutputRemoved(id);
+
+        auto outputIt = std::ranges::find_if(m_outputs, [id](const auto& other) { return other->m_id == id; });
+        if (outputIt != m_outputs.end()) {
+            (*outputIt)->m_events.removed.emit();
+            m_outputs.erase(outputIt);
+        }
+    });
 
     wl_display_roundtrip(m_waylandState.display);
 
@@ -112,13 +136,16 @@ bool CWaylandPlatform::attempt() {
 
     dispatchEvents();
 
+    m_waylandState.initialized = true;
+    for (const auto& o : m_outputs) {
+        g_backend->m_events.outputAdded.emit(o);
+    }
+
     return true;
 }
 
 CWaylandPlatform::~CWaylandPlatform() {
-    const auto DPY = m_waylandState.display;
-    m_waylandState = {};
-    wl_display_disconnect(DPY);
+    m_outputs.clear();
 
     if (m_drmState.fd >= 0)
         close(m_drmState.fd);
@@ -129,6 +156,10 @@ CWaylandPlatform::~CWaylandPlatform() {
         xkb_keymap_unref(m_waylandState.seatState.xkbKeymap);
     if (m_waylandState.seatState.xkbContext)
         xkb_context_unref(m_waylandState.seatState.xkbContext);
+
+    const auto DPY = m_waylandState.display;
+    m_waylandState = {};
+    wl_display_disconnect(DPY);
 }
 
 bool CWaylandPlatform::dispatchEvents() {
@@ -145,12 +176,6 @@ bool CWaylandPlatform::dispatchEvents() {
         ret = wl_display_dispatch_pending(m_waylandState.display);
         wl_display_flush(m_waylandState.display);
     } while (ret > 0);
-
-    // dispatch frames
-    for (auto const& f : m_idleCallbacks) {
-        f();
-    }
-    m_idleCallbacks.clear();
 
     return true;
 }
@@ -180,7 +205,22 @@ SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {
                 return pp;
         }
     }
+
+    if (m_sessionLockState) {
+        for (const auto& w : m_sessionLockState->m_lockSurfaces) {
+            if (w->m_waylandState.surface && w->m_waylandState.surface->resource() == proxy)
+                return w.lock();
+        }
+    }
     return nullptr;
+}
+
+WP<CWaylandOutput> CWaylandPlatform::outputForHandle(uint32_t handle) {
+    for (const auto& o : m_outputs) {
+        if (o->m_id == handle)
+            return o;
+    }
+    return SP<CWaylandOutput>{};
 }
 
 void CWaylandPlatform::initIM() {
@@ -600,4 +640,18 @@ void CWaylandPlatform::stopRepeatTimer() {
     if (m_waylandState.seatState.repeatTimer)
         m_waylandState.seatState.repeatTimer->cancel();
     m_waylandState.seatState.repeatTimer.reset();
+}
+
+SP<CWaylandSessionLockState> CWaylandPlatform::aquireSessionLock() {
+    if (m_sessionLockState)
+        return m_sessionLockState.lock();
+
+    auto sessionLock = makeShared<CWaylandSessionLockState>(makeShared<CCExtSessionLockV1>(m_waylandState.sessionLock->sendLock()));
+
+    // roundtrip in case the compositor sends `finished` right away
+    wl_display_roundtrip(m_waylandState.display);
+
+    m_sessionLockState = sessionLock;
+
+    return sessionLock;
 }

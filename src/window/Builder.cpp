@@ -1,5 +1,6 @@
 #include "Window.hpp"
 #include "../core/InternalBackend.hpp"
+#include <hyprtoolkit/core/Output.hpp>
 #include "ToolkitWindow.hpp"
 
 using namespace Hyprtoolkit;
@@ -38,6 +39,11 @@ SP<CWindowBuilder> CWindowBuilder::minSize(const Hyprutils::Math::Vector2D& x) {
 
 SP<CWindowBuilder> CWindowBuilder::maxSize(const Hyprutils::Math::Vector2D& x) {
     m_data->maxSize = x;
+    return m_self.lock();
+}
+
+SP<CWindowBuilder> CWindowBuilder::prefferedOutput(const SP<IOutput>& x) {
+    m_data->prefferedOutputId = x->handle();
     return m_self.lock();
 }
 
@@ -94,7 +100,8 @@ SP<IWindow> CWindowBuilder::commence() {
 
             return reinterpretPointerCast<IToolkitWindow>(m_data->parent)->openPopup(*m_data);
         case HT_WINDOW_TOPLEVEL:
-        case HT_WINDOW_LAYER: return g_backend->openWindow(*m_data);
+        case HT_WINDOW_LAYER:
+        case HT_WINDOW_LOCK_SURFACE: return g_backend->openWindow(*m_data);
     }
     return nullptr;
 }
