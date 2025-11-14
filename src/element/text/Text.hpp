@@ -10,7 +10,7 @@
 namespace Hyprtoolkit {
     struct STextData {
         std::string                              text;
-        std::string                              fontFamily = "Sans Serif";
+        std::string                              fontFamily = g_palette ? g_palette->m_vars.fontFamily : "Sans Serif";
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
         eFontAlignment                           align       = HT_FONT_ALIGN_LEFT;
         colorFn                                  color       = [] { return g_backend->getPalette()->m_colors.text; };

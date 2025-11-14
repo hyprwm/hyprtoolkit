@@ -5,13 +5,14 @@
 #include <hyprtoolkit/element/Text.hpp>
 
 #include "../../helpers/Memory.hpp"
+#include "../../core/InternalBackend.hpp"
 
 namespace Hyprtoolkit {
     struct SButtonData {
         std::string                                                            label      = "Click me";
         bool                                                                   noBorder   = false;
         bool                                                                   noBg       = false;
-        std::string                                                            fontFamily = "Sans Serif";
+        std::string                                                            fontFamily = g_palette ? g_palette->m_vars.fontFamily : "Sans Serif";
         CFontSize                                                              fontSize   = {CFontSize::HT_FONT_TEXT};
         eFontAlignment                                                         alignText  = HT_FONT_ALIGN_CENTER;
         std::function<void(Hyprutils::Memory::CSharedPointer<CButtonElement>)> onMainClick;

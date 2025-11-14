@@ -216,7 +216,7 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
 
     PangoLayout*          layout = pango_cairo_create_layout(CAIRO);
 
-    PangoFontDescription* fontDesc = pango_font_description_from_string("Sans Serif");
+    PangoFontDescription* fontDesc = pango_font_description_from_string(data.fontFamily.c_str());
     pango_font_description_set_size(fontDesc, std::round(lastFontSizeUnscaled * lastScale) * PANGO_SCALE);
     pango_layout_set_font_description(layout, fontDesc);
     pango_font_description_free(fontDesc);

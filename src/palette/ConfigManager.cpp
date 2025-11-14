@@ -32,6 +32,8 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("font_size", Hyprlang::INT{11});
     m_config->addConfigValue("small_font_size", Hyprlang::INT{10});
     m_config->addConfigValue("icon_theme", Hyprlang::STRING{""});
+    m_config->addConfigValue("font_family", Hyprlang::STRING{"Sans Serif"});
+    m_config->addConfigValue("font_family_monospace", Hyprlang::STRING{"monospace"});
 
     m_config->commence();
 
@@ -66,12 +68,14 @@ SP<CPalette> CConfigManager::getPalette() {
     static auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
     static auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
 
-    static auto H1SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
-    static auto H2SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
-    static auto H3SIZE        = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
-    static auto FONTSIZE      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
-    static auto SMALLFONTSIZE = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
-    static auto ICONTHEME     = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "icon_theme");
+    static auto H1SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
+    static auto H2SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
+    static auto H3SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
+    static auto FONTSIZE       = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
+    static auto SMALLFONTSIZE  = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
+    static auto ICONTHEME      = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "icon_theme");
+    static auto FONTFAMILY     = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family");
+    static auto FONTFAMILYMONO = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family_monospace");
 
     p->m_colors.background      = *BACKGROUND;
     p->m_colors.base            = *BASE;
@@ -81,12 +85,14 @@ SP<CPalette> CConfigManager::getPalette() {
     p->m_colors.accent          = *ACCENT;
     p->m_colors.accentSecondary = *ACCENTSECONDARY;
 
-    p->m_vars.h1Size        = *H1SIZE;
-    p->m_vars.h2Size        = *H2SIZE;
-    p->m_vars.h3Size        = *H3SIZE;
-    p->m_vars.fontSize      = *FONTSIZE;
-    p->m_vars.smallFontSize = *SMALLFONTSIZE;
-    p->m_vars.iconTheme     = *ICONTHEME;
+    p->m_vars.h1Size              = *H1SIZE;
+    p->m_vars.h2Size              = *H2SIZE;
+    p->m_vars.h3Size              = *H3SIZE;
+    p->m_vars.fontSize            = *FONTSIZE;
+    p->m_vars.smallFontSize       = *SMALLFONTSIZE;
+    p->m_vars.iconTheme           = *ICONTHEME;
+    p->m_vars.fontFamily          = *FONTFAMILY;
+    p->m_vars.fontFamilyMonospace = *FONTFAMILYMONO;
 
     return p;
 }

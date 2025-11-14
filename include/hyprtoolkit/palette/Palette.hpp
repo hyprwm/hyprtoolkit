@@ -30,14 +30,16 @@ namespace Hyprtoolkit {
         } m_colors;
 
         struct {
-            int         h1Size        = 19;
-            int         h2Size        = 15;
-            int         h3Size        = 13;
-            int         fontSize      = 11;
-            int         smallFontSize = 10;
-            std::string iconTheme     = ""; // first one found
-            int         bigRounding   = 10;
-            int         smallRounding = 5;
+            int         h1Size              = 19;
+            int         h2Size              = 15;
+            int         h3Size              = 13;
+            int         fontSize            = 11;
+            int         smallFontSize       = 10;
+            std::string iconTheme           = ""; // first one found
+            int         bigRounding         = 10;
+            int         smallRounding       = 5;
+            std::string fontFamily          = "Sans Serif";
+            std::string fontFamilyMonospace = "monospace";
         } m_vars;
 
       private:
