@@ -23,10 +23,12 @@ namespace Hyprtoolkit {
         virtual void                   addFd(int fd, std::function<void()>&& callback);
         virtual void                   removeFd(int fd);
         virtual SP<ISystemIconFactory> systemIcons();
-        virtual ASP<CTimer>  addTimer(const std::chrono::system_clock::duration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force = false);
-        virtual void         addIdle(const std::function<void()>& fn);
-        virtual void         enterLoop();
-        virtual SP<CPalette> getPalette();
+        virtual ASP<CTimer> addTimer(const std::chrono::system_clock::duration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force = false);
+        virtual void        addIdle(const std::function<void()>& fn);
+        virtual void        enterLoop();
+        virtual std::vector<SP<IOutput>>                                getOutputs();
+        virtual SP<CPalette>                                            getPalette();
+        virtual std::expected<SP<ISessionLockState>, eSessionLockError> aquireSessionLock();
 
         // ======================= Internal fns ======================= //
 

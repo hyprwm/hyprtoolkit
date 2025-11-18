@@ -9,12 +9,14 @@
 namespace Hyprtoolkit {
     class IElement;
     class IWindow;
+    class IOutput;
     struct SWindowCreationData;
 
     enum eWindowType : uint8_t {
-        HT_WINDOW_TOPLEVEL = 0,
-        HT_WINDOW_POPUP    = 1,
-        HT_WINDOW_LAYER    = 2,
+        HT_WINDOW_TOPLEVEL     = 0,
+        HT_WINDOW_POPUP        = 1,
+        HT_WINDOW_LAYER        = 2,
+        HT_WINDOW_LOCK_SURFACE = 3,
     };
 
     class CWindowBuilder {
@@ -28,6 +30,8 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        preferredSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
+        // TODO: implement for window types other than HT_WINDOW_LOCK_SURFACE
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
 
         // only for HT_WINDOW_LAYER
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> marginTopLeft(const Hyprutils::Math::Vector2D&);

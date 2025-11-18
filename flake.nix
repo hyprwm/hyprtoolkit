@@ -73,6 +73,18 @@
       inherit (pkgsFor.${system}) hyprtoolkit hyprtoolkit-with-tests;
     });
 
+    devShells = eachSystem (system: {
+      default =
+        pkgsFor.${system}.mkShell.override {
+          inherit (self.packages.${system}.default) stdenv;
+        } {
+          name = "hyprtoolkit-shell";
+          hardeningDisable = ["fortify"];
+          inputsFrom = [pkgsFor.${system}.hyprtoolkit];
+          packages = [pkgsFor.${system}.clang-tools];
+        };
+    });
+
     checks = eachSystem (system: self.packages.${system});
 
     formatter = eachSystem (system: pkgsFor.${system}.alejandra);
