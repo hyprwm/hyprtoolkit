@@ -60,6 +60,11 @@ SP<CTextBuilder> CTextBuilder::size(CDynamicSize&& s) {
     return m_self.lock();
 }
 
+Hyprutils::Memory::CSharedPointer<CTextBuilder> CTextBuilder::async(bool x) {
+    m_data->async = x;
+    return m_self.lock();
+}
+
 SP<CTextElement> CTextBuilder::commence() {
     if (m_element) {
         m_element->replaceData(*m_data);

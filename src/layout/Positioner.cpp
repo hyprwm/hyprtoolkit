@@ -7,24 +7,18 @@ using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
 void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
-#ifndef HT_UNIT_TESTS
-    if (!element->impl->window)
-        return;
-#endif
 
     initElementIfNeeded(element);
 
-#ifndef HT_UNIT_TESTS
     // damage old box
-    element->impl->window->damage(element->impl->positionerData->baseBox);
-#endif
+    if (element->impl->window)
+        element->impl->window->damage(element->impl->positionerData->baseBox);
 
     element->impl->positionerData->baseBox = box;
     element->reposition(box, maxSize);
 
-#ifndef HT_UNIT_TESTS
-    element->impl->window->damage(box);
-#endif
+    if (element->impl->window)
+        element->impl->window->damage(box);
 }
 
 void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& data) {
@@ -85,11 +79,14 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
     }
 }
 
-void CPositioner::repositionNeeded(SP<IElement> element) {
+void CPositioner::repositionNeeded(SP<IElement> element, bool force) {
     if (!element->impl->parent) {
         // root el likely, check
-        if (!element->impl->window || element != element->impl->window->m_rootElement)
+        if (!element->impl->window || element != element->impl->window->m_rootElement) {
+            initElementIfNeeded(element);
+            position(element, element->impl->positionerData->baseBox);
             return;
+        }
 
         // otherwise, max box
         position(element, {{}, (element->impl->window->pixelSize() / element->impl->window->scale()).round()});
@@ -97,8 +94,10 @@ void CPositioner::repositionNeeded(SP<IElement> element) {
     }
 
     if (!element->impl->parent->impl->positionerData || element->impl->parent->impl->positionerData->baseBox.empty()) {
-        // full reflow needed
-        if (element->impl->window)
+        if (force) {
+            initElementIfNeeded(element);
+            position(element, CBox{Vector2D{}, element->preferredSize(Vector2D{}).value_or({})});
+        } else if (element->impl->window) // full reflow needed
             element->impl->window->scheduleReposition(element->impl->window->m_rootElement);
         return;
     }

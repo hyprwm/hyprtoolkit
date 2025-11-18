@@ -223,6 +223,10 @@ CBox IElement::opaqueBox() {
     return {};
 }
 
+void IElement::forceReposition() {
+    g_positioner->repositionNeeded(impl->self.lock(), true);
+}
+
 void SElementInternalData::setPosition(const CBox& box) {
     position = box;
     if (margin > 0)

@@ -33,6 +33,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        callback(std::function<void()>&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        noEllipsize(bool);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        size(CDynamicSize&&);
+        Hyprutils::Memory::CSharedPointer<CTextBuilder>        async(bool x);
 
         Hyprutils::Memory::CSharedPointer<CTextElement>        commence();
 
@@ -65,8 +66,6 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D>       maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual bool                                           positioningDependsOnChild();
         virtual void                                           recheckColor();
-
-        void                                                   renderTex();
 
         Hyprutils::Memory::CUniquePointer<STextImpl>           m_impl;
 
