@@ -86,6 +86,54 @@ if(NOT HAS_INOTIFY AND inotify_FOUND)
   target_link_libraries(hyprtoolkit PUBLIC PkgConfig::inotify)
 endif()
 
+# Protocols
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+pkg_get_variable(WAYLAND_SCANNER_PKGDATA_DIR wayland-scanner pkgdatadir)
+message(
+  STATUS "Found wayland-scanner pkgdatadir at ${WAYLAND_SCANNER_PKGDATA_DIR}")
+
+function(protocolNew protoPath protoName external)
+  if(external)
+    set(path ${CMAKE_SOURCE_DIR}/${protoPath})
+  else()
+    set(path ${WAYLAND_PROTOCOLS_DIR}/${protoPath})
+  endif()
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/${protoName}.cpp
+           ${CMAKE_SOURCE_DIR}/protocols/${protoName}.hpp
+    COMMAND hyprwayland-scanner --client ${path}/${protoName}.xml
+            ${CMAKE_SOURCE_DIR}/protocols/
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  target_sources(hyprtoolkit PRIVATE protocols/${protoName}.cpp
+                                     protocols/${protoName}.hpp)
+endfunction()
+function(protocolWayland)
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
+           ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
+    COMMAND
+      hyprwayland-scanner --wayland-enums --client
+      ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  target_sources(hyprtoolkit PRIVATE protocols/wayland.cpp
+                                     protocols/wayland.hpp)
+endfunction()
+
+protocolwayland()
+
+protocolnew("stable/xdg-shell" "xdg-shell" false)
+protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
+protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
+protocolnew("stable/viewporter" "viewporter" false)
+protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
+protocolnew("staging/ext-session-lock" "ext-session-lock-v1" false)
+protocolnew("stable/tablet" "tablet-v2" false)
+protocolnew("unstable/text-input" "text-input-unstable-v3" false)
+protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
+protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
+
+# Tests
 if(NOT DISABLE_TESTS)
   enable_testing()
 
@@ -112,81 +160,20 @@ if(NOT DISABLE_TESTS)
   # GTest
   find_package(GTest CONFIG REQUIRED)
   include(GoogleTest)
-  add_executable(hyprtoolkit_inline_tests ${SRCFILES})
-  target_compile_definitions(hyprtoolkit_inline_tests PRIVATE HT_UNIT_TESTS=1)
-  target_compile_options(hyprtoolkit_inline_tests PRIVATE --coverage)
-  target_link_options(hyprtoolkit_inline_tests PRIVATE --coverage)
+  file(GLOB_RECURSE TESTFILES CONFIGURE_DEPENDS "tests/unit/*.cpp")
+  add_executable(hyprtoolkit_tests ${TESTFILES})
+  target_compile_options(hyprtoolkit_tests PRIVATE --coverage)
+  target_link_options(hyprtoolkit_tests PRIVATE --coverage)
   target_include_directories(
-    hyprtoolkit_inline_tests
+    hyprtoolkit_tests
     PUBLIC "./include"
     PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
   target_link_libraries(
-    hyprtoolkit_inline_tests PRIVATE GTest::gtest_main OpenGL::EGL
+    hyprtoolkit_tests PRIVATE hyprtoolkit GTest::gtest_main OpenGL::EGL
                                      OpenGL::OpenGL PkgConfig::deps)
 
-  if(NOT HAS_TIMERFD AND epoll_FOUND)
-    target_link_libraries(hyprtoolkit_inline_tests PUBLIC PkgConfig::epoll)
-  endif()
-  if(NOT HAS_INOTIFY AND inotify_FOUND)
-    target_link_libraries(hyprtoolkit_inline_tests PUBLIC PkgConfig::inotify)
-  endif()
-  gtest_discover_tests(hyprtoolkit_inline_tests)
+  gtest_discover_tests(hyprtoolkit_tests)
 endif()
-
-# Protocols
-pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
-pkg_get_variable(WAYLAND_SCANNER_PKGDATA_DIR wayland-scanner pkgdatadir)
-message(
-  STATUS "Found wayland-scanner pkgdatadir at ${WAYLAND_SCANNER_PKGDATA_DIR}")
-
-function(protocolNew protoPath protoName external)
-  if(external)
-    set(path ${CMAKE_SOURCE_DIR}/${protoPath})
-  else()
-    set(path ${WAYLAND_PROTOCOLS_DIR}/${protoPath})
-  endif()
-  add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/${protoName}.cpp
-           ${CMAKE_SOURCE_DIR}/protocols/${protoName}.hpp
-    COMMAND hyprwayland-scanner --client ${path}/${protoName}.xml
-            ${CMAKE_SOURCE_DIR}/protocols/
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_sources(hyprtoolkit PRIVATE protocols/${protoName}.cpp
-                                     protocols/${protoName}.hpp)
-  if(NOT DISABLE_TESTS)
-    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/${protoName}.cpp
-                                                    protocols/${protoName}.hpp)
-  endif()
-endfunction()
-function(protocolWayland)
-  add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
-           ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
-    COMMAND
-      hyprwayland-scanner --wayland-enums --client
-      ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_sources(hyprtoolkit PRIVATE protocols/wayland.cpp
-                                     protocols/wayland.hpp)
-  if(NOT DISABLE_TESTS)
-    target_sources(hyprtoolkit_inline_tests PRIVATE protocols/wayland.cpp
-                                                    protocols/wayland.hpp)
-  endif()
-endfunction()
-
-protocolwayland()
-
-protocolnew("stable/xdg-shell" "xdg-shell" false)
-protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
-protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
-protocolnew("stable/viewporter" "viewporter" false)
-protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
-protocolnew("staging/ext-session-lock" "ext-session-lock-v1" false)
-protocolnew("stable/tablet" "tablet-v2" false)
-protocolnew("unstable/text-input" "text-input-unstable-v3" false)
-protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
-protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
 
 # Installation
 install(TARGETS hyprtoolkit)
