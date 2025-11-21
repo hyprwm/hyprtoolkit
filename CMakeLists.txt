@@ -51,9 +51,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
   message(STATUS "Configuring hyprtoolkit in Debug")
   add_compile_definitions(HYPRTOOLKIT_DEBUG)
+  set(BUILD_TESTING ON)
 else()
   add_compile_options(-O3)
   message(STATUS "Configuring hyprtoolkit in Release")
+  set(BUILD_TESTING OFF)
 endif()
 
 add_compile_definitions(HT_HIDDEN=public)
@@ -134,7 +136,7 @@ protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
 
 # Tests
-if(NOT DISABLE_TESTS)
+if(BUILD_TESTING)
   enable_testing()
 
   # test apps
@@ -173,6 +175,10 @@ if(NOT DISABLE_TESTS)
                                      OpenGL::OpenGL PkgConfig::deps)
 
   gtest_discover_tests(hyprtoolkit_tests)
+
+  # Add coverage to hyprtoolkit
+  target_compile_options(hyprtoolkit PRIVATE --coverage)
+  target_link_options(hyprtoolkit PRIVATE --coverage)
 endif()
 
 # Installation
