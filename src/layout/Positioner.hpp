@@ -21,7 +21,7 @@ namespace Hyprtoolkit {
       public:
         void position(SP<IElement> element, const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         void positionChildren(SP<IElement> element, const SRepositionData& data = {});
-        void repositionNeeded(SP<IElement> element);
+        void repositionNeeded(SP<IElement> element, bool force = false);
 
       private:
         void   initElementIfNeeded(SP<IElement> element);

@@ -72,6 +72,9 @@ namespace Hyprtoolkit {
         virtual void setGrow(bool grow);
         virtual void setGrow(bool growH, bool growV);
 
+        // forces a reposition right now, useful for pre-calculating expected sizes
+        virtual void forceReposition();
+
         HT_HIDDEN :
 
             /* Sizes for auto positioning in layouts */

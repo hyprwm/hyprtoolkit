@@ -40,7 +40,7 @@ void CTextElement::replaceData(const STextData& data) {
     if (m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize() || TEXT_DIFFERENT) {
         m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
         m_impl->preferred            = m_impl->getTextSizePreferred();
-        m_impl->needsTexRefresh      = true;
+        m_impl->scheduleTexRefresh();
     }
 
     if (impl->window)
@@ -63,14 +63,14 @@ void CTextElement::paint() {
 
     if (!textureToUse) {
         if (!m_impl->waitingForTex)
-            renderTex();
+            m_impl->renderTex();
         return;
     }
 
     if ((impl->window && impl->window->scale() != m_impl->lastScale) || m_impl->needsTexRefresh) {
         m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
         m_impl->preferred = m_impl->getTextSizePreferred();
-        renderTex();
+        m_impl->renderTex();
         textureToUse = m_impl->oldTex;
     }
 
@@ -121,69 +121,6 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
     }
 
     g_positioner->positionChildren(impl->self.lock());
-}
-
-void CTextElement::renderTex() {
-    m_impl->oldTex          = m_impl->tex;
-    m_impl->needsTexRefresh = false;
-
-    m_impl->resource.reset();
-    m_impl->tex.reset();
-
-    m_impl->waitingForTex = true;
-
-    m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
-
-    impl->damageEntire();
-
-    std::optional<Vector2D> maxSize = m_impl->data.clampSize.value_or(m_impl->lastMaxSize).round();
-    if (maxSize == Vector2D{0, 0})
-        maxSize = std::nullopt;
-
-    if (maxSize.has_value())
-        (*maxSize) *= m_impl->lastScale;
-
-    auto col = m_impl->data.color();
-
-    m_impl->resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-        .text      = m_impl->data.text,
-        .font      = m_impl->data.fontFamily,
-        .fontSize  = sc<size_t>(std::round(m_impl->lastFontSizeUnscaled * m_impl->lastScale)),
-        .color     = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
-        .align     = m_impl->data.align == HT_FONT_ALIGN_LEFT ?
-                Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
-                (m_impl->data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
-        .maxSize   = maxSize,
-        .ellipsize = maxSize.has_value() && maxSize->y >= 0,
-        .wrap      = maxSize.has_value() && maxSize->x >= 0,
-    });
-
-    ASP<IAsyncResource> resourceGeneric(m_impl->resource);
-
-    g_asyncResourceGatherer->enqueue(resourceGeneric);
-
-    m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
-        if (!self)
-            return;
-
-        g_backend->addIdle([this, self = self]() {
-            if (!self)
-                return;
-
-            ASP<IAsyncResource> resourceGeneric(m_impl->resource);
-            m_impl->size = m_impl->resource->m_asset.pixelSize;
-            m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
-            m_impl->oldTex.reset();
-            if (impl->window)
-                impl->window->scheduleReposition(impl->self);
-
-            m_impl->waitingForTex = false;
-            m_impl->newTex        = true;
-
-            if (m_impl->data.callback)
-                m_impl->data.callback();
-        });
-    });
 }
 
 void CTextElement::recheckColor() {
@@ -339,4 +276,83 @@ Vector2D STextImpl::unscale(const Vector2D& x) {
     if (!self->impl->window)
         return x + Vector2D{self->impl->margin * 2, self->impl->margin * 2};
     return (x + Vector2D{self->impl->margin * 2, self->impl->margin * 2}) / self->impl->window->scale();
+}
+
+void STextImpl::scheduleTexRefresh() {
+    if (data.async) {
+        needsTexRefresh = true;
+        return;
+    }
+}
+
+void STextImpl::renderTex() {
+    oldTex          = tex;
+    needsTexRefresh = false;
+
+    resource.reset();
+    tex.reset();
+
+    waitingForTex = true;
+
+    lastScale = self->impl->window ? self->impl->window->scale() : 1.F;
+
+    self->impl->damageEntire();
+
+    std::optional<Vector2D> maxSize = data.clampSize.value_or(lastMaxSize).round();
+    if (maxSize == Vector2D{0, 0})
+        maxSize = std::nullopt;
+
+    if (maxSize.has_value())
+        (*maxSize) *= lastScale;
+
+    auto col = data.color();
+
+    resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
+        .text      = data.text,
+        .font      = data.fontFamily,
+        .fontSize  = sc<size_t>(std::round(lastFontSizeUnscaled * lastScale)),
+        .color     = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
+        .align     = data.align == HT_FONT_ALIGN_LEFT ?
+                Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
+                (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
+        .maxSize   = maxSize,
+        .ellipsize = maxSize.has_value() && maxSize->y >= 0,
+        .wrap      = maxSize.has_value() && maxSize->x >= 0,
+    });
+
+    ASP<IAsyncResource> resourceGeneric(resource);
+
+    g_asyncResourceGatherer->enqueue(resourceGeneric);
+
+    if (!data.async) {
+        g_asyncResourceGatherer->await(resourceGeneric);
+        postTexLoad();
+    } else {
+        resource->m_events.finished.listenStatic([this, self = self->impl->self] {
+            if (!self)
+                return;
+
+            g_backend->addIdle([this, self = self]() {
+                if (!self)
+                    return;
+
+                postTexLoad();
+            });
+        });
+    }
+}
+
+void STextImpl::postTexLoad() {
+    ASP<IAsyncResource> resourceGeneric(resource);
+    size = resource->m_asset.pixelSize;
+    tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+    oldTex.reset();
+    if (self->impl->window)
+        self->impl->window->scheduleReposition(self->impl->self);
+
+    waitingForTex = false;
+    newTex        = true;
+
+    if (data.callback)
+        data.callback();
 }
