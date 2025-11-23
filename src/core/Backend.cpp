@@ -69,7 +69,6 @@ SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
-    g_logger  = SP<CBackendLogger>(new CBackendLogger());
     g_config  = makeShared<CConfigManager>();
     g_config->parse();
     g_palette     = CPalette::palette();
@@ -94,7 +93,11 @@ void CBackend::destroy() {
 }
 
 void CBackend::setLogFn(LogFn&& fn) {
-    m_logFn = std::move(fn);
+    g_logger->m_logFn = std::move(fn);
+}
+
+void CBackend::setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn) {
+    g_logger->m_loggerConnection = makeUnique<Hyprutils::CLI::CLoggerConnection>(std::move(conn));
 }
 
 SP<CPalette> CBackend::getPalette() {

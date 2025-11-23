@@ -2,6 +2,7 @@
 
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprutils/os/FileDescriptor.hpp>
+#include <hyprutils/cli/Logger.hpp>
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 
 #include "../helpers/Env.hpp"
@@ -20,6 +21,7 @@ namespace Hyprtoolkit {
 
         virtual void                   destroy();
         virtual void                   setLogFn(LogFn&& fn);
+        virtual void                   setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn);
         virtual void                   addFd(int fd, std::function<void()>&& callback);
         virtual void                   removeFd(int fd);
         virtual SP<ISystemIconFactory> systemIcons();
@@ -47,8 +49,6 @@ namespace Hyprtoolkit {
         std::vector<pollfd>                                     m_pollfds;
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
-
-        LogFn                                                   m_logFn;
 
         bool                                                    m_terminate         = false;
         bool                                                    m_needsConfigReload = false;
