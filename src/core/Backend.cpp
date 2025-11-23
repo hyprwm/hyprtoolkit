@@ -35,10 +35,10 @@ CBackend::CBackend() {
     pipe(m_sLoopState.wakeupfd);
 
     Aquamarine::SBackendOptions options{};
-    const auto                  LOG_CONNECTION = makeShared<Hyprutils::CLI::CLoggerConnection>(g_logger->m_logger);
-    LOG_CONNECTION->setLogLevel(Hyprutils::CLI::LOG_WARN); // don't print debug logs, unless AQ_TRACE is set, then aq will set it
-    LOG_CONNECTION->setName("aquamarine");
-    options.logConnection = LOG_CONNECTION;
+    g_logger->m_aqLoggerConnection = makeShared<Hyprutils::CLI::CLoggerConnection>(g_logger->m_logger);
+    g_logger->m_aqLoggerConnection->setLogLevel(Hyprutils::CLI::LOG_WARN); // don't print debug logs, unless AQ_TRACE is set, then aq will set it
+    g_logger->m_aqLoggerConnection->setName("aquamarine");
+    options.logConnection = g_logger->m_aqLoggerConnection;
 
     std::vector<Aquamarine::SBackendImplementationOptions> implementations;
     Aquamarine::SBackendImplementationOptions              option;
@@ -91,6 +91,7 @@ void CBackend::setLogFn(LogFn&& fn) {
 
 void CBackend::setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn) {
     g_logger->m_loggerConnection = makeUnique<Hyprutils::CLI::CLoggerConnection>(std::move(conn));
+    g_logger->m_aqLoggerConnection->redirect(*g_logger->m_loggerConnection->getLogger());
 }
 
 SP<CPalette> CBackend::getPalette() {
