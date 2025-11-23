@@ -30,22 +30,15 @@ using namespace Hyprutils::Memory;
 #define SP CSharedPointer
 #define WP CWeakPointer
 
-static void aqLog(Aquamarine::eBackendLogLevel level, std::string msg) {
-    if (Env::envEnabled("HT_QUIET"))
-        return;
-
-    if (g_logger)
-        g_logger->log(HT_LOG_DEBUG, "[AQ] {}", msg);
-    else
-        std::println("{}", msg);
-}
-
 CBackend::CBackend() {
     pipe(m_sLoopState.exitfd);
     pipe(m_sLoopState.wakeupfd);
 
     Aquamarine::SBackendOptions options{};
-    options.logFunction = ::aqLog;
+    const auto                  LOG_CONNECTION = makeShared<Hyprutils::CLI::CLoggerConnection>(g_logger->m_logger);
+    LOG_CONNECTION->setLogLevel(Hyprutils::CLI::LOG_WARN); // don't print debug logs, unless AQ_TRACE is set, then aq will set it
+    LOG_CONNECTION->setName("aquamarine");
+    options.logConnection = LOG_CONNECTION;
 
     std::vector<Aquamarine::SBackendImplementationOptions> implementations;
     Aquamarine::SBackendImplementationOptions              option;
