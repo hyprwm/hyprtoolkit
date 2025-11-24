@@ -21,7 +21,6 @@ namespace Hyprtoolkit {
 
         virtual void                   destroy();
         virtual void                   setLogFn(LogFn&& fn);
-        virtual void                   setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn);
         virtual void                   addFd(int fd, std::function<void()>&& callback);
         virtual void                   removeFd(int fd);
         virtual SP<ISystemIconFactory> systemIcons();
