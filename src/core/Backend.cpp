@@ -58,6 +58,13 @@ CBackend::~CBackend() {
     close(m_sLoopState.wakeupfd[1]);
 }
 
+IBackend::SBackendCreationData::SBackendCreationData() = default;
+
+SP<IBackend> IBackend::createWithData(const IBackend::SBackendCreationData& data) {
+    g_logger->m_loggerConnection = data.pLogConnection;
+    return IBackend::create();
+}
+
 SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
@@ -87,11 +94,6 @@ void CBackend::destroy() {
 
 void CBackend::setLogFn(LogFn&& fn) {
     g_logger->m_logFn = std::move(fn);
-}
-
-void CBackend::setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn) {
-    g_logger->m_loggerConnection = makeUnique<Hyprutils::CLI::CLoggerConnection>(std::move(conn));
-    g_logger->m_aqLoggerConnection->redirect(*g_logger->m_loggerConnection->getLogger());
 }
 
 SP<CPalette> CBackend::getPalette() {

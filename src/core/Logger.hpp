@@ -38,7 +38,7 @@ namespace Hyprtoolkit {
 
         Hyprutils::CLI::CLogger                                              m_logger;
         IBackend::LogFn                                                      m_logFn;
-        Hyprutils::Memory::CUniquePointer<Hyprutils::CLI::CLoggerConnection> m_loggerConnection;
+        Hyprutils::Memory::CSharedPointer<Hyprutils::CLI::CLoggerConnection> m_loggerConnection;
         Hyprutils::Memory::CSharedPointer<Hyprutils::CLI::CLoggerConnection> m_aqLoggerConnection;
     };
 
