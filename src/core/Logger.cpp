@@ -18,6 +18,12 @@ CLogger::CLogger() {
     m_logger.setLogLevel(IS_TRACE ? Hyprutils::CLI::LOG_TRACE : Hyprutils::CLI::LOG_DEBUG);
 }
 
+void CLogger::updateLogLevel() {
+    const auto IS_TRACE = Env::isTrace();
+    if (m_loggerConnection && IS_TRACE)
+        m_loggerConnection->setLogLevel(Hyprutils::CLI::LOG_TRACE);
+}
+
 void CLogger::log(eLogLevel level, const std::string& str) {
     if (m_logFn) {
         m_logFn(level, str);

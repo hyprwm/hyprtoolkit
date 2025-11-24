@@ -62,6 +62,7 @@ IBackend::SBackendCreationData::SBackendCreationData() = default;
 
 SP<IBackend> IBackend::createWithData(const IBackend::SBackendCreationData& data) {
     g_logger->m_loggerConnection = data.pLogConnection;
+    g_logger->updateLogLevel();
     return IBackend::create();
 }
 

@@ -36,6 +36,8 @@ namespace Hyprtoolkit {
             log(level, logMsg);
         }
 
+        void                                                                 updateLogLevel();
+
         Hyprutils::CLI::CLogger                                              m_logger;
         IBackend::LogFn                                                      m_logFn;
         Hyprutils::Memory::CSharedPointer<Hyprutils::CLI::CLoggerConnection> m_loggerConnection;
