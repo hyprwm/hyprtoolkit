@@ -95,11 +95,6 @@ namespace Hyprtoolkit {
         */
         virtual std::expected<Hyprutils::Memory::CSharedPointer<ISessionLockState>, eSessionLockError> aquireSessionLock() = 0;
 
-        /*
-            Add a log connection for a HU CLogger.
-        */
-        virtual void setLogConnection(Hyprutils::CLI::CLoggerConnection&& conn) = 0;
-
         struct {
             /*
                 Get notified when a new output was added.
