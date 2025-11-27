@@ -246,6 +246,10 @@ void CTextboxElement::init() {
     impl->grouped = true;
 }
 
+std::string_view CTextboxElement::currentText() {
+    return m_impl->data.text;
+}
+
 void STextboxImpl::updateLabel() {
     if (data.text.empty()) {
         bgInnerCont->removeChild(text);

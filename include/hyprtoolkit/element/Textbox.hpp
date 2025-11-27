@@ -42,6 +42,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                  size();
         void                                               focus(bool focus = true);
+        std::string_view                                   currentText();
 
       private:
         static Hyprutils::Memory::CSharedPointer<CTextboxElement> create(const STextboxData& data);
