@@ -63,7 +63,7 @@ namespace Hyprtoolkit {
     using CAnimatedVariable = Hyprutils::Animation::CGenericAnimatedVariable<VarType, SAnimationContext>;
 
     template <Animable VarType>
-    using PHLANIMVAR = SP<CAnimatedVariable<VarType>>;
+    using PHLANIMVAR = UP<CAnimatedVariable<VarType>>;
 
     template <Animable VarType>
     using PHLANIMVARREF = WP<CAnimatedVariable<VarType>>;

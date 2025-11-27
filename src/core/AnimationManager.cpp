@@ -86,8 +86,7 @@ static void updateColorVariable(CAnimatedVariable<CHyprColor>& av, const float P
 // }
 
 void CHTAnimationManager::tick() {
-    for (size_t i = 0; i < m_vActiveAnimatedVariables.size(); i++) {
-        const auto PAV = m_vActiveAnimatedVariables[i].lock();
+    for (const auto& PAV : m_vActiveAnimatedVariables) {
         if (!PAV || !PAV->ok())
             continue;
 
