@@ -25,6 +25,10 @@ void CLogger::updateLogLevel() {
 }
 
 void CLogger::log(eLogLevel level, const std::string& str) {
+    static const bool IS_QUIET = Env::envEnabled("HT_QUIET");
+    if (IS_QUIET)
+        return;
+
     if (m_logFn) {
         m_logFn(level, str);
         return;
