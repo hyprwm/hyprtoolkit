@@ -94,7 +94,7 @@ void CTextElement::paint() {
     g_renderer->renderTexture({
         .box      = renderBox,
         .texture  = textureToUse,
-        .a        = 1.F,
+        .a        = m_impl->data.a,
         .rounding = 0,
     });
 }
