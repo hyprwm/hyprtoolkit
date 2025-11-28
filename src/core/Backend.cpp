@@ -30,22 +30,15 @@ using namespace Hyprutils::Memory;
 #define SP CSharedPointer
 #define WP CWeakPointer
 
-static void aqLog(Aquamarine::eBackendLogLevel level, std::string msg) {
-    if (Env::envEnabled("HT_QUIET"))
-        return;
-
-    if (g_logger)
-        g_logger->log(HT_LOG_DEBUG, "[AQ] {}", msg);
-    else
-        std::println("{}", msg);
-}
-
 CBackend::CBackend() {
     pipe(m_sLoopState.exitfd);
     pipe(m_sLoopState.wakeupfd);
 
     Aquamarine::SBackendOptions options{};
-    options.logFunction = ::aqLog;
+    g_logger->m_aqLoggerConnection = makeShared<Hyprutils::CLI::CLoggerConnection>(g_logger->m_logger);
+    g_logger->m_aqLoggerConnection->setLogLevel(Hyprutils::CLI::LOG_WARN); // don't print debug logs, unless AQ_TRACE is set, then aq will set it
+    g_logger->m_aqLoggerConnection->setName("aquamarine");
+    options.logConnection = g_logger->m_aqLoggerConnection;
 
     std::vector<Aquamarine::SBackendImplementationOptions> implementations;
     Aquamarine::SBackendImplementationOptions              option;
@@ -65,11 +58,18 @@ CBackend::~CBackend() {
     close(m_sLoopState.wakeupfd[1]);
 }
 
+IBackend::SBackendCreationData::SBackendCreationData() = default;
+
+SP<IBackend> IBackend::createWithData(const IBackend::SBackendCreationData& data) {
+    g_logger->m_loggerConnection = data.pLogConnection;
+    g_logger->updateLogLevel();
+    return IBackend::create();
+}
+
 SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
     g_backend = SP<CBackend>(new CBackend());
-    g_logger  = SP<CBackendLogger>(new CBackendLogger());
     g_config  = makeShared<CConfigManager>();
     g_config->parse();
     g_palette     = CPalette::palette();
@@ -94,7 +94,7 @@ void CBackend::destroy() {
 }
 
 void CBackend::setLogFn(LogFn&& fn) {
-    m_logFn = std::move(fn);
+    g_logger->m_logFn = std::move(fn);
 }
 
 SP<CPalette> CBackend::getPalette() {
