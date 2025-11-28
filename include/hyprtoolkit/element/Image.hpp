@@ -2,6 +2,7 @@
 
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
+#include "../types/ImageTypes.hpp"
 
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 #include <hyprgraphics/resource/resources/ImageResource.hpp>
@@ -22,6 +23,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        path(std::string&&);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        icon(const Hyprutils::Memory::CSharedPointer<ISystemIconDescription>&);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        a(float);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        fitMode(eImageFitMode);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        rounding(int);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        size(CDynamicSize&&);
 

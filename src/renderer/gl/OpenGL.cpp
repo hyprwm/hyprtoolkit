@@ -763,25 +763,119 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 
 SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
     const auto TEX = m_glTextures.emplace_back(makeShared<CGLTexture>(data.resource));
+    TEX->m_fitMode = data.fitMode;
     return TEX;
 }
 
-void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
-    const auto ROUNDEDBOX    = logicalToGL(data.box);
-    const auto UNTRANSFORMED = logicalToGL(data.box, false);
-    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
-    Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
+static CBox containImage(const CBox& requested, const Vector2D& imageSize) {
+    const auto SOURCE_ASPECT_RATIO = requested.w / requested.h;
+    const auto IMAGE_ASPECT_RATIO  = imageSize.x / imageSize.y;
 
-    const auto DAMAGE = damageWithClip();
+    if (SOURCE_ASPECT_RATIO > IMAGE_ASPECT_RATIO) {
+        // box is wider than the target
+        const auto HEIGHT = requested.h;
+        const auto WIDTH  = (requested.h / imageSize.y) * imageSize.x;
+        return CBox{
+            requested.x + ((requested.w - WIDTH) / 2.F), //
+            requested.y,                                 //
+            WIDTH,                                       //
+            HEIGHT,                                      //
+        };
+    }
+
+    // box is taller than the target
+    const auto WIDTH  = requested.w;
+    const auto HEIGHT = (requested.w / imageSize.x) * imageSize.y;
+    return CBox{
+        requested.x,                                  //
+        requested.y + ((requested.h - HEIGHT) / 2.F), //
+        WIDTH,                                        //
+        HEIGHT,                                       //
+    };
+}
+
+static std::array<float, 8> coverImage(const CBox& requested, const Vector2D& imageSize) {
+    const float SOURCE_ASPECT_RATIO = requested.w / requested.h;
+    const float IMAGE_ASPECT_RATIO  = imageSize.x / imageSize.y;
+
+    CBox        texbox{};
+
+    if (SOURCE_ASPECT_RATIO > IMAGE_ASPECT_RATIO) {
+        // box is wider than the target
+        const float WIDTH  = requested.w;
+        const float HEIGHT = (requested.w / imageSize.x) * imageSize.y;
+
+        texbox = {
+            requested.x,
+            requested.y - ((HEIGHT - requested.h) / 2.F),
+            WIDTH,
+            HEIGHT,
+        };
+    } else {
+        // box is taller than the target
+        const float HEIGHT = requested.h;
+        const float WIDTH  = (requested.h / imageSize.y) * imageSize.x;
+
+        texbox = {
+            requested.x - ((WIDTH - requested.w) / 2.F),
+            requested.y,
+            WIDTH,
+            HEIGHT,
+        };
+    }
+
+    // where does requested sit inside the enlarged texbox, in [0,1]?
+    const float          TOP    = std::abs(requested.y - texbox.y) / texbox.h;
+    const float          LEFT   = std::abs(requested.x - texbox.x) / texbox.w;
+    const float          BOTTOM = TOP + (requested.h / texbox.h);
+    const float          RIGHT  = LEFT + (requested.w / texbox.w);
+
+    std::array<float, 8> verts = {
+        sc<float>(RIGHT), sc<float>(TOP),    // top right
+        sc<float>(LEFT),  sc<float>(TOP),    // top left
+        sc<float>(RIGHT), sc<float>(BOTTOM), // bottom right
+        sc<float>(LEFT),  sc<float>(BOTTOM), // bottom left
+    };
+
+    return verts;
+}
+
+static std::array<float, 8> tileImage(const CBox& requested, const Vector2D& imageSize) {
+
+    const auto           IMAGE_AS_PERCENT = imageSize / requested.size();
+    const auto           INVERSE_RATIOS   = Vector2D{1.F, 1.F} / IMAGE_AS_PERCENT;
+
+    std::array<float, 8> verts = {
+        sc<float>(INVERSE_RATIOS.x),
+        sc<float>(0), // top right
+        sc<float>(0),
+        sc<float>(0), // top left
+        sc<float>(INVERSE_RATIOS.x),
+        sc<float>(INVERSE_RATIOS.y), // bottom right
+        sc<float>(0),
+        sc<float>(INVERSE_RATIOS.y), // bottom left
+    };
+
+    return verts;
+}
+
+void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
+    RASSERT(data.texture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl texture");
+
+    SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(data.texture);
+
+    const auto     SOURCE_BOX    = data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN ? containImage(data.box, tex->m_size) : data.box;
+    const auto     ROUNDEDBOX    = logicalToGL(SOURCE_BOX);
+    const auto     UNTRANSFORMED = logicalToGL(SOURCE_BOX, false);
+    Mat3x3         matrix        = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    Mat3x3         glMatrix      = m_projection.copy().multiply(matrix);
+
+    const auto     DAMAGE = damageWithClip();
 
     if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
         return;
 
     CShader* shader = &m_texShader;
-
-    RASSERT(data.texture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl texture");
-
-    SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(data.texture);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(tex->m_target, tex->m_texID);
@@ -804,8 +898,20 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glUniform1i(shader->discardAlpha, 0);
     glUniform1i(shader->applyTint, 0);
 
-    glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-    glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    if (data.texture->fitMode() == IMAGE_FIT_MODE_STRETCH || data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN) {
+        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    } else if (data.texture->fitMode() == IMAGE_FIT_MODE_COVER) {
+        const auto VERTS = coverImage(data.box, tex->m_size);
+        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, VERTS.data());
+    } else if (data.texture->fitMode() == IMAGE_FIT_MODE_TILE) {
+        const auto VERTS = tileImage(data.box, tex->m_size);
+        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, VERTS.data());
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
 
     glEnableVertexAttribArray(shader->posAttrib);
     glEnableVertexAttribArray(shader->texAttrib);

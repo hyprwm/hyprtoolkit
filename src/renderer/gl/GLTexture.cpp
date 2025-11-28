@@ -88,3 +88,7 @@ void CGLTexture::allocate() {
 void CGLTexture::bind() {
     GLCALL(glBindTexture(m_target, m_texID));
 }
+
+eImageFitMode CGLTexture::fitMode() {
+    return m_fitMode;
+}

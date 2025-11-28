@@ -92,7 +92,7 @@ void CImageElement::renderTex() {
             if (m_impl->resource->m_asset.cairoSurface) {
                 ASP<IAsyncResource> resourceGeneric(m_impl->resource);
                 m_impl->size = m_impl->resource->m_asset.pixelSize;
-                m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+                m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = m_impl->data.fitMode});
             } else {
                 m_impl->failed = true;
                 g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", m_impl->lastPath);

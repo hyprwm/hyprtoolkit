@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/palette/Color.hpp>
+#include <hyprtoolkit/types/ImageTypes.hpp>
 #include <hyprutils/math/Box.hpp>
 #include <hyprgraphics/color/Color.hpp>
 #include <hyprgraphics/resource/resources/AsyncResource.hpp>
@@ -31,6 +32,7 @@ namespace Hyprtoolkit {
 
         struct STextureData {
             ASP<Hyprgraphics::IAsyncResource> resource;
+            eImageFitMode                     fitMode = IMAGE_FIT_MODE_STRETCH;
         };
 
         struct STextureRenderData {

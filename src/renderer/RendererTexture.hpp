@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include <hyprtoolkit/types/ImageTypes.hpp>
+
 namespace Hyprtoolkit {
     class IRendererTexture {
       public:
@@ -12,8 +14,9 @@ namespace Hyprtoolkit {
             TEXTURE_GL,
         };
 
-        virtual size_t       id()      = 0;
-        virtual eTextureType type()    = 0;
-        virtual void         destroy() = 0;
+        virtual size_t        id()      = 0;
+        virtual eTextureType  type()    = 0;
+        virtual void          destroy() = 0;
+        virtual eImageFitMode fitMode() = 0;
     };
 }

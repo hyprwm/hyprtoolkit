@@ -29,11 +29,13 @@ namespace Hyprtoolkit {
         virtual size_t                    id();
         virtual eTextureType              type();
         virtual void                      destroy();
+        virtual eImageFitMode             fitMode();
 
         eGLTextureType                    m_type      = TEXTURE_RGBA;
         GLenum                            m_target    = GL_TEXTURE_2D;
         bool                              m_allocated = false;
         GLuint                            m_texID     = 0;
+        eImageFitMode                     m_fitMode   = IMAGE_FIT_MODE_STRETCH;
         Hyprutils::Math::Vector2D         m_size      = {};
 
         ASP<Hyprgraphics::IAsyncResource> m_resource;

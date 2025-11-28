@@ -8,6 +8,7 @@ namespace Hyprtoolkit {
         float                      a        = 1.F;
         int                        rounding = 0;
         SP<ISystemIconDescription> icon;
+        eImageFitMode              fitMode = IMAGE_FIT_MODE_STRETCH;
         CDynamicSize               size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
 
