@@ -101,8 +101,10 @@ void CImageElement::renderTex() {
             m_impl->oldTex.reset();
 
             m_impl->waitingForTex = false;
-            if (!m_impl->failed)
+            if (!m_impl->failed) {
                 impl->damageEntire();
+                impl->window->scheduleReposition(impl->self);
+            }
         });
     });
 }
@@ -135,7 +137,24 @@ Hyprutils::Math::Vector2D CImageElement::size() {
 }
 
 std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+    auto s = m_impl->data.size.calculate(parent);
+    if (s.x != -1 && s.y != -1)
+        return s;
+
+    const float SCALE = impl->window ? impl->window->scale() : 1.F;
+
+    if (s.x == -1 && s.y == -1)
+        return m_impl->size / SCALE;
+
+    if (m_impl->size.y == 0)
+        return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+
+    const double ASPECT_RATIO = m_impl->size.x / m_impl->size.y;
+
+    if (s.y == -1)
+        return Vector2D{s.x, s.x * (1 / ASPECT_RATIO)};
+
+    return Vector2D{ASPECT_RATIO * s.y, s.y};
 }
 
 std::optional<Vector2D> CImageElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
