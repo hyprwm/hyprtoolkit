@@ -59,6 +59,10 @@ void CImageElement::renderTex() {
     if (m_impl->waitingForTex)
         return;
 
+    // TODO: this happens in hyprpaper's case, but if we have two or more wallpapers of the same
+    // image we duplicate VRAM. Maybe keep an asset ref table?
+    // ofc this won't work for svg but rasters of course.
+
     m_impl->resource.reset();
     m_impl->oldTex = m_impl->tex;
     m_impl->tex.reset();
@@ -81,32 +85,41 @@ void CImageElement::renderTex() {
 
     g_asyncResourceGatherer->enqueue(resourceGeneric);
 
-    m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
-        if (!self)
-            return;
-
-        g_backend->addIdle([this, self = self]() {
+    if (!m_impl->data.sync) {
+        m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
             if (!self)
                 return;
 
-            if (m_impl->resource->m_asset.cairoSurface) {
-                ASP<IAsyncResource> resourceGeneric(m_impl->resource);
-                m_impl->size = m_impl->resource->m_asset.pixelSize;
-                m_impl->tex  = g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = m_impl->data.fitMode});
-            } else {
-                m_impl->failed = true;
-                g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", m_impl->lastPath);
-            }
+            g_backend->addIdle([this, self = self]() {
+                if (!self)
+                    return;
 
-            m_impl->oldTex.reset();
-
-            m_impl->waitingForTex = false;
-            if (!m_impl->failed) {
-                impl->damageEntire();
-                impl->window->scheduleReposition(impl->self);
-            }
+                m_impl->postImageLoad();
+            });
         });
-    });
+    } else {
+        g_asyncResourceGatherer->await(resourceGeneric);
+        m_impl->postImageLoad();
+    }
+}
+
+void SImageImpl::postImageLoad() {
+    if (resource->m_asset.cairoSurface) {
+        ASP<IAsyncResource> resourceGeneric(resource);
+        size = resource->m_asset.pixelSize;
+        tex  = g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = data.fitMode});
+    } else {
+        failed = true;
+        g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", lastPath);
+    }
+
+    oldTex.reset();
+
+    waitingForTex = false;
+    if (!failed) {
+        self->impl->damageEntire();
+        self->impl->window->scheduleReposition(self);
+    }
 }
 
 SP<CImageBuilder> CImageElement::rebuild() {

@@ -24,6 +24,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        icon(const Hyprutils::Memory::CSharedPointer<ISystemIconDescription>&);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        a(float);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        fitMode(eImageFitMode);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        sync(bool);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        rounding(int);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        size(CDynamicSize&&);
 

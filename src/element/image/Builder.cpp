@@ -19,6 +19,11 @@ SP<CImageBuilder> CImageBuilder::a(float a) {
     return m_self.lock();
 }
 
+Hyprutils::Memory::CSharedPointer<CImageBuilder> CImageBuilder::sync(bool x) {
+    m_data->sync = x;
+    return m_self.lock();
+}
+
 SP<CImageBuilder> CImageBuilder::fitMode(eImageFitMode x) {
     m_data->fitMode = x;
     return m_self.lock();
