@@ -30,7 +30,8 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        preferredSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
-        // TODO: implement for window types other than HT_WINDOW_LOCK_SURFACE
+
+        // only for LAYER and LOCK_SURFACE
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
 
         // only for HT_WINDOW_LAYER

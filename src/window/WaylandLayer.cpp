@@ -10,6 +10,7 @@
 #include "../core/AnimationManager.hpp"
 
 #include "../Macros.hpp"
+#include "../output/WaylandOutput.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
@@ -68,8 +69,13 @@ void CWaylandLayer::open() {
     } else
         m_waylandState.surface->sendAttach(nullptr, 0, 0);
 
+    wl_proxy* outputProxy = nullptr;
+    if (m_creationData.prefferedOutputId) {
+        if (auto output = g_waylandPlatform->outputForHandle(m_creationData.prefferedOutputId); output)
+            outputProxy = output->m_wlOutput->proxy();
+    }
     m_layerState.layerSurface = makeShared<CCZwlrLayerSurfaceV1>(g_waylandPlatform->m_waylandState.layerShell->sendGetLayerSurface(
-        m_waylandState.surface->proxy(), nullptr, sc<zwlrLayerShellV1Layer>(m_creationData.layer), m_creationData.class_.c_str()));
+        m_waylandState.surface->proxy(), outputProxy, sc<zwlrLayerShellV1Layer>(m_creationData.layer), m_creationData.class_.c_str()));
 
     if (!m_layerState.layerSurface->resource()) {
         g_logger->log(HT_LOG_ERROR, "layer opening failed: no ls resource. Errno: {}", errno);
