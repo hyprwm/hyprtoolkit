@@ -104,6 +104,9 @@ void CImageElement::renderTex() {
 }
 
 void SImageImpl::postImageLoad() {
+    if (!resource)
+        return;
+
     if (resource->m_asset.cairoSurface) {
         ASP<IAsyncResource> resourceGeneric(resource);
         size = resource->m_asset.pixelSize;
@@ -114,6 +117,7 @@ void SImageImpl::postImageLoad() {
     }
 
     oldTex.reset();
+    resource.reset();
 
     waitingForTex = false;
     if (!failed) {

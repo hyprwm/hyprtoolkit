@@ -343,6 +343,9 @@ void STextImpl::renderTex() {
 }
 
 void STextImpl::postTexLoad() {
+    if (!resource)
+        return;
+
     ASP<IAsyncResource> resourceGeneric(resource);
     size = resource->m_asset.pixelSize;
     tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
@@ -352,6 +355,7 @@ void STextImpl::postTexLoad() {
 
     waitingForTex = false;
     newTex        = true;
+    resource.reset();
 
     if (data.callback)
         data.callback();
