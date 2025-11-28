@@ -21,7 +21,7 @@ namespace Hyprtoolkit {
             constexpr const eAnimatedVarType EAVTYPE = typeToeAnimatedVarType<VarType>;
             pav                                      = makeUnique<CAnimatedVariable<VarType>>();
 
-            pav->create(EAVTYPE, static_cast<Hyprutils::Animation::CAnimationManager*>(this), pav, v);
+            pav->create2(EAVTYPE, static_cast<Hyprutils::Animation::CAnimationManager*>(this), pav, v);
             pav->setConfig(pConfig);
         }
 
