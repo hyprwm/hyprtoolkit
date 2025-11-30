@@ -2,6 +2,7 @@
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/Atomic.hpp>
+#include <hyprutils/cli/Logger.hpp>
 #include <aquamarine/backend/Null.hpp>
 #include <aquamarine/backend/Backend.hpp>
 #include <functional>
