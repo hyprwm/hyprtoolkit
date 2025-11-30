@@ -103,6 +103,7 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
             auto newOutput = makeShared<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id);
             m_outputs.emplace_back(newOutput);
+            wl_display_roundtrip(m_waylandState.display); // sync display. We emit a new event where the user expects full data. this is not a common event, sync is ok.
             if (m_waylandState.initialized)
                 g_backend->m_events.outputAdded.emit(newOutput);
         } else if (NAME == ext_session_lock_manager_v1_interface.name) {
