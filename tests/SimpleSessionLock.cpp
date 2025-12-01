@@ -12,6 +12,7 @@
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/UniquePtr.hpp>
 
+#include <algorithm>
 #include <print>
 
 using namespace Hyprutils::Memory;
