@@ -2,6 +2,7 @@
 
 #include <hyprutils/memory/SharedPtr.hpp>
 #include <hyprutils/memory/Atomic.hpp>
+#include <hyprutils/cli/Logger.hpp>
 #include <aquamarine/backend/Null.hpp>
 #include <aquamarine/backend/Backend.hpp>
 #include <functional>
@@ -28,12 +29,19 @@ namespace Hyprtoolkit {
 
         using LogFn = std::function<void(eLogLevel, const std::string&)>;
 
+        struct SBackendCreationData {
+            explicit SBackendCreationData();
+
+            Hyprutils::Memory::CSharedPointer<Hyprutils::CLI::CLoggerConnection> pLogConnection;
+        };
+
         /*
             Create a backend.
             There can only be one backend per process: In case of another create(),
             it will fail.
         */
         static Hyprutils::Memory::CSharedPointer<IBackend> create();
+        static Hyprutils::Memory::CSharedPointer<IBackend> createWithData(const SBackendCreationData& data);
 
         /*
             Destroy the backend.

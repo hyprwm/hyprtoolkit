@@ -2,6 +2,7 @@
 
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprutils/os/FileDescriptor.hpp>
+#include <hyprutils/cli/Logger.hpp>
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 
 #include "../helpers/Env.hpp"
@@ -47,8 +48,6 @@ namespace Hyprtoolkit {
         std::vector<pollfd>                                     m_pollfds;
 
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
-
-        LogFn                                                   m_logFn;
 
         bool                                                    m_terminate         = false;
         bool                                                    m_needsConfigReload = false;

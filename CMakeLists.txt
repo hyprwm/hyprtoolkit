@@ -28,7 +28,7 @@ pkg_check_modules(
   wayland-client
   wayland-protocols
   egl
-  hyprutils>=0.9.0
+  hyprutils>=0.10.4
   hyprlang>=0.6.0
   pixman-1
   libdrm
@@ -39,7 +39,7 @@ pkg_check_modules(
   pangocairo
   iniparser
   hyprgraphics>=0.3.0
-  aquamarine>=0.9.5)
+  aquamarine>=0.10.0)
 
 configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
 
