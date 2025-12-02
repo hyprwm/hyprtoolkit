@@ -133,6 +133,7 @@ protocolnew("staging/ext-session-lock" "ext-session-lock-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
 protocolnew("unstable/text-input" "text-input-unstable-v3" false)
 protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
+protocolnew("staging/color-management" "color-management-v1" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
 
 # Tests

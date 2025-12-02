@@ -63,6 +63,7 @@ void IWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
 
     resizeSwapchain(m_waylandState.size);
     damageEntire();
+    ensureCMReady();
 
     m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
 }
@@ -172,6 +173,8 @@ void IWaylandWindow::render() {
 
     if (!currentBuffer)
         return;
+
+    applyCMToSurface();
 
     m_needsFrame = false;
 
@@ -285,4 +288,43 @@ void IWaylandWindow::resetIM() {
 
     m_currentInput       = "";
     m_currentInputCursor = 0;
+}
+
+void IWaylandWindow::ensureCMReady() {
+    if (m_waylandState.cmImageDesc || m_waylandState.cmSurface)
+        return;
+
+    m_waylandState.cmSurface = makeShared<CCWpColorManagementSurfaceV1>(g_waylandPlatform->m_waylandState.colorManagement->sendGetSurface(m_waylandState.surface->resource()));
+
+    // create our image description.
+    auto imageDesc = makeShared<CCWpImageDescriptionCreatorParamsV1>(g_waylandPlatform->m_waylandState.colorManagement->sendCreateParametricCreator());
+
+    // Because we don't actually give a flying fuck about color in our renderer... at the moment (FIXME: I wanna write an image viewer, proper colors would be nice...)
+    // we essentially do an srgb kinda...
+
+    // FIXME: for some reason this is correct while named sRGB isn't. Hyprland bug probably. Needs a hl patch.
+    constexpr const int32_t MILLION = 1000000;
+    imageDesc->sendSetPrimaries(          //
+        0.64 * MILLION, 0.33 * MILLION,   // r
+        0.3 * MILLION, 0.6 * MILLION,     // g
+        0.15 * MILLION, 0.06 * MILLION,   // b
+        0.3127 * MILLION, 0.329 * MILLION // D65 white point
+    );
+    imageDesc->sendSetTfNamed(WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB);
+    m_waylandState.cmImageDesc = makeShared<CCWpImageDescriptionV1>(imageDesc->sendCreate());
+    m_waylandState.cmImageDesc->setReady([this](CCWpImageDescriptionV1* r, uint32_t id) {
+        g_logger->log(HT_LOG_DEBUG, "wayland: cm creation succeeded");
+        m_waylandState.cmReady = true;
+    });
+    m_waylandState.cmImageDesc->setFailed([this](CCWpImageDescriptionV1* r, wpImageDescriptionV1Cause c, const char* msg) {
+        g_logger->log(HT_LOG_ERROR, "wayland: cm creation failed with code {} and message {}", sc<uint32_t>(c), msg);
+        m_waylandState.cmImageDesc.reset();
+    });
+}
+
+void IWaylandWindow::applyCMToSurface() {
+    if (m_waylandState.cmApplied)
+        return;
+
+    m_waylandState.cmSurface->sendSetImageDescription(m_waylandState.cmImageDesc.get(), WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL);
 }
