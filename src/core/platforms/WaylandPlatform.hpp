@@ -25,6 +25,7 @@
 #include <wlr-layer-shell-unstable-v1.hpp>
 #include <linux-drm-syncobj-v1.hpp>
 #include <ext-session-lock-v1.hpp>
+#include <color-management-v1.hpp>
 
 #include <aquamarine/allocator/GBM.hpp>
 #include <aquamarine/backend/Misc.hpp>
@@ -91,6 +92,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
             Hyprutils::Memory::CSharedPointer<CCWpLinuxDrmSyncobjManagerV1> syncobj;
             Hyprutils::Memory::CSharedPointer<CCExtSessionLockManagerV1>    sessionLock;
+            Hyprutils::Memory::CSharedPointer<CCWpColorManagerV1>           colorManagement;
 
             // control
             bool initialized  = false;
