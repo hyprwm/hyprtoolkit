@@ -30,6 +30,7 @@ namespace Hyprtoolkit {
         virtual eTextureType              type();
         virtual void                      destroy();
         virtual eImageFitMode             fitMode();
+        virtual Hyprutils::Math::Vector2D size();
 
         eGLTextureType                    m_type      = TEXTURE_RGBA;
         GLenum                            m_target    = GL_TEXTURE_2D;

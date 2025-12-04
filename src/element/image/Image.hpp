@@ -1,6 +1,7 @@
 #include <hyprtoolkit/element/Image.hpp>
 
 #include "../../helpers/Memory.hpp"
+#include "../../resource/assetCache/AssetCacheEntry.hpp"
 
 namespace Hyprtoolkit {
     struct SImageData {
@@ -20,8 +21,8 @@ namespace Hyprtoolkit {
 
         float                                                                 lastScale = 1.F;
 
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                   tex;
-        Hyprutils::Memory::CSharedPointer<IRendererTexture>                   oldTex; // while loading a new one
+        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry>            cacheEntry;
+        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry>            oldCacheEntry; // while loading a new one
         Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CImageResource> resource;
         Hyprutils::Math::Vector2D                                             size;
 
@@ -31,5 +32,11 @@ namespace Hyprtoolkit {
 
         Hyprutils::Math::Vector2D                                             preferredSvgSize();
         void                                                                  postImageLoad();
+        void                                                                  postImageScheduleRecalc();
+        std::string                                                           getCacheString();
+
+        struct {
+            Hyprutils::Signal::CHyprSignalListener cacheEntryDone;
+        } listeners;
     };
 }

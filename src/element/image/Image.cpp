@@ -5,6 +5,8 @@
 #include "../../core/InternalBackend.hpp"
 #include "../../window/ToolkitWindow.hpp"
 #include "../../system/Icons.hpp"
+#include "../../resource/assetCache/AssetCache.hpp"
+#include "../../renderer/RendererTexture.hpp"
 
 #include "../Element.hpp"
 
@@ -25,12 +27,12 @@ void CImageElement::paint() {
     if (m_impl->failed)
         return;
 
-    SP<IRendererTexture> textureToUse = m_impl->tex;
+    auto assetToUse = m_impl->cacheEntry;
 
-    if (!m_impl->tex)
-        textureToUse = m_impl->oldTex;
+    if (!assetToUse || !assetToUse->tex())
+        assetToUse = m_impl->oldCacheEntry;
 
-    if (!textureToUse) {
+    if (!assetToUse || !assetToUse->tex()) {
         if (!m_impl->waitingForTex)
             renderTex();
         return;
@@ -41,15 +43,15 @@ void CImageElement::paint() {
 
     if (m_impl->data.icon && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
         renderTex();
-        textureToUse = m_impl->oldTex;
+        assetToUse = m_impl->oldCacheEntry;
     }
 
-    if (!textureToUse)
+    if (!assetToUse || !assetToUse->tex())
         return; // ???
 
     g_renderer->renderTexture({
         .box      = impl->position,
-        .texture  = textureToUse,
+        .texture  = assetToUse->tex(),
         .a        = 1.F,
         .rounding = 0,
     });
@@ -59,13 +61,27 @@ void CImageElement::renderTex() {
     if (m_impl->waitingForTex)
         return;
 
-    // TODO: this happens in hyprpaper's case, but if we have two or more wallpapers of the same
-    // image we duplicate VRAM. Maybe keep an asset ref table?
-    // ofc this won't work for svg but rasters of course.
-
     m_impl->resource.reset();
-    m_impl->oldTex = m_impl->tex;
-    m_impl->tex.reset();
+    m_impl->oldCacheEntry = m_impl->cacheEntry;
+    m_impl->cacheEntry.reset();
+
+    const auto CACHE_STR = m_impl->getCacheString();
+
+    const auto ASSET = Asset::assetCache()->get(CACHE_STR);
+    if (ASSET) {
+        g_logger->log(HT_LOG_DEBUG, "CImageElement: path {} was already cached, reusing entry", m_impl->data.path);
+        m_impl->failed     = false;
+        m_impl->cacheEntry = ASSET;
+        if (ASSET->status() == Asset::CACHE_ENTRY_DONE)
+            m_impl->postImageScheduleRecalc();
+        else {
+            m_impl->listeners.cacheEntryDone = ASSET->m_events.done.listen([this] {
+                m_impl->postImageScheduleRecalc();
+                m_impl->listeners.cacheEntryDone.reset();
+            });
+        }
+        return;
+    }
 
     if (!m_impl->data.icon) {
         m_impl->resource = makeAtomicShared<CImageResource>(m_impl->data.path);
@@ -78,6 +94,9 @@ void CImageElement::renderTex() {
         if (SIZE.x == 0 || SIZE.y == 0)
             return;
     }
+
+    m_impl->cacheEntry = makeShared<Asset::CAssetCacheEntry>(CACHE_STR);
+    Asset::assetCache()->cache(m_impl->cacheEntry);
 
     m_impl->waitingForTex = true;
 
@@ -104,26 +123,39 @@ void CImageElement::renderTex() {
 }
 
 void SImageImpl::postImageLoad() {
-    if (!resource)
+    if (!resource || !cacheEntry)
         return;
 
     if (resource->m_asset.cairoSurface) {
         ASP<IAsyncResource> resourceGeneric(resource);
         size = resource->m_asset.pixelSize;
-        tex  = g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = data.fitMode});
+        cacheEntry->texDone(g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = data.fitMode}));
     } else {
         failed = true;
         g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", lastPath);
     }
 
-    oldTex.reset();
+    oldCacheEntry.reset();
     resource.reset();
 
+    postImageScheduleRecalc();
+}
+
+void SImageImpl::postImageScheduleRecalc() {
     waitingForTex = false;
     if (!failed) {
+        if (cacheEntry)
+            size = cacheEntry->tex()->size();
         self->impl->damageEntire();
         self->impl->window->scheduleReposition(self);
     }
+}
+
+std::string SImageImpl::getCacheString() {
+    if (!data.icon)
+        return data.path.ends_with(".svg") ? std::format("{}-{}x{}", data.path, preferredSvgSize().x, preferredSvgSize().y) : data.path;
+    else
+        return std::format("icon-{}-{}x{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y);
 }
 
 SP<CImageBuilder> CImageElement::rebuild() {

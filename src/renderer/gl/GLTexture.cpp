@@ -92,3 +92,7 @@ void CGLTexture::bind() {
 eImageFitMode CGLTexture::fitMode() {
     return m_fitMode;
 }
+
+Vector2D CGLTexture::size() {
+    return m_size;
+}
