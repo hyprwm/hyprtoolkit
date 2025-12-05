@@ -88,6 +88,35 @@ if(NOT HAS_INOTIFY AND inotify_FOUND)
   target_link_libraries(hyprtoolkit PUBLIC PkgConfig::inotify)
 endif()
 
+# Optional Lua bindings
+option(HYPRTOOLKIT_WITH_LUA "Build with Lua scripting support" OFF)
+
+if(HYPRTOOLKIT_WITH_LUA)
+  find_package(Lua 5.4 REQUIRED)
+
+  include(FetchContent)
+  FetchContent_Declare(
+    sol2
+    GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+    GIT_TAG develop)
+  FetchContent_MakeAvailable(sol2)
+
+  file(GLOB_RECURSE LUA_BINDING_SOURCES CONFIGURE_DEPENDS
+       "src/bindings/lua/*.cpp")
+  target_sources(hyprtoolkit PRIVATE ${LUA_BINDING_SOURCES})
+  target_link_libraries(hyprtoolkit PUBLIC ${LUA_LIBRARIES})
+  target_include_directories(hyprtoolkit PUBLIC ${LUA_INCLUDE_DIR})
+  target_link_libraries(hyprtoolkit PRIVATE sol2::sol2)
+  target_compile_definitions(hyprtoolkit PUBLIC HYPRTOOLKIT_LUA_ENABLED)
+
+  # Lua runner executable
+  add_executable(hyprtoolkit-lua "tests/LuaRunner.cpp")
+  target_include_directories(hyprtoolkit-lua PRIVATE "./src")
+  target_link_libraries(hyprtoolkit-lua PRIVATE hyprtoolkit PkgConfig::deps sol2::sol2)
+
+  message(STATUS "Lua bindings enabled")
+endif()
+
 # Protocols
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")

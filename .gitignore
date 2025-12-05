@@ -20,6 +20,8 @@ CMakeUserPresets.json
 
 build/
 .vscode/
+.idea/
+.zed/
 .cache/
 
 protocols/*.cpp
