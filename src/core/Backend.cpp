@@ -52,6 +52,8 @@ CBackend::CBackend() {
 }
 
 CBackend::~CBackend() {
+    destroy();
+
     close(m_sLoopState.exitfd[0]);
     close(m_sLoopState.exitfd[1]);
     close(m_sLoopState.wakeupfd[0]);
