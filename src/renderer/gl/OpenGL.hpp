@@ -100,7 +100,6 @@ namespace Hyprtoolkit {
         float                          m_scale = 1.F;
         SP<CFramebuffer>               m_polyRenderFb;
 
-        std::vector<SP<CGLTexture>>    m_glTextures;
         std::vector<SP<CRenderbuffer>> m_rbos;
         SP<CRenderbuffer>              m_currentRBO;
 

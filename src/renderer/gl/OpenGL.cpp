@@ -522,8 +522,6 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
 }
 
 COpenGLRenderer::~COpenGLRenderer() {
-    m_glTextures.clear();
-
     if (m_eglDisplay && m_eglContext != EGL_NO_CONTEXT)
         eglDestroyContext(m_eglDisplay, m_eglContext);
 
@@ -762,7 +760,7 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 }
 
 SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
-    const auto TEX = m_glTextures.emplace_back(makeShared<CGLTexture>(data.resource));
+    const auto TEX = makeShared<CGLTexture>(data.resource);
     TEX->m_fitMode = data.fitMode;
     return TEX;
 }
