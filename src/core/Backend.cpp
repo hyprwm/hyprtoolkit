@@ -173,6 +173,9 @@ void CBackend::addIdle(const std::function<void()>& fn) {
 }
 
 void CBackend::terminate() {
+    if (m_terminate)
+        return;
+
     m_terminate = true;
 
     if (m_sLoopState.eventLoopMutex.try_lock()) {
