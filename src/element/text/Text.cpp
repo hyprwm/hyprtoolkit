@@ -213,6 +213,7 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
 Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
     auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
 
+    g_object_unref(LAYOUT);
     cairo_destroy(CAIRO);
 
     return LAYOUTSIZE / lastScale;
@@ -234,6 +235,7 @@ CBox STextImpl::getCharBox(size_t charIdxUTF8) {
         }
             .scale(1.F / lastScale);
 
+    g_object_unref(LAYOUT);
     cairo_destroy(CAIRO);
 
     return charBox;
@@ -248,6 +250,7 @@ std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
     int index = 0, trailing = 0;
     pango_layout_xy_to_index(LAYOUT, pangoX, pangoY, &index, &trailing);
 
+    g_object_unref(LAYOUT);
     cairo_destroy(CAIRO);
 
     if (index == -1)
