@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include <glib.h>
+
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/string/ConstVarList.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
@@ -32,9 +34,30 @@ static std::optional<std::string> readFileAsString(const std::string& path) {
     return trim(std::string((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>())));
 }
 
-static const std::array<const char*, 3> ICON_THEME_DIRS = {"/usr/share/icons", "/usr/local/share/icons", "~/.icons"};
+static std::vector<std::string> getIconSearchPaths() {
+  std::vector<std::string> paths;
 
-static std::string                      fromDir(const char* p) {
+  // user icons (e.g., ~/.local/share/icons)
+  const gchar* userDataDir = g_get_user_data_dir();
+  if (userDataDir) {
+    paths.push_back(std::string(userDataDir) + "/icons");
+  }
+
+  // system icons (e.g. /usr/local/share/icons, /usr/share/icons)
+  const gchar* const* systemDataDirs = g_get_system_data_dirs();
+  for (int i = 0; systemDataDirs[i] != nullptr; i++) {
+    paths.push_back(std::string(systemDataDirs[i]) + "/icons");
+  }
+
+  //non-xdg compliant icon dirs
+  paths.push_back("~/.icons");
+
+  return paths;
+}
+
+static const auto ICON_THEME_DIRS = getIconSearchPaths();
+
+static std::string                      fromDir(const std::string& p) {
     static auto HOME_ENV = getenv("HOME");
 
     if (p[0] == '~') {
