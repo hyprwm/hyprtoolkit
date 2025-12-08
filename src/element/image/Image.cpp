@@ -147,7 +147,9 @@ void SImageImpl::postImageScheduleRecalc() {
         if (cacheEntry)
             size = cacheEntry->tex()->size();
         self->impl->damageEntire();
-        self->impl->window->scheduleReposition(self);
+
+        if (self->impl->window)
+            self->impl->window->scheduleReposition(self);
     }
 }
 
