@@ -52,6 +52,8 @@ CBackend::CBackend() {
 }
 
 CBackend::~CBackend() {
+    destroy();
+
     close(m_sLoopState.exitfd[0]);
     close(m_sLoopState.exitfd[1]);
     close(m_sLoopState.wakeupfd[0]);
@@ -171,6 +173,9 @@ void CBackend::addIdle(const std::function<void()>& fn) {
 }
 
 void CBackend::terminate() {
+    if (m_terminate)
+        return;
+
     m_terminate = true;
 
     if (m_sLoopState.eventLoopMutex.try_lock()) {
