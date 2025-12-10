@@ -28,7 +28,7 @@ pkg_check_modules(
   wayland-client
   wayland-protocols
   egl
-  hyprutils>=0.10.4
+  hyprutils>=0.11.0
   hyprlang>=0.6.0
   pixman-1
   libdrm
