@@ -191,8 +191,15 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     PangoRectangle ink, logical;
     pango_layout_get_pixel_extents(layout, &ink, &logical);
 
-    if (data.clampSize) {
-        const auto CLAMP_SIZE = data.clampSize.value() * lastScale;
+    std::optional<Vector2D> maxSize = data.clampSize.value_or(lastMaxSize).round();
+    if (maxSize == Vector2D{0, 0})
+        maxSize = std::nullopt;
+
+    if (maxSize.has_value())
+        (*maxSize) *= lastScale;
+
+    if (maxSize.has_value()) {
+        const auto CLAMP_SIZE = maxSize.value() * lastScale;
         if (!data.noEllipsize)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
         if (data.clampSize->x >= 0)
