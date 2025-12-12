@@ -34,6 +34,11 @@ SP<CTextboxBuilder> CTextboxBuilder::multiline(bool x) {
     return m_self.lock();
 }
 
+SP<CTextboxBuilder> CTextboxBuilder::password(bool x) {
+    m_data->password = x;
+    return m_self.lock();
+}
+
 SP<CTextboxElement> CTextboxBuilder::commence() {
     if (m_element) {
         m_element->replaceData(*m_data);

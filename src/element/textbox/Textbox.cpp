@@ -259,11 +259,25 @@ void STextboxImpl::updateLabel() {
         bgInnerCont->addChild(text);
     }
 
-    auto fullLabel = inputState.imText.empty() ? //
-        data.text :                              //
-        UTF8::substr(data.text, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(data.text, inputState.cursor);
+    if (!data.password) {
 
-    text->rebuild()->text(std::move(fullLabel))->commence();
+        auto fullLabel = inputState.imText.empty() ? //
+            data.text :                              //
+            UTF8::substr(data.text, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(data.text, inputState.cursor);
+
+        text->rebuild()->text(std::move(fullLabel))->commence();
+    } else {
+        std::string pwdText = "";
+        for (size_t i = 0; i < data.text.size(); ++i) {
+            pwdText += '*';
+        }
+
+        auto fullLabel = inputState.imText.empty() ? //
+            pwdText :                                //
+            UTF8::substr(pwdText, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(pwdText, inputState.cursor);
+
+        text->rebuild()->text(std::move(fullLabel))->commence();
+    }
 
     updateCursor();
 

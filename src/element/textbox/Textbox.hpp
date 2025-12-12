@@ -17,6 +17,7 @@ namespace Hyprtoolkit {
         std::string                                                                                 placeholder;
         std::function<void(Hyprutils::Memory::CSharedPointer<CTextboxElement>, const std::string&)> onTextEdited;
         bool                                                                                        multiline = true;
+        bool                                                                                        password  = false;
         CDynamicSize                                                                                size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
     struct STextboxImpl {
