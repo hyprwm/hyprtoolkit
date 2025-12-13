@@ -59,25 +59,25 @@ void CConfigManager::parse() {
 }
 
 SP<CPalette> CConfigManager::getPalette() {
-    auto        p = CPalette::emptyPalette();
+    auto p = CPalette::emptyPalette();
 
-    static auto BACKGROUND      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "background");
-    static auto BASE            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "base");
-    static auto TEXT            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "text");
-    static auto ALTERNATEBASE   = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "alternate_base");
-    static auto BRIGHTTEXT      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "bright_text");
-    static auto LINK            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "link_text");
-    static auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
-    static auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
+    auto BACKGROUND      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "background");
+    auto BASE            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "base");
+    auto TEXT            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "text");
+    auto ALTERNATEBASE   = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "alternate_base");
+    auto BRIGHTTEXT      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "bright_text");
+    auto LINK            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "link_text");
+    auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
+    auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
 
-    static auto H1SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
-    static auto H2SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
-    static auto H3SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
-    static auto FONTSIZE       = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
-    static auto SMALLFONTSIZE  = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
-    static auto ICONTHEME      = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "icon_theme");
-    static auto FONTFAMILY     = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family");
-    static auto FONTFAMILYMONO = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family_monospace");
+    auto H1SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
+    auto H2SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
+    auto H3SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h3_size");
+    auto FONTSIZE       = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "font_size");
+    auto SMALLFONTSIZE  = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "small_font_size");
+    auto ICONTHEME      = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "icon_theme");
+    auto FONTFAMILY     = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family");
+    auto FONTFAMILYMONO = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(m_config.get(), "font_family_monospace");
 
     p->m_colors.background      = *BACKGROUND;
     p->m_colors.base            = *BASE;

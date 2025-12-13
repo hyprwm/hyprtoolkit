@@ -54,6 +54,14 @@ CBackend::CBackend() {
 CBackend::~CBackend() {
     destroy();
 
+    g_openGL.reset();
+    g_renderer.reset();
+    g_config.reset();
+    g_palette.reset();
+    g_iconFactory.reset();
+    g_waylandPlatform.reset();
+    g_logger.reset();
+
     close(m_sLoopState.exitfd[0]);
     close(m_sLoopState.exitfd[1]);
     close(m_sLoopState.wakeupfd[0]);
@@ -63,6 +71,7 @@ CBackend::~CBackend() {
 IBackend::SBackendCreationData::SBackendCreationData() = default;
 
 SP<IBackend> IBackend::createWithData(const IBackend::SBackendCreationData& data) {
+    g_logger                     = makeShared<CLogger>();
     g_logger->m_loggerConnection = data.pLogConnection;
     g_logger->updateLogLevel();
     return IBackend::create();
@@ -71,6 +80,9 @@ SP<IBackend> IBackend::createWithData(const IBackend::SBackendCreationData& data
 SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
+
+    g_logger = makeShared<CLogger>();
+
     g_backend = SP<CBackend>(new CBackend());
     g_config  = makeShared<CConfigManager>();
     g_config->parse();

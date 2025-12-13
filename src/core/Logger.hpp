@@ -44,5 +44,5 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<Hyprutils::CLI::CLoggerConnection> m_aqLoggerConnection;
     };
 
-    inline Hyprutils::Memory::CSharedPointer<CLogger> g_logger = Hyprutils::Memory::makeShared<CLogger>();
+    inline Hyprutils::Memory::CSharedPointer<CLogger> g_logger;
 };
