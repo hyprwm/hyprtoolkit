@@ -77,6 +77,7 @@ namespace Hyprtoolkit {
         std::vector<SP<SToolkitFocusLock>> m_hoveredElements;
         WP<IElement>                       m_keyboardFocus;
         bool                               m_scheduledRender = false;
+        std::function<ePointerShape()>     m_pointerFn       = nullptr;
 
         std::vector<WP<IElement>>          m_needsReposition;
 

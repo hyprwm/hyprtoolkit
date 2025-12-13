@@ -25,8 +25,18 @@ namespace Hyprtoolkit {
         bool                                     async = true;
     };
 
+    struct STextLink {
+        uint64_t                 begin = 0, end = 0;
+        std::string              link;
+        Hyprutils::Math::CRegion region;
+    };
+
     struct STextImpl {
         STextData                                                                                      data;
+
+        std::string                                                                                    parsedText;
+        std::vector<STextLink>                                                                         parsedLinks;
+        STextLink*                                                                                     hoveredTextLink = nullptr;
 
         WP<CTextElement>                                                                               self;
 
@@ -41,6 +51,8 @@ namespace Hyprtoolkit {
         ASP<Hyprgraphics::CTextResource>                                                               resource;
         Hyprutils::Math::Vector2D                                                                      size, preferred;
 
+        Hyprutils::Math::Vector2D                                                                      lastCursorPos;
+
         bool                                                                                           waitingForTex = false;
 
         Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
@@ -53,6 +65,10 @@ namespace Hyprtoolkit {
         void                                                                                           scheduleTexRefresh();
         void                                                                                           renderTex();
         void                                                                                           postTexLoad();
+        void                                                                                           parseText();
+        void                                                                                           recheckTextBoxes();
+        void                                                                                           onMouseDown();
+        void                                                                                           onMouseMove();
 
         friend class CTextboxElement;
         friend struct STextboxImpl;

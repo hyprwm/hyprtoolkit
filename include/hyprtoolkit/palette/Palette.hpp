@@ -25,6 +25,7 @@ namespace Hyprtoolkit {
             CHyprColor base;
             CHyprColor alternateBase;
             CHyprColor brightText;
+            CHyprColor linkText;
             CHyprColor accent;
             CHyprColor accentSecondary;
         } m_colors;

@@ -196,6 +196,8 @@ int main(int argc, char** argv, char** envp) {
 
     auto textboxCont = stretchLayout("Textbox", textbox);
 
+    auto text = CTextBuilder::begin()->text("This is a link test: <a href=\"https://hypr.land\">click me</a>!")->commence();
+
     hiddenSlider = CSliderBuilder::begin()->max(100)->val(69)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, SLIDER_HEIGHT}})->commence();
 
     mainLayout->addChild(title);
@@ -210,6 +212,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(slider2);
     mainLayout->addChild(combo);
     mainLayout->addChild(textboxCont);
+    mainLayout->addChild(text);
 
     auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable-symbolic");
     if (!iconDesc->exists())

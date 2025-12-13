@@ -9,10 +9,12 @@
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/Logger.hpp"
 #include "../../helpers/Memory.hpp"
 
 #include "../Element.hpp"
 #include "../../helpers/UTF8.hpp"
+#include "../../system/DesktopMethods.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -25,9 +27,22 @@ SP<CTextElement> CTextElement::create(const STextData& data) {
 }
 
 CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUnique<STextImpl>()) {
-    m_impl->data                 = data;
+    m_impl->data = data;
+    m_impl->parseText();
     m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
     m_impl->preferred            = m_impl->getTextSizePreferred();
+
+    impl->m_externalEvents.mouseMove.listenStatic([this](const Vector2D& pos) {
+        m_impl->lastCursorPos = pos;
+        m_impl->onMouseMove();
+    });
+
+    impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
+        if (!down)
+            return;
+
+        m_impl->onMouseDown();
+    });
 }
 
 CTextElement::~CTextElement() = default;
@@ -38,6 +53,7 @@ void CTextElement::replaceData(const STextData& data) {
     m_impl->data = data;
 
     if (m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize() || TEXT_DIFFERENT) {
+        m_impl->parseText();
         m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
         m_impl->preferred            = m_impl->getTextSizePreferred();
         m_impl->scheduleTexRefresh();
@@ -143,6 +159,14 @@ std::optional<Vector2D> CTextElement::minimumSize(const Hyprutils::Math::Vector2
     return Vector2D{0, 0};
 }
 
+bool CTextElement::acceptsMouseInput() {
+    return true;
+}
+
+std::function<ePointerShape()> CTextElement::pointerShapeFn() {
+    return [this] { return m_impl->hoveredTextLink ? HT_POINTER_POINTER : HT_POINTER_ARROW; };
+}
+
 bool CTextElement::positioningDependsOnChild() {
     return m_impl->data.size.hasAuto();
 }
@@ -168,11 +192,11 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     PangoAttrList* attrList = nullptr;
     GError*        gError   = nullptr;
     char*          buf      = nullptr;
-    if (pango_parse_markup(data.text.c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
+    if (pango_parse_markup(parsedText.c_str(), -1, 0, &attrList, &buf, nullptr, &gError))
         pango_layout_set_text(layout, buf, -1);
     else {
         g_error_free(gError);
-        pango_layout_set_text(layout, data.text.c_str(), -1);
+        pango_layout_set_text(layout, parsedText.c_str(), -1);
     }
 
     if (!attrList)
@@ -231,7 +255,7 @@ CBox STextImpl::getCharBox(size_t charIdxUTF8) {
 
     PangoRectangle rect;
 
-    pango_layout_index_to_pos(LAYOUT, UTF8::utf8ToOffset(data.text, charIdxUTF8), &rect);
+    pango_layout_index_to_pos(LAYOUT, UTF8::utf8ToOffset(parsedText, charIdxUTF8), &rect);
 
     CBox charBox =
         CBox{
@@ -263,11 +287,11 @@ std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
     if (index == -1)
         return std::nullopt;
 
-    return UTF8::offsetToUTF8Len(data.text, index + trailing);
+    return UTF8::offsetToUTF8Len(parsedText, index + trailing);
 }
 
 float STextImpl::getCursorPos(size_t charIdx) {
-    if (charIdx >= UTF8::length(data.text))
+    if (charIdx >= UTF8::length(parsedText))
         return preferred.x;
 
     if (charIdx == 0)
@@ -279,7 +303,7 @@ float STextImpl::getCursorPos(size_t charIdx) {
 }
 
 float STextImpl::getCursorPos(const Hyprutils::Math::Vector2D& click) {
-    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(data.text)));
+    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(parsedText)));
 }
 
 Vector2D STextImpl::unscale(const Vector2D& x) {
@@ -318,7 +342,7 @@ void STextImpl::renderTex() {
     auto col = data.color();
 
     resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-        .text      = data.text,
+        .text      = parsedText,
         .font      = data.fontFamily,
         .fontSize  = sc<size_t>(std::round(lastFontSizeUnscaled * lastScale)),
         .color     = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
@@ -367,6 +391,106 @@ void STextImpl::postTexLoad() {
     newTex        = true;
     resource.reset();
 
+    recheckTextBoxes();
+
     if (data.callback)
         data.callback();
+}
+
+static std::string formatColor(uint32_t col) {
+    return std::format("#{0:08x}", ((col & 0x00ffffffu) << 8) | (col >> 24));
+}
+
+void STextImpl::parseText() {
+    parsedLinks.clear();
+    hoveredTextLink = nullptr;
+
+    size_t      lastTagClose = 0;
+    const auto& ORIGINAL     = data.text;
+    std::string newString;
+
+    while (true) {
+        size_t tagOpen = ORIGINAL.find("<a href=\"", lastTagClose);
+
+        if (tagOpen == std::string::npos) {
+            // no more tags
+            newString += ORIGINAL.substr(lastTagClose);
+            break;
+        }
+
+        newString += ORIGINAL.substr(lastTagClose, tagOpen - lastTagClose);
+
+        // find the close
+        size_t linkOpen  = tagOpen + 9;
+        size_t linkClose = ORIGINAL.find('"', linkOpen);
+
+        if (linkClose == std::string::npos)
+            break; // broken tag
+
+        const std::string_view LINK = std::string_view{ORIGINAL}.substr(linkOpen, linkClose - linkOpen);
+
+        // expect spaces or >
+        size_t needle = linkClose + 1;
+        while (needle < ORIGINAL.size() && (ORIGINAL[needle] == ' ')) {
+            needle++;
+        }
+
+        if (needle >= ORIGINAL.size() || ORIGINAL[needle] != '>')
+            break; // broken tag
+
+        size_t contentOpen  = needle + 1;
+        size_t contentClose = ORIGINAL.find("</a>", contentOpen);
+
+        if (contentClose == std::string::npos)
+            break; // broken tag
+
+        std::string replaceWith = std::format("<u><span foreground=\"{}\">{}</span></u>", formatColor(g_palette->m_colors.linkText.getAsHex()),
+                                              std::string_view{ORIGINAL}.substr(contentOpen, contentClose - contentOpen));
+
+        parsedLinks.emplace_back(STextLink{
+            .begin = newString.size(),
+            .end   = newString.size() + replaceWith.size(),
+            .link  = std::string{LINK},
+        });
+
+        newString += replaceWith;
+
+        lastTagClose = contentClose + 4;
+    }
+
+    parsedText = std::move(newString);
+}
+
+void STextImpl::recheckTextBoxes() {
+    for (auto& link : parsedLinks) {
+        link.region.clear();
+        for (size_t i = link.begin; i < link.end + 1; ++i) {
+            auto box = getCharBox(UTF8::offsetToUTF8Len(parsedText, i));
+            link.region.add(box);
+        }
+    }
+}
+
+void STextImpl::onMouseDown() {
+    if (!hoveredTextLink)
+        return;
+
+    g_logger->log(HT_LOG_DEBUG, "STextImpl::onMouseDown: running link {}", hoveredTextLink->link);
+
+    auto ret = DesktopMethods::openLink(hoveredTextLink->link);
+
+    if (!ret)
+        g_logger->log(HT_LOG_ERROR, "STextImpl::onMouseDown: failed to open link, ret: {}", ret.error());
+}
+
+void STextImpl::onMouseMove() {
+    hoveredTextLink = nullptr;
+
+    for (auto& link : parsedLinks) {
+        if (!link.region.containsPoint(lastCursorPos))
+            continue;
+
+        hoveredTextLink = &link;
+        break;
+    }
 }
