@@ -171,15 +171,32 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
 
     m_hoveredElements = alwaysHover;
 
-    if ((el == (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{})) || m_mouseIsDown /* Lock focus while mouse is down */)
+    if ((el == (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{})) || m_mouseIsDown /* Lock focus while mouse is down */) {
+        if (m_pointerFn)
+            setCursor(m_pointerFn());
         return;
+    }
 
     if (el) {
         initElementIfNeeded(el);
         m_mainHoverElement = makeShared<SToolkitFocusLock>(el, coords - el->impl->position.pos());
     } else
         m_mainHoverElement.reset();
-    setCursor(m_mainHoverElement && m_mainHoverElement->m_el ? m_mainHoverElement->m_el->pointerShape() : HT_POINTER_ARROW);
+
+    if (m_mainHoverElement && m_mainHoverElement->m_el) {
+        if (auto fn = m_mainHoverElement->m_el->pointerShapeFn(); fn)
+            m_pointerFn = fn;
+        else {
+            setCursor(m_mainHoverElement->m_el->pointerShape());
+            m_pointerFn = nullptr;
+        }
+    } else {
+        setCursor(HT_POINTER_ARROW);
+        m_pointerFn = nullptr;
+    }
+
+    if (m_pointerFn)
+        setCursor(m_pointerFn());
 
     if (m_mainHoverElement && m_mainHoverElement->m_el && m_mainHoverElement->m_el->impl->hasTooltip && !m_tooltip.hoverTooltipTimer) {
         m_tooltip.hoverTooltipTimer = g_backend->addTimer(

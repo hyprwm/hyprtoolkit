@@ -146,6 +146,10 @@ ePointerShape IElement::pointerShape() {
     return HT_POINTER_ARROW;
 }
 
+std::function<ePointerShape()> IElement::pointerShapeFn() {
+    return nullptr;
+}
+
 bool IElement::alwaysGetMouseInput() {
     return false;
 }

@@ -23,6 +23,7 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("text", Hyprlang::INT{0xFFDADADA});
     m_config->addConfigValue("alternate_base", Hyprlang::INT{0xFF272727});
     m_config->addConfigValue("bright_text", Hyprlang::INT{0xFFFFDEDE});
+    m_config->addConfigValue("link_text", Hyprlang::INT{0xFF4EECF8});
     m_config->addConfigValue("accent", Hyprlang::INT{0xFF00FFCC});
     m_config->addConfigValue("accent_secondary", Hyprlang::INT{0xFF0099F0});
 
@@ -65,6 +66,7 @@ SP<CPalette> CConfigManager::getPalette() {
     static auto TEXT            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "text");
     static auto ALTERNATEBASE   = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "alternate_base");
     static auto BRIGHTTEXT      = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "bright_text");
+    static auto LINK            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "link_text");
     static auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
     static auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
 
@@ -82,6 +84,7 @@ SP<CPalette> CConfigManager::getPalette() {
     p->m_colors.text            = *TEXT;
     p->m_colors.alternateBase   = *ALTERNATEBASE;
     p->m_colors.brightText      = *BRIGHTTEXT;
+    p->m_colors.linkText        = *LINK;
     p->m_colors.accent          = *ACCENT;
     p->m_colors.accentSecondary = *ACCENTSECONDARY;
 
