@@ -202,11 +202,11 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
         const auto CLAMP_SIZE = maxSize.value() * lastScale;
         if (!data.noEllipsize)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
-        if (data.clampSize->x >= 0)
+        if (CLAMP_SIZE.x >= 0)
             pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(CLAMP_SIZE.x * PANGO_SCALE)));
-        if (data.clampSize->y >= 0)
+        if (CLAMP_SIZE.y >= 0)
             pango_layout_set_height(layout, std::min(logical.height * PANGO_SCALE, sc<int>(CLAMP_SIZE.y * PANGO_SCALE)));
-        if (data.clampSize->x >= 0)
+        if (CLAMP_SIZE.x >= 0)
             pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
         pango_layout_get_pixel_extents(layout, &ink, &logical);
