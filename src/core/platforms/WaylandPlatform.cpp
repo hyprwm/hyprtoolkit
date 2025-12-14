@@ -160,7 +160,8 @@ CWaylandPlatform::~CWaylandPlatform() {
 
     const auto DPY = m_waylandState.display;
     m_waylandState = {};
-    wl_display_disconnect(DPY);
+    if (DPY)
+        wl_display_disconnect(DPY);
 }
 
 bool CWaylandPlatform::dispatchEvents() {
