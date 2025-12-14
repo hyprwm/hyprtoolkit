@@ -90,11 +90,13 @@ SP<IBackend> IBackend::create() {
     g_iconFactory = SP<CSystemIconFactory>(new CSystemIconFactory());
     if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
+        g_backend.reset();
         return nullptr;
     }
     g_waylandPlatform = makeUnique<CWaylandPlatform>();
     if (!g_waylandPlatform->attempt()) {
         g_waylandPlatform = nullptr;
+        g_backend.reset();
         return nullptr;
     }
     g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
