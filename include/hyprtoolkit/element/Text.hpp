@@ -34,6 +34,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        noEllipsize(bool);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        size(CDynamicSize&&);
         Hyprutils::Memory::CSharedPointer<CTextBuilder>        async(bool x);
+        Hyprutils::Memory::CSharedPointer<CTextBuilder>        interactable(bool x);
 
         Hyprutils::Memory::CSharedPointer<CTextElement>        commence();
 

@@ -60,8 +60,13 @@ SP<CTextBuilder> CTextBuilder::size(CDynamicSize&& s) {
     return m_self.lock();
 }
 
-Hyprutils::Memory::CSharedPointer<CTextBuilder> CTextBuilder::async(bool x) {
+SP<CTextBuilder> CTextBuilder::async(bool x) {
     m_data->async = x;
+    return m_self.lock();
+}
+
+SP<CTextBuilder> CTextBuilder::interactable(bool x) {
+    m_data->interactable = x;
     return m_self.lock();
 }
 

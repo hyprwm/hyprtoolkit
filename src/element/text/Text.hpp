@@ -22,7 +22,8 @@ namespace Hyprtoolkit {
         std::optional<Hyprutils::Math::Vector2D> clampSize;
         CDynamicSize                             size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
         std::function<void()>                    callback; // called after resource is loaded
-        bool                                     async = true;
+        bool                                     async        = true;
+        std::optional<bool>                      interactable;
     };
 
     struct STextLink {
