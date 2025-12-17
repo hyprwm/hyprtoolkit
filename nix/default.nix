@@ -25,9 +25,8 @@
   doCheck ? false,
 }:
 let
-  inherit (lib.attrsets) mapAttrsToList;
   inherit (lib.lists) optional;
-  inherit (lib.strings) cmakeBool optionalString;
+  inherit (lib.strings) optionalString;
 in
 stdenv.mkDerivation {
   pname = "hyprtoolkit" + optionalString doCheck "-with-tests";
@@ -60,9 +59,13 @@ stdenv.mkDerivation {
     wayland-protocols
   ] ++ (optional stdenv.isBSD epoll-shim);
 
-  cmakeFlags = mapAttrsToList cmakeBool {
-    "DISABLE_TESTING" = !doCheck;
-  };
+  env.XDG_RUNTIME_DIR = "/build/runtime";
+
+  cmakeBuildType = if doCheck then "Debug" else "RelWithDebInfo";
+
+  preCheck = ''
+    mkdir /build/runtime
+  '';
 
   meta = {
     homepage = "https://github.com/hyprwm/hyprtoolkit";
