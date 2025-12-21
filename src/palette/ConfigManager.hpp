@@ -26,7 +26,11 @@ namespace Hyprtoolkit {
         Hyprutils::OS::CFileDescriptor m_inotifyFd;
         std::vector<int>               m_watches;
         std::string                    m_configPath;
+        std::string                    m_configCurrentPath;
 
         void                           replantWatch();
+
+        //
+        std::optional<std::string> handleSource(const std::string&, const std::string&);
     };
 }

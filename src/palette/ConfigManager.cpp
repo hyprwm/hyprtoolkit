@@ -5,8 +5,39 @@
 #include "../core/InternalBackend.hpp"
 
 #include <unistd.h>
+#include <glob.h>
+#include <filesystem>
+#include <cstring>
 
 using namespace Hyprtoolkit;
+
+static Hyprlang::CParseResult handleSource(const char* c, const char* v) {
+    const std::string      VALUE   = v;
+    const std::string      COMMAND = c;
+
+    const auto             RESULT = g_config->handleSource(COMMAND, VALUE);
+
+    Hyprlang::CParseResult result;
+    if (RESULT.has_value())
+        result.setError(RESULT.value().c_str());
+    return result;
+}
+
+static std::string absolutePath(const std::string& rawpath, const std::string& currentDir) {
+    std::filesystem::path path(rawpath);
+
+    // Handling where rawpath starts with '~'
+    if (!rawpath.empty() && rawpath[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        path                             = std::filesystem::path(ENVHOME) / path.relative_path().string().substr(2);
+    }
+
+    // Handling e.g. ./, ../
+    if (path.is_relative())
+        return std::filesystem::weakly_canonical(std::filesystem::path(currentDir) / path);
+    else
+        return std::filesystem::weakly_canonical(path);
+}
 
 CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     // Initialize the configuration
@@ -35,6 +66,8 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("icon_theme", Hyprlang::STRING{""});
     m_config->addConfigValue("font_family", Hyprlang::STRING{"Sans Serif"});
     m_config->addConfigValue("font_family_monospace", Hyprlang::STRING{"monospace"});
+
+    m_config->registerHandler(&::handleSource, "source", {.allowFlags = false});
 
     m_config->commence();
 
@@ -126,4 +159,50 @@ void CConfigManager::onInotifyEvent() {
     replantWatch();
 
     parse();
+}
+
+std::optional<std::string> CConfigManager::handleSource(const std::string& command, const std::string& rawpath) {
+    if (rawpath.length() < 2) {
+        g_logger->log(HT_LOG_ERROR, "source= path garbage");
+        return "source path " + rawpath + " bogus!";
+    }
+    std::unique_ptr<glob_t, void (*)(glob_t*)> glob_buf{new glob_t, [](glob_t* g) { globfree(g); }};
+    memset(glob_buf.get(), 0, sizeof(glob_t));
+
+    const auto CURRENTDIR = std::filesystem::path(m_configCurrentPath).parent_path().string();
+
+    if (auto r = glob(absolutePath(rawpath, CURRENTDIR).c_str(), GLOB_TILDE, nullptr, glob_buf.get()); r != 0) {
+        std::string err = std::format("source= globbing error: {}", r == GLOB_NOMATCH ? "found no match" : GLOB_ABORTED ? "read error" : "out of memory");
+        g_logger->log(HT_LOG_ERROR, "{}", err);
+        return err;
+    }
+
+    for (size_t i = 0; i < glob_buf->gl_pathc; i++) {
+        const auto PATH = absolutePath(glob_buf->gl_pathv[i], CURRENTDIR);
+
+        if (PATH.empty() || PATH == m_configCurrentPath) {
+            g_logger->log(HT_LOG_WARNING, "source= skipping invalid path");
+            continue;
+        }
+
+        if (!std::filesystem::is_regular_file(PATH)) {
+            if (std::filesystem::exists(PATH)) {
+                g_logger->log(HT_LOG_WARNING, "source= skipping non-file {}", PATH);
+                continue;
+            }
+
+            g_logger->log(HT_LOG_ERROR, "source= file doesnt exist");
+            return "source file " + PATH + " doesn't exist!";
+        }
+
+        // allow for nested config parsing
+        auto backupConfigPath = m_configCurrentPath;
+        m_configCurrentPath   = PATH;
+
+        m_config->parseFile(PATH.c_str());
+
+        m_configCurrentPath = backupConfigPath;
+    }
+
+    return {};
 }
