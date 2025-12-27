@@ -197,6 +197,21 @@ void CBackend::terminate() {
         m_sLoopState.loopCV.notify_all();
         m_sLoopState.eventLoopMutex.unlock();
     }
+
+    if (m_sLoopState.eventLoopThreadID == -1) {
+        // we are not in a thread loop at all, so we
+        g_renderer.reset();
+        g_openGL.reset();
+
+        g_waylandPlatform.reset();
+
+        g_asyncResourceGatherer.reset();
+        g_animationManager.reset();
+
+        g_palette.reset();
+        g_backend.reset();
+        g_logger.reset();
+    }
 }
 
 SP<ISystemIconFactory> CBackend::systemIcons() {
@@ -400,6 +415,8 @@ void CBackend::enterLoop() {
 
     m_sLoopState.event = true; // let it process once
 
+    m_sLoopState.eventLoopThreadID = gettid();
+
     while (!m_terminate) {
         std::unique_lock lk(m_sLoopState.eventRequestMutex);
         if (!m_sLoopState.event)
@@ -483,6 +500,8 @@ void CBackend::enterLoop() {
             rebuildPollfds(false);
         }
     }
+
+    m_sLoopState.eventLoopThreadID = -1;
 
     g_renderer.reset();
     g_openGL.reset();

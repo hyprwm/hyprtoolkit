@@ -83,6 +83,8 @@ namespace Hyprtoolkit {
             int                      wakeupfd[2];
 
             std::vector<SFDListener> userFds;
+
+            int64_t                  eventLoopThreadID = -1;
         } m_sLoopState;
 
         std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
