@@ -59,12 +59,12 @@ stdenv.mkDerivation {
     wayland-protocols
   ] ++ (optional stdenv.isBSD epoll-shim);
 
-  env.XDG_RUNTIME_DIR = "/build/runtime";
+  env.XDG_RUNTIME_DIR = "/tmp/runtime";
 
   cmakeBuildType = if doCheck then "Debug" else "RelWithDebInfo";
 
   preCheck = ''
-    mkdir /build/runtime
+    mkdir -p /tmp/runtime
   '';
 
   meta = {
