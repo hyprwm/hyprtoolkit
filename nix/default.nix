@@ -64,7 +64,10 @@ stdenv.mkDerivation {
   cmakeBuildType = if doCheck then "Debug" else "RelWithDebInfo";
 
   preCheck = ''
-    mkdir /build/runtime
+    ls -lAh /
+    ls -lAh /build
+    printenv XDG_RUNTIME_DIR
+    mkdir -p /build/runtime
   '';
 
   meta = {
