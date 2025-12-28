@@ -83,7 +83,11 @@ void CImageElement::renderTex() {
         return;
     }
 
-    if (!m_impl->data.icon) {
+    if (!m_impl->data.data.empty()) {
+        const auto SIZE  = m_impl->preferredSvgSize();
+        m_impl->resource = makeAtomicShared<CImageResource>(m_impl->data.data, SIZE);
+        m_impl->lastData = m_impl->data.data.data();
+    } else if (!m_impl->data.icon) {
         m_impl->resource = makeAtomicShared<CImageResource>(m_impl->data.path);
         m_impl->lastPath = m_impl->data.path;
     } else {
@@ -154,6 +158,9 @@ void SImageImpl::postImageScheduleRecalc() {
 }
 
 std::string SImageImpl::getCacheString() {
+    if (!data.data.empty()) // uncacheable
+        return std::format("data-{:x}", rc<uintptr_t>(data.data.data()));
+
     if (!data.icon)
         return data.path.ends_with(".svg") ? std::format("{}-{}x{}", data.path, preferredSvgSize().x, preferredSvgSize().y) : data.path;
     else

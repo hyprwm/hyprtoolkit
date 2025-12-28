@@ -39,6 +39,11 @@ SP<CImageBuilder> CImageBuilder::icon(const SP<ISystemIconDescription>& x) {
     return m_self.lock();
 }
 
+SP<CImageBuilder> CImageBuilder::data(std::vector<uint8_t>&& x) {
+    m_data->data = std::move(x);
+    return m_self.lock();
+}
+
 SP<CImageBuilder> CImageBuilder::size(CDynamicSize&& s) {
     m_data->size = std::move(s);
     return m_self.lock();

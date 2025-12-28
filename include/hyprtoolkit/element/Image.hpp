@@ -22,6 +22,7 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CImageBuilder> begin();
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        path(std::string&&);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        icon(const Hyprutils::Memory::CSharedPointer<ISystemIconDescription>&);
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        data(std::vector<uint8_t>&& data);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        a(float);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        fitMode(eImageFitMode);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        sync(bool);

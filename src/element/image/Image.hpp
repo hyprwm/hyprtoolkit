@@ -10,6 +10,7 @@ namespace Hyprtoolkit {
         int                        rounding = 0;
         bool                       sync     = false;
         SP<ISystemIconDescription> icon;
+        std::vector<uint8_t>       data;
         eImageFitMode              fitMode = IMAGE_FIT_MODE_STRETCH;
         CDynamicSize               size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
@@ -29,6 +30,7 @@ namespace Hyprtoolkit {
         bool                                                                  waitingForTex = false, failed = false;
 
         std::string                                                           lastPath = "";
+        void*                                                                 lastData = nullptr;
 
         Hyprutils::Math::Vector2D                                             preferredSvgSize();
         void                                                                  postImageLoad();
