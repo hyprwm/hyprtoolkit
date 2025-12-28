@@ -15,6 +15,8 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
 
     const auto THEME_DIR = g_iconFactory->m_themeDir.value();
 
+    bool       found = false;
+
     for (const auto& sd : g_iconFactory->m_iconDirs) {
         auto fullDirPath = THEME_DIR + "/";
         fullDirPath += sd;
@@ -30,7 +32,17 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
             continue;
 
         m_bestPath = iconPath;
+        found      = true;
         break;
+    }
+
+    if (!found) {
+        // try /usr/share/pixmaps
+        std::error_code ec;
+        if (std::filesystem::exists("/usr/share/pixmaps/" + name + ".svg", ec) || ec) {
+            found      = true;
+            m_bestPath = "/usr/share/pixmaps/" + name + ".svg";
+        }
     }
 }
 
