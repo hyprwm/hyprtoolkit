@@ -16,6 +16,7 @@
 #include <viewporter.hpp>
 #include <text-input-unstable-v3.hpp>
 #include <linux-drm-syncobj-v1.hpp>
+#include <color-management-v1.hpp>
 
 #include <chrono>
 
@@ -64,6 +65,9 @@ namespace Hyprtoolkit {
         virtual void configure(const Hyprutils::Math::Vector2D& size, uint32_t serial);
         virtual void resizeSwapchain(const Hyprutils::Math::Vector2D& pixelSize);
 
+        void         ensureCMReady();
+        void         applyCMToSurface();
+
         void         prepareExplicit(SP<CWaylandBuffer>);
         void         submitExplicit(SP<CWaylandBuffer>);
 
@@ -78,6 +82,10 @@ namespace Hyprtoolkit {
             SP<CCXdgToplevel>                       xdgToplevel;
             SP<CCWlCallback>                        frameCallback;
             SP<CCWpLinuxDrmSyncobjSurfaceV1>        syncobjSurf;
+
+            bool                                    cmReady = false, cmApplied = false;
+            SP<CCWpColorManagementSurfaceV1>        cmSurface;
+            SP<CCWpImageDescriptionV1>              cmImageDesc;
 
             std::array<SP<CWaylandBuffer>, 2>       wlBuffers;
             SP<Aquamarine::CSwapchain>              swapchain;
