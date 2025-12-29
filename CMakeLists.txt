@@ -72,7 +72,7 @@ target_include_directories(
   PUBLIC "./include"
   PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
 set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
-                                             SOVERSION 4)
+                                             SOVERSION 5)
 target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL
                                          PkgConfig::deps)
 
