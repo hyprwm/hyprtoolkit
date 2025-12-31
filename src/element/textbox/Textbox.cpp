@@ -2,13 +2,13 @@
 
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/element/Null.hpp>
+#include <tuple>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <pango/pangocairo.h>
 
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
 #include "../../window/ToolkitWindow.hpp"
-#include "../../core/AnimationManager.hpp"
 #include "../../core/InternalBackend.hpp"
 #include "../Element.hpp"
 #include "../text/Text.hpp"
@@ -107,24 +107,21 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == 0)
                 return;
 
-            if (m_impl->inputState.selectBegin >= 0) {
+            if (m_impl->hasSelect()) {
                 m_impl->removeSelectedText();
                 m_impl->updateLabel();
                 return;
             }
 
-            if (ev.modMask & (Input::HT_MODIFIER_CTRL | Input::HT_MODIFIER_SHIFT)) {
-                // remove everything before
-                // TODO: make shift remove word?
-                // TODO: make this remove until a newline?
-                m_impl->data.text         = UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
-                m_impl->inputState.cursor = 0;
-                m_impl->updateLabel();
-                return;
-            }
-
-            m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor - 1) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
-            m_impl->inputState.cursor--;
+            if ((ev.modMask & Input::HT_MODIFIER_CTRL_SHIFT) == Input::HT_MODIFIER_CTRL_SHIFT)
+                m_impl->inputState.selectBegin = m_impl->moveLineBackwards();
+            else if (ev.modMask & Input::HT_MODIFIER_CTRL)
+                m_impl->inputState.selectBegin = m_impl->moveWordBackwards();
+            else
+                m_impl->inputState.selectBegin = m_impl->moveCharBackwards();
+            m_impl->inputState.selectEnd = m_impl->inputState.cursor;
+            m_impl->inputState.cursor    = m_impl->inputState.selectBegin;
+            m_impl->removeSelectedText();
             m_impl->updateLabel();
             return;
         }
@@ -133,7 +130,21 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == m_impl->data.text.length())
                 return;
 
-            m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor + 1);
+            if (m_impl->hasSelect()) {
+                m_impl->removeSelectedText();
+                m_impl->updateLabel();
+                return;
+            }
+
+            m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+            if ((ev.modMask & Input::HT_MODIFIER_CTRL_SHIFT) == Input::HT_MODIFIER_CTRL_SHIFT)
+                m_impl->inputState.selectEnd = m_impl->moveLineForwards();
+            else if (ev.modMask & Input::HT_MODIFIER_CTRL)
+                m_impl->inputState.selectEnd = m_impl->moveWordForwards();
+            else
+                m_impl->inputState.selectEnd = m_impl->moveCharForwards();
+            m_impl->inputState.cursor = m_impl->inputState.selectBegin;
+            m_impl->removeSelectedText();
             m_impl->updateLabel();
             return;
         }
@@ -142,32 +153,32 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == 0)
                 return;
 
-            if (ev.modMask & Input::HT_MODIFIER_CTRL) {
-                // go to beginning
-                // TODO: make this go back a word instead
-                m_impl->inputState.cursor = 0;
-                m_impl->updateLabel();
-                return;
-            }
+            const auto oldCursorPos = m_impl->inputState.cursor;
+            if (ev.modMask & Input::HT_MODIFIER_CTRL)
+                m_impl->inputState.cursor = m_impl->moveWordBackwards();
+            else
+                m_impl->inputState.cursor = m_impl->moveCharBackwards();
 
             if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
-                if (m_impl->inputState.selectBegin == -1) {
-                    m_impl->inputState.selectBegin = m_impl->inputState.cursor - 1;
-                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor;
+                if (!m_impl->hasSelect()) {
+                    m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    m_impl->inputState.selectEnd   = oldCursorPos;
                 } else {
-                    if (sc<ssize_t>(m_impl->inputState.cursor) == m_impl->inputState.selectBegin)
-                        m_impl->inputState.selectBegin--;
+                    if (sc<ssize_t>(oldCursorPos) == m_impl->inputState.selectEnd)
+                        m_impl->inputState.selectEnd = m_impl->inputState.cursor;
                     else
-                        m_impl->inputState.selectEnd--;
+                        m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    const auto selectBegin         = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    const auto selectEnd           = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    m_impl->inputState.selectBegin = selectBegin;
+                    m_impl->inputState.selectEnd   = selectEnd;
                 }
                 m_impl->updateSelect();
-            } else {
-                m_impl->inputState.selectBegin = -1;
-                m_impl->inputState.selectEnd   = -1;
-                m_impl->updateSelect();
+            } else if (m_impl->hasSelect()) {
+                m_impl->inputState.cursor = m_impl->inputState.selectBegin;
+                m_impl->clearSelect();
             }
 
-            m_impl->inputState.cursor--;
             m_impl->updateCursor();
             return;
         }
@@ -176,25 +187,48 @@ void CTextboxElement::init() {
             if (m_impl->inputState.cursor == m_impl->data.text.length())
                 return;
 
+            const auto oldCursorPos = m_impl->inputState.cursor;
+
+            if (ev.modMask & Input::HT_MODIFIER_CTRL)
+                m_impl->inputState.cursor = m_impl->moveWordForwards();
+            else
+                m_impl->inputState.cursor = m_impl->moveCharForwards();
+
             if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
-                if (m_impl->inputState.selectBegin == -1) {
-                    m_impl->inputState.selectBegin = m_impl->inputState.cursor;
-                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor + 1;
+                if (!m_impl->hasSelect()) {
+                    m_impl->inputState.selectBegin = oldCursorPos;
+                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor;
                 } else {
-                    if (sc<ssize_t>(m_impl->inputState.cursor) == m_impl->inputState.selectEnd)
-                        m_impl->inputState.selectEnd++;
+                    if (sc<ssize_t>(oldCursorPos) == m_impl->inputState.selectEnd)
+                        m_impl->inputState.selectEnd = m_impl->inputState.cursor;
                     else
-                        m_impl->inputState.selectBegin++;
+                        m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    const auto selectBegin         = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    const auto selectEnd           = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    m_impl->inputState.selectBegin = selectBegin;
+                    m_impl->inputState.selectEnd   = selectEnd;
                 }
                 m_impl->updateSelect();
-            } else {
-                m_impl->inputState.selectBegin = -1;
-                m_impl->inputState.selectEnd   = -1;
-                m_impl->updateSelect();
+            } else if (m_impl->hasSelect()) {
+                m_impl->inputState.cursor = m_impl->inputState.selectEnd;
+                m_impl->clearSelect();
             }
 
-            m_impl->inputState.cursor++;
             m_impl->updateCursor();
+            return;
+        }
+
+        if (ev.xkbKeysym == XKB_KEY_Home || ev.xkbKeysym == XKB_KEY_KP_Home) {
+            m_impl->inputState.cursor = 0;
+            m_impl->updateCursor();
+            m_impl->clearSelect();
+            return;
+        }
+
+        if (ev.xkbKeysym == XKB_KEY_End || ev.xkbKeysym == XKB_KEY_KP_End) {
+            m_impl->inputState.cursor = m_impl->data.text.length();
+            m_impl->updateCursor();
+            m_impl->clearSelect();
             return;
         }
 
@@ -202,9 +236,7 @@ void CTextboxElement::init() {
             if (impl->window)
                 impl->window->unfocusKeyboard();
 
-            m_impl->inputState.selectBegin = -1;
-            m_impl->inputState.selectEnd   = -1;
-            m_impl->updateSelect();
+            m_impl->clearSelect();
 
             return;
         }
@@ -248,6 +280,14 @@ void CTextboxElement::init() {
 
 std::string_view CTextboxElement::currentText() {
     return m_impl->data.text;
+}
+
+size_t CTextboxElement::cursorPos() const {
+    return m_impl->inputState.cursor;
+}
+
+std::tuple<ssize_t, ssize_t> CTextboxElement::selection() const {
+    return {m_impl->inputState.selectBegin, m_impl->inputState.selectEnd};
 }
 
 void STextboxImpl::updateLabel() {
@@ -324,6 +364,12 @@ void CTextboxElement::paint() {
     ;
 }
 
+void STextboxImpl::clearSelect() {
+    inputState.selectBegin = -1;
+    inputState.selectEnd   = -1;
+    updateSelect();
+}
+
 void STextboxImpl::updateSelect() {
     if (inputState.selectBegin < 0) {
         bgInnerCont->removeChild(selectBgCont);
@@ -341,19 +387,70 @@ void STextboxImpl::updateSelect() {
     bgInnerCont->addChild(selectBgCont);
 }
 
+bool STextboxImpl::hasSelect() const {
+    return inputState.selectBegin >= 0 && inputState.selectEnd >= 0 && inputState.selectBegin < inputState.selectEnd;
+}
+
 void STextboxImpl::removeSelectedText() {
-    if (inputState.selectBegin >= 0 && inputState.selectEnd >= 0 && inputState.selectBegin < inputState.selectEnd) {
-        data.text              = UTF8::substr(data.text, 0, inputState.selectBegin) + UTF8::substr(data.text, inputState.selectEnd);
-        inputState.cursor      = inputState.selectBegin;
-        inputState.selectBegin = -1;
-        inputState.selectEnd   = -1;
-        updateSelect();
+    if (hasSelect()) {
+        data.text         = UTF8::substr(data.text, 0, inputState.selectBegin) + UTF8::substr(data.text, inputState.selectEnd);
+        inputState.cursor = inputState.selectBegin;
+        clearSelect();
     }
 }
 
 void STextboxImpl::focusCursorAtClickedChar() {
-    inputState.cursor = text->m_impl->vecToCharIdx(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size()) + 1;
+    inputState.cursor = text->m_impl->vecToCharIdx(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size());
     updateCursor();
+    clearSelect();
+}
+
+size_t STextboxImpl::moveLineBackwards() const {
+    if (inputState.cursor == 0)
+        return inputState.cursor;
+
+    auto newlineBeforeCursor = data.text.find_last_of('\n', inputState.cursor);
+    newlineBeforeCursor      = newlineBeforeCursor == std::string::npos ? 0 : newlineBeforeCursor + 1;
+    return newlineBeforeCursor;
+}
+
+size_t STextboxImpl::moveLineForwards() const {
+    auto newlineAfterCursor = data.text.find_first_of('\n', inputState.cursor);
+    newlineAfterCursor      = newlineAfterCursor == std::string::npos ? data.text.length() : newlineAfterCursor;
+    return newlineAfterCursor;
+}
+
+size_t STextboxImpl::moveWordBackwards() const {
+    if (inputState.cursor == 0)
+        return inputState.cursor;
+
+    // ignore spaces that are right behind the cursor
+    auto searchStartPos = data.text.find_last_not_of(' ', inputState.cursor - 1);
+    searchStartPos      = searchStartPos == std::string::npos ? 0 : searchStartPos;
+
+    auto spaceBeforeCursor = data.text.find_last_of(' ', searchStartPos);
+    spaceBeforeCursor      = spaceBeforeCursor == std::string::npos ? 0 : spaceBeforeCursor + 1;
+    return spaceBeforeCursor;
+}
+
+size_t STextboxImpl::moveWordForwards() const {
+    // ignore spaces that are right in front of the cursor
+    auto searchStartPos = data.text.find_first_not_of(' ', inputState.cursor);
+    searchStartPos      = searchStartPos == std::string::npos ? data.text.length() : searchStartPos + 1;
+
+    auto spaceAfterCursor = data.text.find_first_of(' ', searchStartPos);
+    spaceAfterCursor      = spaceAfterCursor == std::string::npos ? data.text.length() : spaceAfterCursor;
+    return spaceAfterCursor;
+}
+
+size_t STextboxImpl::moveCharBackwards() const {
+    if (inputState.cursor == 0)
+        return inputState.cursor;
+    return inputState.cursor - 1;
+}
+
+size_t STextboxImpl::moveCharForwards() const {
+    return inputState.cursor + 1;
 }
 
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
