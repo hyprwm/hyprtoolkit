@@ -81,7 +81,8 @@ SP<IBackend> IBackend::create() {
     if (g_backend)
         return nullptr;
 
-    g_logger = makeShared<CLogger>();
+    if (!g_logger)
+        g_logger = makeShared<CLogger>();
 
     g_backend = SP<CBackend>(new CBackend());
     g_config  = makeShared<CConfigManager>();
