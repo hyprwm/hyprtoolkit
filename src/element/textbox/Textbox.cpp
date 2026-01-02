@@ -243,8 +243,8 @@ void CTextboxElement::init() {
 
         if ((ev.xkbKeysym == XKB_KEY_A || ev.xkbKeysym == XKB_KEY_a) && ev.modMask & Input::HT_MODIFIER_CTRL) {
             m_impl->inputState.selectBegin = 0;
-            m_impl->inputState.selectEnd   = UTF8::length(m_impl->data.text);
-            m_impl->inputState.cursor      = m_impl->inputState.selectEnd + 1;
+            m_impl->inputState.selectEnd   = m_impl->data.text.length();
+            m_impl->inputState.cursor      = m_impl->inputState.selectEnd;
             m_impl->updateSelect();
             m_impl->updateCursor();
             return;
@@ -258,8 +258,8 @@ void CTextboxElement::init() {
 
         m_impl->removeSelectedText();
 
-        m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + ev.utf8 + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
-        m_impl->inputState.cursor++;
+        m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, ev.utf8);
+        m_impl->inputState.cursor += ev.utf8.length();
         m_impl->updateLabel();
     });
 
@@ -303,7 +303,7 @@ void STextboxImpl::updateLabel() {
 
         auto fullLabel = inputState.imText.empty() ? //
             data.text :                              //
-            UTF8::substr(data.text, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(data.text, inputState.cursor);
+            data.text.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
 
         text->rebuild()->text(std::move(fullLabel))->commence();
     } else {
@@ -314,7 +314,7 @@ void STextboxImpl::updateLabel() {
 
         auto fullLabel = inputState.imText.empty() ? //
             pwdText :                                //
-            UTF8::substr(pwdText, 0, inputState.cursor) + "<u>" + inputState.imText + "</u>" + UTF8::substr(pwdText, inputState.cursor);
+            pwdText.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
 
         text->rebuild()->text(std::move(fullLabel))->commence();
     }
@@ -331,14 +331,14 @@ void CTextboxElement::imCommitNewText(const std::string& s) {
 }
 
 void CTextboxElement::imApplyText() {
-    m_impl->data.text = UTF8::substr(m_impl->data.text, 0, m_impl->inputState.cursor) + m_impl->inputState.imText + UTF8::substr(m_impl->data.text, m_impl->inputState.cursor);
-    m_impl->inputState.cursor += UTF8::length(m_impl->inputState.imText);
+    m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, m_impl->inputState.imText);
+    m_impl->inputState.cursor += m_impl->inputState.imText.length();
     m_impl->inputState.imText.clear();
     m_impl->updateLabel();
 }
 
 void STextboxImpl::updateCursor() {
-    inputState.cursor = std::clamp(inputState.cursor, sc<size_t>(0), sc<size_t>(UTF8::length(data.text)));
+    inputState.cursor = std::clamp(inputState.cursor, (size_t)0, data.text.length());
 
     const float WIDTH = text->m_impl->getCursorPos(inputState.cursor);
 
@@ -393,14 +393,14 @@ bool STextboxImpl::hasSelect() const {
 
 void STextboxImpl::removeSelectedText() {
     if (hasSelect()) {
-        data.text         = UTF8::substr(data.text, 0, inputState.selectBegin) + UTF8::substr(data.text, inputState.selectEnd);
+        data.text         = data.text.substr(0, inputState.selectBegin) + data.text.substr(inputState.selectEnd);
         inputState.cursor = inputState.selectBegin;
         clearSelect();
     }
 }
 
 void STextboxImpl::focusCursorAtClickedChar() {
-    inputState.cursor = text->m_impl->vecToCharIdx(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size());
+    inputState.cursor = text->m_impl->vecToOffset(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size());
     updateCursor();
     clearSelect();
 }
@@ -446,11 +446,11 @@ size_t STextboxImpl::moveWordForwards() const {
 size_t STextboxImpl::moveCharBackwards() const {
     if (inputState.cursor == 0)
         return inputState.cursor;
-    return inputState.cursor - 1;
+    return inputState.cursor - UTF8::codepointLenBefore(data.text, inputState.cursor);
 }
 
 size_t STextboxImpl::moveCharForwards() const {
-    return inputState.cursor + 1;
+    return inputState.cursor + UTF8::codepointLen(&data.text[inputState.cursor], data.text.length() - inputState.cursor);
 }
 
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {

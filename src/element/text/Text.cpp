@@ -250,12 +250,12 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
     return LAYOUTSIZE / lastScale;
 }
 
-CBox STextImpl::getCharBox(size_t charIdxUTF8) {
+CBox STextImpl::getCharBox(size_t offset) {
     auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
 
     PangoRectangle rect;
 
-    pango_layout_index_to_pos(LAYOUT, UTF8::utf8ToOffset(parsedText, charIdxUTF8), &rect);
+    pango_layout_index_to_pos(LAYOUT, offset, &rect);
 
     CBox charBox =
         CBox{
@@ -272,7 +272,7 @@ CBox STextImpl::getCharBox(size_t charIdxUTF8) {
     return charBox;
 }
 
-std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
+std::optional<size_t> STextImpl::vecToOffset(const Vector2D& vec) {
     auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
 
     auto pangoX = sc<int>(vec.x * PANGO_SCALE), //
@@ -287,23 +287,23 @@ std::optional<size_t> STextImpl::vecToCharIdx(const Vector2D& vec) {
     if (index == -1)
         return std::nullopt;
 
-    return UTF8::offsetToUTF8Len(parsedText, index + trailing);
+    return index + trailing;
 }
 
-float STextImpl::getCursorPos(size_t charIdx) {
-    if (charIdx >= UTF8::length(parsedText))
+float STextImpl::getCursorPos(size_t offset) {
+    if (offset >= parsedText.length())
         return preferred.x;
 
-    if (charIdx == 0)
+    if (offset == 0)
         return 0;
 
-    auto box = getCharBox(charIdx - 1);
+    auto box = getCharBox(offset);
 
-    return (box.x + box.w);
+    return box.x;
 }
 
 float STextImpl::getCursorPos(const Hyprutils::Math::Vector2D& click) {
-    return getCursorPos(vecToCharIdx(click).value_or(UTF8::length(parsedText)));
+    return getCursorPos(vecToOffset(click).value_or(parsedText.length()));
 }
 
 Vector2D STextImpl::unscale(const Vector2D& x) {
@@ -465,7 +465,7 @@ void STextImpl::recheckTextBoxes() {
     for (auto& link : parsedLinks) {
         link.region.clear();
         for (size_t i = link.begin; i < link.end + 1; ++i) {
-            auto box = getCharBox(UTF8::offsetToUTF8Len(parsedText, i));
+            auto box = getCharBox(i);
             link.region.add(box);
         }
     }
