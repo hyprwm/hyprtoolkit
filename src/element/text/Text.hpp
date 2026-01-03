@@ -57,9 +57,9 @@ namespace Hyprtoolkit {
         bool                                                                                           waitingForTex = false;
 
         Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
-        Hyprutils::Math::CBox                                                                          getCharBox(size_t charIdxUTF8);
-        std::optional<size_t>                                                                          vecToCharIdx(const Hyprutils::Math::Vector2D& vec); // utf8
-        float                                                                                          getCursorPos(size_t charIdx);
+        Hyprutils::Math::CBox                                                                          getCharBox(size_t offset);
+        std::optional<size_t>                                                                          vecToOffset(const Hyprutils::Math::Vector2D& vec);
+        float                                                                                          getCursorPos(size_t offset);
         float                                                                                          getCursorPos(const Hyprutils::Math::Vector2D& click);
         Hyprutils::Math::Vector2D                                                                      unscale(const Hyprutils::Math::Vector2D& x);
         std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Hyprutils::Math::Vector2D> prepPangoLayout();

@@ -1,9 +1,10 @@
 #include "UTF8.hpp"
+#include <string_view>
 
 using namespace Hyprtoolkit;
 using namespace Hyprtoolkit::UTF8;
 
-static size_t codepointLen(const char* utf8Char, size_t max) {
+size_t UTF8::codepointLen(const char* utf8Char, size_t max) {
     size_t len = 1;
     while (len < max) {
         if (((*(utf8Char + len)) & 0xC0) == 0x80) {
@@ -15,6 +16,18 @@ static size_t codepointLen(const char* utf8Char, size_t max) {
     }
 
     return len;
+}
+
+size_t UTF8::codepointLenBefore(const std::string& s, size_t offset) {
+    const auto initialOffset = offset;
+    while (true) {
+        if (offset == 0)
+            return 0;
+        offset--;
+        if ((s[offset] & 0xC0) != 0x80)
+            break;
+    }
+    return initialOffset - offset;
 }
 
 size_t UTF8::length(const std::string& s) {
@@ -31,6 +44,7 @@ size_t UTF8::length(const std::string& s) {
     return len;
 }
 
+/// Converts a byte index to a codepoint index.
 size_t UTF8::offsetToUTF8Len(const std::string& s, size_t offset) {
     if (s.empty())
         return 0;
@@ -45,6 +59,7 @@ size_t UTF8::offsetToUTF8Len(const std::string& s, size_t offset) {
     return len;
 }
 
+/// Converts a codepoint index to a byte index.
 size_t UTF8::utf8ToOffset(const std::string& s, size_t utf8) {
     if (s.empty())
         return 0;
@@ -100,4 +115,48 @@ std::string UTF8::substr(const std::string& s, size_t start, size_t length) {
         return s.substr(byteStart);
 
     return s.substr(byteStart, byteEnd - byteStart);
+}
+
+size_t UTF8::findFirstOf(const std::string& s, const std::string ch, size_t offset) {
+    while (offset < s.length()) {
+        const auto c     = s.data() + offset;
+        const auto cpLen = codepointLen(c, s.length() - offset);
+        if (std::string_view{c, cpLen} == ch)
+            return offset;
+        offset += cpLen;
+    }
+    return std::string::npos;
+}
+
+size_t UTF8::findLastOf(const std::string& s, const std::string ch, size_t offset) {
+    offset = std::min(offset, s.length());
+    while (offset > 0) {
+        const auto cpLen = codepointLenBefore(s, offset);
+        offset -= cpLen;
+        if (std::string_view{&s[offset], cpLen} == ch)
+            return offset;
+    }
+    return std::string::npos;
+}
+
+size_t UTF8::findFirstNotOf(const std::string& s, const std::string ch, size_t offset) {
+    while (offset < s.length()) {
+        const auto c     = s.data() + offset;
+        const auto cpLen = codepointLen(c, s.length() - offset);
+        if (std::string_view{c, cpLen} != ch)
+            return offset;
+        offset += cpLen;
+    }
+    return std::string::npos;
+}
+
+size_t UTF8::findLastNotOf(const std::string& s, const std::string ch, size_t offset) {
+    offset = std::min(offset, s.length());
+    while (offset > 0) {
+        const auto cpLen = codepointLenBefore(s, offset);
+        offset -= cpLen;
+        if (std::string_view{&s[offset], cpLen} != ch)
+            return offset;
+    }
+    return std::string::npos;
 }

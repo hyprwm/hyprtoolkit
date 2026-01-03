@@ -1,10 +1,11 @@
 #pragma once
 
 #include <hyprtoolkit/element/Textbox.hpp>
-#include <string_view>
+#include <hyprutils/signal/Listener.hpp>
 
 #include "../../helpers/Memory.hpp"
-#include "../../helpers/Signal.hpp"
+
+using namespace Hyprutils::Signal;
 
 namespace Hyprtoolkit {
 
@@ -50,9 +51,17 @@ namespace Hyprtoolkit {
             ssize_t     selectBegin = -1, selectEnd = -1;
         } inputState;
 
+        void                      clearSelect();
         void                      updateSelect();
+        bool                      hasSelect() const;
         void                      removeSelectedText();
         void                      focusCursorAtClickedChar();
+        size_t                    moveLineBackwards() const;
+        size_t                    moveLineForwards() const;
+        size_t                    moveWordBackwards() const;
+        size_t                    moveWordForwards() const;
+        size_t                    moveCharBackwards() const;
+        size_t                    moveCharForwards() const;
         void                      updateLabel();
         void                      updateCursor();
 
