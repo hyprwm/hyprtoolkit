@@ -223,8 +223,8 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
         (*maxSize) *= lastScale;
 
     if (maxSize.has_value()) {
-        const auto CLAMP_SIZE = maxSize.value() * lastScale;
-        if (!data.noEllipsize)
+        const auto CLAMP_SIZE = maxSize.value();
+        if (!data.noEllipsize && maxSize.has_value() && maxSize->y >= 0)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
         if (CLAMP_SIZE.x >= 0)
             pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(CLAMP_SIZE.x * PANGO_SCALE)));
@@ -350,7 +350,7 @@ void STextImpl::renderTex() {
                 Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
                 (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
         .maxSize   = maxSize,
-        .ellipsize = maxSize.has_value() && maxSize->y >= 0,
+        .ellipsize = !data.noEllipsize && maxSize.has_value() && maxSize->y >= 0,
         .wrap      = maxSize.has_value() && maxSize->x >= 0,
     });
 

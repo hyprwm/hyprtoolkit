@@ -196,7 +196,9 @@ int main(int argc, char** argv, char** envp) {
 
     auto textboxCont = stretchLayout("Textbox", textbox);
 
-    auto text = CTextBuilder::begin()->text("This is a link test: <a href=\"https://hypr.land\">click me</a>!")->commence();
+    auto text = CTextBuilder::begin()
+                    ->text("This is a link test: <a href=\"https://hypr.land\">click me</a>! Test overflow as well woo woo woo woo woo woo woo woo I am vaxry")
+                    ->commence();
 
     hiddenSlider = CSliderBuilder::begin()->max(100)->val(69)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, SLIDER_HEIGHT}})->commence();
 
