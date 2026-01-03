@@ -2,9 +2,9 @@
 
 #include "Element.hpp"
 #include "../types/SizeType.hpp"
-#include "../palette/Color.hpp"
 
 #include <hyprutils/memory/UniquePtr.hpp>
+#include <tuple>
 
 namespace Hyprtoolkit {
 
@@ -44,6 +44,8 @@ namespace Hyprtoolkit {
         virtual Hyprutils::Math::Vector2D                  size();
         void                                               focus(bool focus = true);
         std::string_view                                   currentText();
+        size_t                                             cursorPos() const;
+        std::tuple<ssize_t, ssize_t>                       selection() const;
 
       private:
         static Hyprutils::Memory::CSharedPointer<CTextboxElement> create(const STextboxData& data);

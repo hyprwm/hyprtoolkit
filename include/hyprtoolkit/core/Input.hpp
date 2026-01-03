@@ -25,6 +25,8 @@ namespace Hyprtoolkit::Input {
         HT_MODIFIER_MOD3  = (1 << 5),
         HT_MODIFIER_META  = (1 << 6),
         HT_MODIFIER_MOD5  = (1 << 7),
+
+        HT_MODIFIER_CTRL_SHIFT = HT_MODIFIER_CTRL | HT_MODIFIER_SHIFT,
     };
 
     struct SKeyboardKeyEvent {
