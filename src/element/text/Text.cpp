@@ -132,8 +132,14 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
         if (SIZE.y + 1 < DESIRED.y)
             m_impl->lastMaxSize.y = SIZE.y;
 
-        if (PREV != m_impl->lastMaxSize)
+        if (PREV != m_impl->lastMaxSize) {
             m_impl->needsTexRefresh = true;
+            const auto LAST_PREF    = m_impl->preferred;
+            m_impl->lastScale       = impl->window ? impl->window->scale() : 1.F;
+            m_impl->preferred       = m_impl->getTextSizePreferred();
+            if (impl->window && (std::abs(LAST_PREF.x - m_impl->preferred.x) > 2 || std::abs(LAST_PREF.y - m_impl->preferred.y) > 2))
+                impl->window->scheduleReposition(impl->self.lock());
+        }
     }
 
     g_positioner->positionChildren(impl->self.lock());
