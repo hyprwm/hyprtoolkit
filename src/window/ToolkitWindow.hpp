@@ -12,6 +12,7 @@
 namespace Hyprtoolkit {
 
     class CRectangleElement;
+    class CColumnLayoutElement;
     class CTextElement;
     class CTimer;
 

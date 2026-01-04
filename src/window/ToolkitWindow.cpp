@@ -330,7 +330,9 @@ void IToolkitWindow::openTooltip(const std::string& s, const Hyprutils::Math::Ve
     if (m_tooltip.tooltipPopup)
         return;
 
-    m_tooltip.text = CTextBuilder::begin()->color([] { return g_palette->m_colors.text; })->text(std::string{s})->commence();
+    constexpr const double MAX_TOOLTIP_WIDTH = 400;
+
+    m_tooltip.text = CTextBuilder::begin()->color([] { return g_palette->m_colors.text; })->clampSize({MAX_TOOLTIP_WIDTH, -1.F})->text(std::string{s})->commence();
     m_tooltip.bg   = CRectangleBuilder::begin()
                        ->color([] { return g_palette->m_colors.base; })
                        ->borderThickness(1)
@@ -356,7 +358,7 @@ void IToolkitWindow::openTooltip(const std::string& s, const Hyprutils::Math::Ve
     m_tooltip.tooltipPopup = reinterpretPointerCast<IToolkitWindow>(CWindowBuilder::begin()
                                                                         ->type(eWindowType::HT_WINDOW_POPUP)
                                                                         ->pos(pos)
-                                                                        ->preferredSize(EXPECTED_TEXT_SIZE + Hyprutils::Math::Vector2D{10, 10})
+                                                                        ->preferredSize(EXPECTED_TEXT_SIZE + Hyprutils::Math::Vector2D{30, 10})
                                                                         ->parent(m_self.lock())
                                                                         ->commence());
 
