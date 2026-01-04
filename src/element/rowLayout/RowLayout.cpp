@@ -168,7 +168,9 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
 
         CBox childBox = CBox{box.x + currentX, box.y + ((box.h - cSize.y) / 2), (double)widths.at(i), cSize.y};
 
-        g_positioner->position(child, childBox, Vector2D{-1.F, box.h});
+        g_positioner->position(child, childBox, Vector2D{childBox.w + (MAX_X - usedX) /* this can potentially cause problems... ↓ */, box.h});
+        //                                                                              This essentially tells each item it can grow, so if we have two
+        //                                                                              texts next to each other, they might fight for space. FIXME:
 
         currentX += childBox.w + m_impl->data.gap;
     }

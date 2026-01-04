@@ -162,7 +162,9 @@ void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const H
 
         CBox childBox = CBox{box.x + ((box.w - cSize.x) / 2), box.y + currentY, cSize.x, (double)heights.at(i)};
 
-        g_positioner->position(child, childBox, Vector2D{box.w, -1.F});
+        g_positioner->position(child, childBox, Vector2D{box.w, childBox.h + (MAX_Y - usedY) /* this can potentially cause problems... ↓ */});
+        //                                                                              This essentially tells each item it can grow, so if we have two
+        //                                                                              texts next to each other, they might fight for space. FIXME:
 
         currentY += childBox.h + m_impl->data.gap;
     }

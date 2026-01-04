@@ -125,7 +125,7 @@ int main(int argc, char** argv, char** envp) {
 
     //
     window = CWindowBuilder::begin() //
-                 ->preferredSize({480, 480})
+                 ->preferredSize({480, 700})
                  ->minSize({480, 480})
                  ->maxSize({1280, 720})
                  ->appTitle("Controls")
@@ -224,6 +224,9 @@ int main(int argc, char** argv, char** envp) {
                      ->text("hi hi overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow")
                      ->commence();
 
+    auto rowl = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    rowl->addChild(CTextBuilder::begin()->text("hello this will be ellipsized woooo oooo ooo oo oo oo oo o oo")->commence());
+
     mainLayout->addChild(title);
     mainLayout->addChild(hr);
     mainLayout->addChild(button1);
@@ -238,6 +241,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(combo);
     mainLayout->addChild(textboxCont);
     mainLayout->addChild(text);
+    mainLayout->addChild(rowl);
 
     auto iconDesc = backend->systemIcons()->lookupIcon("action-unavailable-symbolic");
     if (!iconDesc->exists())
