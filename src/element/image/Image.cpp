@@ -148,7 +148,7 @@ void SImageImpl::postImageLoad() {
 void SImageImpl::postImageScheduleRecalc() {
     waitingForTex = false;
     if (!failed) {
-        if (cacheEntry)
+        if (cacheEntry && cacheEntry->tex())
             size = cacheEntry->tex()->size();
         self->impl->damageEntire();
 
