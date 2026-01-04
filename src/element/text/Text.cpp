@@ -166,7 +166,7 @@ std::optional<Vector2D> CTextElement::minimumSize(const Hyprutils::Math::Vector2
 }
 
 bool CTextElement::acceptsMouseInput() {
-    return m_impl->data.interactable.value_or(!m_impl->parsedLinks.empty());
+    return m_impl->data.interactable.value_or(!m_impl->parsedLinks.empty()) || IElement::acceptsMouseInput();
 }
 
 std::function<ePointerShape()> CTextElement::pointerShapeFn() {
