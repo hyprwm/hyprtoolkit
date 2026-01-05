@@ -57,6 +57,8 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_config->addConfigValue("link_text", Hyprlang::INT{0xFF4EECF8});
     m_config->addConfigValue("accent", Hyprlang::INT{0xFF00FFCC});
     m_config->addConfigValue("accent_secondary", Hyprlang::INT{0xFF0099F0});
+    m_config->addConfigValue("rounding_large", Hyprlang::INT{10});
+    m_config->addConfigValue("rounding_small", Hyprlang::INT{5});
 
     m_config->addConfigValue("h1_size", Hyprlang::INT{19});
     m_config->addConfigValue("h2_size", Hyprlang::INT{15});
@@ -102,6 +104,8 @@ SP<CPalette> CConfigManager::getPalette() {
     auto LINK            = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "link_text");
     auto ACCENT          = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent");
     auto ACCENTSECONDARY = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "accent_secondary");
+    auto ROUNDINGLARGE   = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "rounding_large");
+    auto ROUNDINGSMALL   = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "rounding_small");
 
     auto H1SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h1_size");
     auto H2SIZE         = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(m_config.get(), "h2_size");
@@ -120,6 +124,9 @@ SP<CPalette> CConfigManager::getPalette() {
     p->m_colors.linkText        = *LINK;
     p->m_colors.accent          = *ACCENT;
     p->m_colors.accentSecondary = *ACCENTSECONDARY;
+
+    p->m_vars.bigRounding   = *ROUNDINGLARGE;
+    p->m_vars.smallRounding = *ROUNDINGSMALL;
 
     p->m_vars.h1Size              = *H1SIZE;
     p->m_vars.h2Size              = *H2SIZE;
