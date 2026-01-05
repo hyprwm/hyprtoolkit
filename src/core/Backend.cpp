@@ -24,6 +24,14 @@
 #include <print>
 #include <unistd.h>
 
+#if defined(__FreeBSD__)
+#include <pthread_np.h>
+#elif defined(__NetBSD__)
+#include <lwp.h>
+#elif defined(__DragonFly__)
+#include <sys/lwp.h>
+#endif
+
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Memory;
 
@@ -416,7 +424,18 @@ void CBackend::enterLoop() {
 
     m_sLoopState.event = true; // let it process once
 
-    m_sLoopState.eventLoopThreadID = gettid();
+    m_sLoopState.eventLoopThreadID =
+#if defined (__linux__)
+        gettid();
+#elif defined(__FreeBSD__)
+        pthread_getthreadid_np();
+#elif defined(__OpenBSD__)
+        getthrid();
+#elif defined(__NetBSD__)
+        _lwp_self();
+#elif defined(__DragonFly__)
+        lwp_gettid();
+#endif
 
     while (!m_terminate) {
         std::unique_lock lk(m_sLoopState.eventRequestMutex);
