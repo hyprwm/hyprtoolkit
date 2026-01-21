@@ -425,7 +425,7 @@ void CBackend::enterLoop() {
     m_sLoopState.event = true; // let it process once
 
     m_sLoopState.eventLoopThreadID =
-#if defined (__linux__)
+#if defined(__linux__)
         gettid();
 #elif defined(__FreeBSD__)
         pthread_getthreadid_np();

@@ -15,6 +15,7 @@
 #include "../Element.hpp"
 #include "../../helpers/UTF8.hpp"
 #include "../../system/DesktopMethods.hpp"
+#include "Macros.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
@@ -78,7 +79,7 @@ void CTextElement::paint() {
         textureToUse = m_impl->oldTex;
 
     if (!textureToUse) {
-        if (!m_impl->waitingForTex)
+        if (!m_impl->waitingForTex && !m_impl->resource)
             m_impl->renderTex();
         return;
     }
@@ -86,7 +87,8 @@ void CTextElement::paint() {
     if ((impl->window && impl->window->scale() != m_impl->lastScale) || m_impl->needsTexRefresh) {
         m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
         m_impl->preferred = m_impl->getTextSizePreferred();
-        m_impl->renderTex();
+        if (!m_impl->resource)
+            m_impl->renderTex();
         textureToUse = m_impl->oldTex;
     }
 
@@ -329,7 +331,8 @@ void STextImpl::renderTex() {
     oldTex          = tex;
     needsTexRefresh = false;
 
-    resource.reset();
+    ASSERT(!resource);
+
     tex.reset();
 
     waitingForTex = true;
@@ -359,6 +362,18 @@ void STextImpl::renderTex() {
         .ellipsize = !data.noEllipsize && maxSize.has_value() && maxSize->y >= 0,
         .wrap      = maxSize.has_value() && maxSize->x >= 0,
     });
+
+    if (Env::isTrace()) {
+        const std::string TEXT_SHORT = data.text.size() > 20 ? data.text.substr(0, 20) + "..." : data.text;
+        g_logger->log(HT_LOG_TRACE, "TextImpl: scheduling rendering of text \"{}\", with the following params:\nfont: {}, fontSize: {}, maxSize: {}, ellipsize: {}, wrap: {}",
+                      TEXT_SHORT,                                                       //
+                      data.fontFamily,                                                  //
+                      sc<size_t>(std::round(lastFontSizeUnscaled * lastScale)),         //
+                      maxSize.has_value() ? std::format("{}", *maxSize) : "<no value>", //
+                      !data.noEllipsize && maxSize.has_value() && maxSize->y >= 0,      //
+                      maxSize.has_value() && maxSize->x >= 0                            //
+        );
+    }
 
     ASP<IAsyncResource> resourceGeneric(resource);
 
@@ -392,6 +407,15 @@ void STextImpl::postTexLoad() {
     oldTex.reset();
     if (self->impl->window)
         self->impl->window->scheduleReposition(self->impl->self);
+
+    if (Env::isTrace()) {
+        const std::string TEXT_SHORT = data.text.size() > 20 ? data.text.substr(0, 20) + "..." : data.text;
+
+        if (size.x == 0 || size.y == 0 || !resourceGeneric->m_asset.cairoSurface)
+            g_logger->log(HT_LOG_ERROR, "TextImpl: failed to render text \"{}\"!!!", TEXT_SHORT);
+        else
+            g_logger->log(HT_LOG_TRACE, "TextImpl: got a tex with size {} for text \"{}\"", size, TEXT_SHORT);
+    }
 
     waitingForTex = false;
     newTex        = true;
