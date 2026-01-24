@@ -8,6 +8,7 @@
 #include <glob.h>
 #include <filesystem>
 #include <cstring>
+#include <climits>
 
 using namespace Hyprtoolkit;
 
