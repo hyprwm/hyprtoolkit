@@ -10,6 +10,7 @@
 #include <hyprutils/os/FileDescriptor.hpp>
 #include <aquamarine/buffer/Buffer.hpp>
 
+#include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -42,6 +43,8 @@ namespace Hyprtoolkit {
 
         virtual bool                 explicitSyncSupported();
 
+        virtual int                  getMaxTextureSize();
+
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);
         CRegion                        damageWithClip();
@@ -66,6 +69,7 @@ namespace Hyprtoolkit {
         bool                           m_hasModifiers     = true;
         int                            m_drmFD            = -1;
         bool                           m_syncobjSupported = false;
+        const GLint                    m_maxTextureSize   = 0;
 
         struct {
             PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC glEGLImageTargetRenderbufferStorageOES = nullptr;
