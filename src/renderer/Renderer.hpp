@@ -76,6 +76,8 @@ namespace Hyprtoolkit {
         virtual SP<CSyncTimeline>    exportSync(SP<Aquamarine::IBuffer> buf) = 0;
 
         virtual bool                 explicitSyncSupported() = 0;
+
+        virtual int                  getMaxTextureSize() = 0;
     };
 
     inline SP<IRenderer> g_renderer;

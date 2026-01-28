@@ -129,7 +129,13 @@ void SImageImpl::postImageLoad() {
     if (resource->m_asset.cairoSurface) {
         ASP<IAsyncResource> resourceGeneric(resource);
         size = resource->m_asset.pixelSize;
-        cacheEntry->texDone(g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = data.fitMode}));
+
+        const auto MAX_SIZE = g_renderer->getMaxTextureSize();
+        if (size.x > MAX_SIZE || size.y > MAX_SIZE) {
+            failed = true;
+            g_logger->log(HT_LOG_ERROR, "Image: failed loading, image dimensions {}x{} exceed max texture size {}", (int)size.x, (int)size.y, MAX_SIZE);
+        } else
+            cacheEntry->texDone(g_renderer->uploadTexture({.resource = resourceGeneric, .fitMode = data.fitMode}));
     } else {
         failed = true;
         g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", lastPath);

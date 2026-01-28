@@ -430,6 +430,9 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
 
     RASSERT(success, "EGL does not support KHR_platform_gbm or EXT_platform_device, this is an issue with your gpu driver.");
 
+    makeEGLCurrent();
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, cc<GLint*>(&m_maxTextureSize));
+
     auto* const EXTENSIONS = rc<const char*>(glGetString(GL_EXTENSIONS));
     RASSERT(EXTENSIONS, "Couldn't retrieve openGL extensions!");
 
@@ -536,6 +539,10 @@ COpenGLRenderer::~COpenGLRenderer() {
 
 bool COpenGLRenderer::explicitSyncSupported() {
     return !Env::envEnabled("HT_NO_EXPLICIT_SYNC") && m_syncobjSupported && m_exts.EGL_ANDROID_native_fence_sync_ext;
+}
+
+int COpenGLRenderer::getMaxTextureSize() {
+    return m_maxTextureSize;
 }
 
 CBox COpenGLRenderer::logicalToGL(const CBox& box, bool transform) {
