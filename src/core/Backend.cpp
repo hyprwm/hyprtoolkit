@@ -93,6 +93,7 @@ SP<IBackend> IBackend::create() {
         g_logger = makeShared<CLogger>();
 
     g_backend = SP<CBackend>(new CBackend());
+    auto bk   = g_backend;
     g_config  = makeShared<CConfigManager>();
     g_config->parse();
     g_palette     = CPalette::palette();
