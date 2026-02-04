@@ -110,6 +110,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
                 (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
+        } else if (NAME == wp_color_manager_v1_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
+            m_waylandState.colorManagement =
+                makeShared<CCWpColorManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_color_manager_v1_interface, 1));
         }
     });
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
