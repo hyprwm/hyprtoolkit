@@ -74,7 +74,8 @@ void CTextboxElement::init() {
         CRectangleBuilder::begin()->color([] { return g_palette->m_colors.text; })->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
 
     m_impl->cursorCont->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->cursorCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
+    if (!m_impl->data.multiline)
+        m_impl->cursorCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
     m_impl->cursor->setPositionMode(HT_POSITION_ABSOLUTE);
 
     m_impl->placeholder->setPositionMode(HT_POSITION_ABSOLUTE);
@@ -342,15 +343,21 @@ void CTextboxElement::imApplyText() {
 void STextboxImpl::updateCursor() {
     inputState.cursor = std::clamp(inputState.cursor, (size_t)0, data.text.length());
 
-    const float WIDTH = text->m_impl->getCursorPos(inputState.cursor);
+    const auto  CHARBOX = text->m_impl->getCharBox(inputState.cursor);
+    const float XPOS    = CHARBOX.x;
 
-    cursor->setAbsolutePosition({
-        WIDTH,
-        0.F,
-    });
+    if (data.multiline) {
+        // For multiline, size the cursor to match the line height and position it at the character's Y position
+        cursor->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, CHARBOX.h}})->commence();
+        cursor->setAbsolutePosition({XPOS, CHARBOX.y});
+    } else {
+        // For single-line, keep the cursor at 100% height and centered
+        cursor->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
+        cursor->setAbsolutePosition({XPOS, 0.F});
+    }
 
     if (self->impl->window)
-        self->impl->window->setIMTo(self->impl->position.copy().translate({std::clamp(WIDTH, 0.F, sc<float>(self->impl->position.w)), 0.F}), data.text, inputState.cursor);
+        self->impl->window->setIMTo(self->impl->position.copy().translate({std::clamp(XPOS, 0.F, sc<float>(self->impl->position.w)), 0.F}), data.text, inputState.cursor);
 
     g_positioner->repositionNeeded(cursor);
 }
