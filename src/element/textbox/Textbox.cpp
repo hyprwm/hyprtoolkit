@@ -418,7 +418,7 @@ void STextboxImpl::updateSelect() {
                 auto nextBox = text->m_impl->getCharBox(i);
 
                 // check if we moved to a new line
-                if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD) 
+                if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD)
                     break;
 
                 lineEndOffset = i;
