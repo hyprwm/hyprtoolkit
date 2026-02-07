@@ -409,7 +409,8 @@ void STextboxImpl::removeSelectedText() {
 }
 
 void STextboxImpl::focusCursorAtClickedChar() {
-    inputState.cursor = text->m_impl->vecToOffset(lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())).value_or(data.text.size());
+    const float SCALE = self->impl->window ? self->impl->window->scale() : 1.F;
+    inputState.cursor = text->m_impl->vecToOffset((lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())) * SCALE).value_or(data.text.size());
     updateCursor();
     clearSelect();
 }
