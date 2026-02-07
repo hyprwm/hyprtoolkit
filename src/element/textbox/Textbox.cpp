@@ -54,20 +54,8 @@ void CTextboxElement::init() {
     m_impl->bgInnerCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
     m_impl->bgInnerCont->setMargin(3);
 
-    m_impl->selectBgCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.7F}})->commence();
-    m_impl->selectBg     = CRectangleBuilder::begin()
-                           ->color([] {
-                               auto x = g_palette->m_colors.accent.darken(0.4F);
-                               x.a    = 0.5F;
-                               return x;
-                           })
-                           ->commence();
-
+    m_impl->selectBgCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})->commence();
     m_impl->selectBgCont->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->selectBgCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
-    m_impl->selectBg->setPositionMode(HT_POSITION_ABSOLUTE);
-
-    m_impl->selectBgCont->addChild(m_impl->selectBg);
 
     m_impl->cursorCont = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 0.8F}})->commence();
     m_impl->cursor =
@@ -380,18 +368,91 @@ void STextboxImpl::clearSelect() {
 }
 
 void STextboxImpl::updateSelect() {
+    for (auto& selectBg : selectBgs) {
+        selectBgCont->removeChild(selectBg);
+    }
+    selectBgs.clear();
+
     if (inputState.selectBegin < 0) {
         bgInnerCont->removeChild(selectBgCont);
         return;
     }
 
-    float begin = text->m_impl->getCursorPos(inputState.selectBegin), //
-        end     = text->m_impl->getCursorPos(inputState.selectEnd);
+    // get character boxes for selection start and end
+    auto beginBox = text->m_impl->getCharBox(inputState.selectBegin);
+    auto endBox   = text->m_impl->getCharBox(inputState.selectEnd);
 
-    float width = end - begin;
+    // check if selection spans multiple lines
+    const float LINE_THRESHOLD = 1.F; // tolerance for Y position comparison
+    bool        isMultiline    = std::abs(beginBox.y - endBox.y) > LINE_THRESHOLD;
 
-    selectBg->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {width, 1.F}})->commence();
-    selectBg->setAbsolutePosition(Vector2D{begin, 0.F});
+    if (!isMultiline) {
+        float width = endBox.x - beginBox.x;
+
+        auto  selectBg = CRectangleBuilder::begin()
+                            ->color([] {
+                                auto x = g_palette->m_colors.accent.darken(0.4F);
+                                x.a    = 0.5F;
+                                return x;
+                            })
+                            ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {width, beginBox.h}})
+                            ->commence();
+
+        selectBg->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+        selectBg->setAbsolutePosition(Vector2D{beginBox.x, beginBox.y});
+
+        selectBgCont->addChild(selectBg);
+        selectBgs.push_back(selectBg);
+    } else {
+        // multiline selection - create rectangles for each line
+        size_t currentOffset = inputState.selectBegin;
+        auto   lineStartBox  = beginBox;
+
+        while (currentOffset < (size_t)inputState.selectEnd) {
+            // find the end of this line
+            size_t lineEndOffset = currentOffset;
+            auto   lineEndBox    = lineStartBox;
+
+            // scan forward on this line until we hit a line break or end of selection
+            for (size_t i = currentOffset + 1; i <= (size_t)inputState.selectEnd; i++) {
+                auto nextBox = text->m_impl->getCharBox(i);
+
+                // check if we moved to a new line
+                if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD) 
+                    break;
+
+                lineEndOffset = i;
+                lineEndBox    = nextBox;
+            }
+
+            float width = lineEndBox.x - lineStartBox.x;
+
+            if (width > 0) {
+                auto selectBg = CRectangleBuilder::begin()
+                                    ->color([] {
+                                        auto x = g_palette->m_colors.accent.darken(0.4F);
+                                        x.a    = 0.5F;
+                                        return x;
+                                    })
+                                    ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {width, lineStartBox.h}})
+                                    ->commence();
+
+                selectBg->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+                selectBg->setAbsolutePosition(Vector2D{lineStartBox.x, lineStartBox.y});
+
+                selectBgCont->addChild(selectBg);
+                selectBgs.push_back(selectBg);
+            }
+
+            // move to the next line
+            if (lineEndOffset >= (size_t)inputState.selectEnd)
+                break;
+
+            currentOffset = lineEndOffset + 1;
+            if (currentOffset < (size_t)inputState.selectEnd)
+                lineStartBox = text->m_impl->getCharBox(currentOffset);
+        }
+    }
 
     bgInnerCont->addChild(selectBgCont);
 }

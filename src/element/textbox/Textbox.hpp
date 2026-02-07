@@ -22,20 +22,20 @@ namespace Hyprtoolkit {
         CDynamicSize                                                                                size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
     struct STextboxImpl {
-        STextboxData          data;
+        STextboxData                       data;
 
-        WP<CTextboxElement>   self;
+        WP<CTextboxElement>                self;
 
-        SP<CRectangleElement> bg;
-        SP<CNullElement>      bgInnerCont;
-        SP<CNullElement>      cursorCont;
-        SP<CRectangleElement> cursor;
-        SP<CNullElement>      selectBgCont;
-        SP<CRectangleElement> selectBg;
-        SP<CTextElement>      text;
-        SP<CTextElement>      placeholder;
+        SP<CRectangleElement>              bg;
+        SP<CNullElement>                   bgInnerCont;
+        SP<CNullElement>                   cursorCont;
+        SP<CRectangleElement>              cursor;
+        SP<CNullElement>                   selectBgCont;
+        std::vector<SP<CRectangleElement>> selectBgs;
+        SP<CTextElement>                   text;
+        SP<CTextElement>                   placeholder;
 
-        bool                  active = false;
+        bool                               active = false;
 
         struct {
             CHyprSignalListener key;
