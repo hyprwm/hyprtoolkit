@@ -209,8 +209,12 @@ int main(int argc, char** argv, char** envp) {
             ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.3F, 25.F}})
             ->commence());
 
-    textbox =
-        CTextboxBuilder::begin()->defaultText("")->placeholder("placeholder")->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 24.F}})->commence();
+    textbox = CTextboxBuilder::begin()
+                  ->defaultText("")
+                  ->placeholder("placeholder")
+                  ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {150.F, 60.F}})
+                  ->multiline(true)
+                  ->commence();
 
     auto textboxCont = stretchLayout("Textbox", textbox);
 

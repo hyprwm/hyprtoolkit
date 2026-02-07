@@ -78,9 +78,11 @@ void CTextboxElement::init() {
     m_impl->cursor->setPositionMode(HT_POSITION_ABSOLUTE);
 
     m_impl->placeholder->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->placeholder->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
+    if (!m_impl->data.multiline)
+        m_impl->placeholder->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
     m_impl->text->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->text->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
+    if (!m_impl->data.multiline)
+        m_impl->text->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
 
     m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) { m_impl->lastCursorPos = pos; });
 
