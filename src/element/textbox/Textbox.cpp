@@ -209,6 +209,86 @@ void CTextboxElement::init() {
             return;
         }
 
+        if (ev.xkbKeysym == XKB_KEY_Up) {
+            if (!m_impl->data.multiline)
+                return;
+
+            const auto oldCursorPos = m_impl->inputState.cursor;
+            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->inputState.cursor);
+            const auto SCALE        = m_impl->self->impl->window ? m_impl->self->impl->window->scale() : 1.F;
+
+            // move up by one line height, using the left edge of the character box
+            Vector2D targetPos = {CHARBOX.x, CHARBOX.y - (CHARBOX.h / 2.F)};
+            targetPos          = targetPos * SCALE;
+
+            auto newOffset = m_impl->text->m_impl->vecToOffset(targetPos);
+            if (newOffset.has_value())
+                m_impl->inputState.cursor = std::min(newOffset.value(), m_impl->data.text.length());
+
+            if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
+                if (!m_impl->hasSelect()) {
+                    m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    m_impl->inputState.selectEnd   = oldCursorPos;
+                } else {
+                    if (sc<ssize_t>(oldCursorPos) == m_impl->inputState.selectEnd)
+                        m_impl->inputState.selectEnd = m_impl->inputState.cursor;
+                    else
+                        m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    const auto selectBegin         = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    const auto selectEnd           = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    m_impl->inputState.selectBegin = selectBegin;
+                    m_impl->inputState.selectEnd   = selectEnd;
+                }
+                m_impl->updateSelect();
+            } else if (m_impl->hasSelect()) {
+                m_impl->inputState.cursor = m_impl->inputState.selectBegin;
+                m_impl->clearSelect();
+            }
+
+            m_impl->updateCursor();
+            return;
+        }
+
+        if (ev.xkbKeysym == XKB_KEY_Down) {
+            if (!m_impl->data.multiline)
+                return;
+
+            const auto oldCursorPos = m_impl->inputState.cursor;
+            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->inputState.cursor);
+            const auto SCALE        = m_impl->self->impl->window ? m_impl->self->impl->window->scale() : 1.F;
+
+            // move down by one line height, using the left edge of the character box
+            Vector2D targetPos = {CHARBOX.x, CHARBOX.y + (CHARBOX.h * 1.5F)};
+            targetPos          = targetPos * SCALE;
+
+            auto newOffset = m_impl->text->m_impl->vecToOffset(targetPos);
+            if (newOffset.has_value())
+                m_impl->inputState.cursor = std::min(newOffset.value(), m_impl->data.text.length());
+
+            if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
+                if (!m_impl->hasSelect()) {
+                    m_impl->inputState.selectBegin = oldCursorPos;
+                    m_impl->inputState.selectEnd   = m_impl->inputState.cursor;
+                } else {
+                    if (sc<ssize_t>(oldCursorPos) == m_impl->inputState.selectEnd)
+                        m_impl->inputState.selectEnd = m_impl->inputState.cursor;
+                    else
+                        m_impl->inputState.selectBegin = m_impl->inputState.cursor;
+                    const auto selectBegin         = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    const auto selectEnd           = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                    m_impl->inputState.selectBegin = selectBegin;
+                    m_impl->inputState.selectEnd   = selectEnd;
+                }
+                m_impl->updateSelect();
+            } else if (m_impl->hasSelect()) {
+                m_impl->inputState.cursor = m_impl->inputState.selectEnd;
+                m_impl->clearSelect();
+            }
+
+            m_impl->updateCursor();
+            return;
+        }
+
         if (ev.xkbKeysym == XKB_KEY_Home || ev.xkbKeysym == XKB_KEY_KP_Home) {
             m_impl->inputState.cursor = 0;
             m_impl->updateCursor();
@@ -418,7 +498,7 @@ void STextboxImpl::updateSelect() {
                 auto nextBox = text->m_impl->getCharBox(i);
 
                 // check if we moved to a new line
-                if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD) 
+                if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD)
                     break;
 
                 lineEndOffset = i;
