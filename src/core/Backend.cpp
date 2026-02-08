@@ -381,7 +381,9 @@ void CBackend::enterLoop() {
                 m_sLoopState.event = true;
                 m_sLoopState.loopCV.notify_all();
 
-                m_sLoopState.wlDispatchCV.wait_for(lk, std::chrono::milliseconds(100), [this] { return m_sLoopState.wlDispatched; });
+                // wait briefly for main thread to dispatch events before polling again
+                // this prevents prepare_read from failing due to pending events
+                m_sLoopState.wlDispatchCV.wait_for(lk, std::chrono::milliseconds(5), [this] { return m_sLoopState.wlDispatched; });
             }
         }
     });
@@ -412,7 +414,7 @@ void CBackend::enterLoop() {
 
     std::thread idleThr([this]() {
         while (!m_terminate) {
-            std::unique_lock lk(m_sLoopState.timerRequestMutex);
+            std::unique_lock lk(m_sLoopState.idleRequestMutex);
             m_sLoopState.idleCV.wait(lk, [this] { return m_sLoopState.idleEvent; });
             m_sLoopState.idleEvent = false;
 

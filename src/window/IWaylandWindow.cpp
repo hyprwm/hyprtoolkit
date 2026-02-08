@@ -168,12 +168,13 @@ void IWaylandWindow::render() {
     auto currentBuffer    = m_waylandState.wlBuffers[m_waylandState.bufIdx];
     m_waylandState.bufIdx = (m_waylandState.bufIdx + 1) % 2;
 
+    // clear needsFrame BEFORE onPreRender, so any events during rendering will set it again
+    m_needsFrame = false;
+
     onPreRender();
 
     if (!currentBuffer)
         return;
-
-    m_needsFrame = false;
 
     g_renderer->beginRendering(m_self.lock(), currentBuffer->m_buffer.lock());
 
@@ -205,6 +206,7 @@ void IWaylandWindow::render() {
         m_lastFrame = std::chrono::steady_clock::now();
     }
 
+    // check if we need another frame (either set during rendering or needed for animations)
     m_needsFrame = m_needsFrame || g_animationManager->shouldTickForNext();
 }
 
