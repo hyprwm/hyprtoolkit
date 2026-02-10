@@ -45,7 +45,12 @@ namespace Hyprtoolkit {
         void                            cacheEntry(const std::string& iconName, SIconCacheResult&& result);
         std::optional<SIconCacheResult> getCached(const std::string& name);
 
+        bool                            m_hicolorAdded = false;
+
       private:
+        void                     parseThemes(const std::vector<std::string>& themeDirs);
+        void                     parseTheme(const std::string& themeDir);
+
         std::vector<std::string> m_lookupPaths;
 
         // TODO: stdlib's map is SLOW

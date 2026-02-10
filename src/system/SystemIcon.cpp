@@ -26,10 +26,8 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
         auto                  iconPath = fullDirPath / (name + ".svg");
         std::error_code       ec;
 
-        if (!std::filesystem::exists(iconPath, ec) || ec) {
+        if (!std::filesystem::exists(iconPath, ec) || ec)
             iconPath = fullDirPath / (name + ".png");
-            continue;
-        }
 
         if (!std::filesystem::exists(iconPath, ec) || ec)
             continue;

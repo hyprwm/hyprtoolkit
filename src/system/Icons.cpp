@@ -167,9 +167,7 @@ static std::optional<std::vector<std::string>> getIconThemeDirs() {
     return paths;
 }
 
-static void parseThemes(const std::vector<std::string>& themeDirs, std::vector<std::string>& lookupDirs);
-
-static void parseTheme(const std::string& themeDir, std::vector<std::string>& lookupDirs) {
+void CSystemIconFactory::parseTheme(const std::string& themeDir) {
     const auto THEME_DATA = readFileAsString(themeDir + "/index.theme");
 
     if (!THEME_DATA)
@@ -190,7 +188,7 @@ static void parseTheme(const std::string& themeDir, std::vector<std::string>& lo
         CConstVarList dirs(directoriesList, 0, ',', true);
 
         for (const auto& d : dirs) {
-            lookupDirs.emplace_back(BASE_PATH / d);
+            m_lookupPaths.emplace_back(BASE_PATH / d);
         }
 
         g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: theme {} has {} dirs", themeDir, dirs.size());
@@ -211,19 +209,22 @@ static void parseTheme(const std::string& themeDir, std::vector<std::string>& lo
         g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: theme {} inherits {} themes", themeDir, inherits.size());
 
         for (const auto& inheritName : inherits) {
+            if (inheritName == "hicolor")
+                m_hicolorAdded = true;
+
             auto inheritTheme = getThemeDir(trim(std::string{inheritName}));
             if (inheritTheme) {
                 g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: parsing inherited theme {}", *inheritTheme);
-                parseThemes(*inheritTheme, lookupDirs);
+                parseThemes(*inheritTheme);
             } else
                 g_logger->log(HT_LOG_WARNING, "CSystemIconFactory: inherited theme {} not found", std::string{inheritName});
         }
     }
 }
 
-static void parseThemes(const std::vector<std::string>& themeDirs, std::vector<std::string>& lookupDirs) {
+void CSystemIconFactory::parseThemes(const std::vector<std::string>& themeDirs) {
     for (const auto& td : themeDirs) {
-        parseTheme(td, lookupDirs);
+        parseTheme(td);
     }
 }
 
@@ -233,7 +234,13 @@ CSystemIconFactory::CSystemIconFactory() {
     if (!baseThemeDir)
         return;
 
-    parseThemes(baseThemeDir.value(), m_lookupPaths);
+    parseThemes(baseThemeDir.value());
+
+    if (!m_hicolorAdded) {
+        const auto DIRS = getThemeDir("hicolor");
+        if (DIRS)
+            parseThemes(*DIRS);
+    }
 
     g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: initialized with {} lookup paths", m_lookupPaths.size());
 }
