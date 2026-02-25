@@ -324,7 +324,7 @@ void CTextboxElement::init() {
         if (ev.utf8.empty())
             return;
 
-        if (ev.utf8 == "\n" && !m_impl->data.multiline)
+        if ((ev.utf8 == "\n" || ev.utf8 == "\r") && !m_impl->data.multiline)
             return;
 
         m_impl->removeSelectedText();

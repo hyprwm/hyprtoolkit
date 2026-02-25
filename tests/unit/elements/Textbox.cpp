@@ -77,3 +77,21 @@ TEST(Element, textboxEditing) {
 
     textbox.reset();
 }
+
+TEST(Element, textBoxNewLines) {
+    Tests::Tricks::createBackendSupport();
+
+    auto textbox = CTextboxBuilder::begin()->defaultText("I am on the first line!")->multiline(true)->commence();
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_End});
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.utf8 = "\r"});
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.utf8 = "\n"});
+    EXPECT_EQ(textbox->currentText(), "I am on the first line!\r\n");
+    textbox.reset();
+
+    textbox = CTextboxBuilder::begin()->defaultText("I am on the first line!")->multiline(false)->commence();
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_End});
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.utf8 = "\r"});
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.utf8 = "\n"});
+    EXPECT_EQ(textbox->currentText(), "I am on the first line!");
+    textbox.reset();
+}
