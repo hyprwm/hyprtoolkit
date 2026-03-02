@@ -63,7 +63,7 @@
         import nixpkgs {
           localSystem.system = system;
           overlays = with self.overlays; [
-            hyprtoolkit
+            hyprtoolkit-with-deps
           ];
         }
       );

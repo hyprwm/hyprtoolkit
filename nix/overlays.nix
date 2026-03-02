@@ -15,28 +15,30 @@ let
   version = lib.removeSuffix "\n" (builtins.readFile ../VERSION);
 in
 {
-  default = inputs.self.overlays.hyprtoolkit;
+  default = self.overlays.hyprtoolkit;
 
-  hyprtoolkit = lib.composeManyExtensions [
+  hyprtoolkit-with-deps = lib.composeManyExtensions [
     inputs.aquamarine.overlays.default
     inputs.hyprgraphics.overlays.default
     inputs.hyprlang.overlays.default
     inputs.hyprutils.overlays.default
     inputs.hyprwayland-scanner.overlays.default
-    (final: prev: {
-      hyprtoolkit = prev.callPackage ./default.nix {
-        stdenv = prev.gcc15Stdenv;
-        version =
-          version
-          + "+date="
-          + (mkDate (inputs.self.lastModifiedDate or "19700101"))
-          + "_"
-          + (inputs.self.shortRev or "dirty");
-      };
-
-      hyprtoolkit-with-tests = final.hyprtoolkit.override {
-        doCheck = true;
-      };
-    })
+    self.overlays.hyprtoolkit
   ];
+
+  hyprtoolkit = final: prev: {
+    hyprtoolkit = prev.callPackage ./default.nix {
+      stdenv = prev.gcc15Stdenv;
+      version =
+        version
+        + "+date="
+        + (mkDate (inputs.self.lastModifiedDate or "19700101"))
+        + "_"
+        + (inputs.self.shortRev or "dirty");
+    };
+
+    hyprtoolkit-with-tests = final.hyprtoolkit.override {
+      doCheck = true;
+    };
+  };
 }
