@@ -57,7 +57,8 @@ stdenv.mkDerivation {
     pixman
     wayland
     wayland-protocols
-  ] ++ (optional stdenv.isBSD epoll-shim);
+  ]
+  ++ (optional stdenv.isBSD epoll-shim);
 
   env.XDG_RUNTIME_DIR = "/tmp/runtime";
 

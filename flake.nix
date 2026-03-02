@@ -48,45 +48,50 @@
     };
   };
 
-  outputs = inputs @ {
-    self,
-    nixpkgs,
-    systems,
-    ...
-  }: let
-    inherit (nixpkgs) lib;
-    eachSystem = lib.genAttrs (import systems);
-    pkgsFor = eachSystem (
-      system:
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      systems,
+      ...
+    }:
+    let
+      inherit (nixpkgs) lib;
+      eachSystem = lib.genAttrs (import systems);
+      pkgsFor = eachSystem (
+        system:
         import nixpkgs {
           localSystem.system = system;
           overlays = with self.overlays; [
             hyprtoolkit
           ];
         }
-    );
-  in {
-    overlays = import ./nix/overlays.nix {inherit self lib inputs;};
+      );
+    in
+    {
+      overlays = import ./nix/overlays.nix { inherit self lib inputs; };
 
-    packages = eachSystem (system: {
-      default = self.packages.${system}.hyprtoolkit;
-      inherit (pkgsFor.${system}) hyprtoolkit hyprtoolkit-with-tests;
-    });
+      packages = eachSystem (system: {
+        default = self.packages.${system}.hyprtoolkit;
+        inherit (pkgsFor.${system}) hyprtoolkit hyprtoolkit-with-tests;
+      });
 
-    devShells = eachSystem (system: {
-      default =
-        pkgsFor.${system}.mkShell.override {
-          inherit (self.packages.${system}.default) stdenv;
-        } {
-          name = "hyprtoolkit-shell";
-          hardeningDisable = ["fortify"];
-          inputsFrom = [pkgsFor.${system}.hyprtoolkit];
-          packages = [pkgsFor.${system}.clang-tools];
-        };
-    });
+      devShells = eachSystem (system: {
+        default =
+          pkgsFor.${system}.mkShell.override
+            {
+              inherit (self.packages.${system}.default) stdenv;
+            }
+            {
+              name = "hyprtoolkit-shell";
+              hardeningDisable = [ "fortify" ];
+              inputsFrom = [ pkgsFor.${system}.hyprtoolkit ];
+              packages = [ pkgsFor.${system}.clang-tools ];
+            };
+      });
 
-    checks = eachSystem (system: self.packages.${system});
+      checks = eachSystem (system: self.packages.${system});
 
-    formatter = eachSystem (system: pkgsFor.${system}.alejandra);
-  };
+      formatter = eachSystem (system: pkgsFor.${system}.nixfmt-tree);
+    };
 }
