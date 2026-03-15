@@ -377,9 +377,8 @@ void STextImpl::renderTex() {
 
     ASP<IAsyncResource> resourceGeneric(resource);
 
-    g_asyncResourceGatherer->enqueue(resourceGeneric);
-
     if (!data.async) {
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
         g_asyncResourceGatherer->await(resourceGeneric);
         postTexLoad();
     } else {
@@ -394,6 +393,8 @@ void STextImpl::renderTex() {
                 postTexLoad();
             });
         });
+
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
     }
 }
 
