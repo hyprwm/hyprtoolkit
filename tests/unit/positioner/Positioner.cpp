@@ -152,3 +152,31 @@ TEST(Positioner, rowLayoutGrowFillsRemaining) {
     EXPECT_EQ(grow->impl->position.w, 970);
     EXPECT_EQ(grow->impl->position.x, 30);
 }
+
+// overflow path: a child that doesn't fit must not size_t-underflow when
+// shrinking earlier siblings. before the fix, sizes[j] -= needs - sizes[j]
+// could wrap to ~2^64 and the layout would explode.
+TEST(Positioner, rowLayoutOverflowShrinkDoesNotUnderflow) {
+    auto root = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 100}})->commence();
+
+    auto row = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->gap(0)->commence();
+    root->addChild(row);
+
+    // three 100-px children, parent only has 200, last one cannot fit
+    auto a = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+    auto b = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+    auto c = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+
+    row->addChild(a);
+    row->addChild(b);
+    row->addChild(c);
+
+    g_positioner->position(root, {{}, {200, 100}});
+    g_positioner->positionChildren(root);
+
+    // every realised width must be sane (<= parent width). underflow would
+    // produce nonsense in the gigabytes.
+    EXPECT_LE(a->impl->position.w, 200);
+    EXPECT_LE(b->impl->position.w, 200);
+    EXPECT_LE(c->impl->position.w, 200);
+}

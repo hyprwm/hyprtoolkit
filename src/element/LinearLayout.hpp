@@ -26,7 +26,7 @@ namespace Hyprtoolkit::LinearLayout {
         auto boxPrimary  = [](const CBox& b) -> double { return Horizontal ? b.w : b.h; };
         auto grows       = [](const SP<IElement>& e) -> bool { return Horizontal ? e->impl->growH : e->impl->growV; };
 
-        const double        MAX = boxPrimary(box);
+        const double        MAX = (double)(uint64_t)boxPrimary(box); // floor to match upstream behavior
         double              used = 0;
 
         std::vector<size_t> sizes;
@@ -58,10 +58,10 @@ namespace Hyprtoolkit::LinearLayout {
                         const auto& prevChild = C.at(j);
                         const auto  MIN       = prevChild->minimumSize(box.size());
                         if (!MIN.has_value()) {
-                            // we can shrink this child to zero
+                            // can shrink to zero. give all of it, continue if not enough.
                             if (needs > sizes.at(j)) {
-                                sizes.at(j) -= needs - sizes.at(j);
-                                needs -= needs - sizes.at(j);
+                                needs -= sizes.at(j);
+                                sizes.at(j) = 0;
                                 continue;
                             }
 
@@ -69,11 +69,11 @@ namespace Hyprtoolkit::LinearLayout {
                             needs = 0;
                             break;
                         } else if (axisPrimary(*MIN) < sizes.at(j)) {
-                            // we can shrink it a bit
+                            // can shrink down to MIN. give all available slack, continue if not enough.
                             const double slack = sizes.at(j) - axisPrimary(*MIN);
                             if (needs > slack) {
-                                sizes.at(j) -= needs - slack;
-                                needs -= needs - slack;
+                                sizes.at(j) -= slack;
+                                needs -= slack;
                                 continue;
                             }
 
@@ -152,7 +152,7 @@ namespace Hyprtoolkit::LinearLayout {
                 g_positioner->position(child, childBox, Vector2D{box.w, childBox.h + (MAX - used)});
             }
 
-            cursor += (size_t)(Horizontal ? childBox.w : childBox.h) + (size_t)gap;
+            cursor += (size_t)((Horizontal ? childBox.w : childBox.h) + gap);
         }
     }
 }
