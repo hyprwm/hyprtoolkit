@@ -483,6 +483,9 @@ void CWaylandPlatform::initSeat() {
                 if (!w)
                     return;
 
+                // release the synthetic press so latched elements (buttons, etc.)
+                // don't stay stuck if the compositor cancels the touch sequence
+                w->mouseButton(Input::MOUSE_BUTTON_LEFT, false);
                 w->mouseLeave();
             });
 
