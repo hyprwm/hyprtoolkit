@@ -139,5 +139,7 @@ void CWaylandPopup::close() {
 }
 
 SP<IWindow> CWaylandPopup::openPopup(const SWindowCreationData& data) {
-    return nullptr; //FIXME:
+    // nested popups (popup-on-popup) are not implemented
+    g_logger->log(HT_LOG_WARNING, "CWaylandPopup::openPopup: nested popups are not supported");
+    return nullptr;
 }
