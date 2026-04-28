@@ -5,25 +5,26 @@
 
 using namespace Hyprtoolkit;
 
-CGLTexture::CGLTexture(ASP<Hyprgraphics::IAsyncResource> resource) {
+CGLTexture::CGLTexture() {
+    ;
+}
+
+void CGLTexture::attachAsync(WP<CGLTexture> self, ASP<Hyprgraphics::IAsyncResource> resource) {
     if (resource->m_ready) {
         m_resource = resource;
         upload();
         return;
     }
 
-    // not ready yet, add a timer when it is and do it
-    // FIXME: could UAF. Maybe keep wref?
-    resource->m_events.finished.listenStatic([this, resource] {
-        g_backend->addIdle([this, resource]() {
-            m_resource = resource;
-            upload();
+    resource->m_events.finished.listenStatic([self, resource] {
+        g_backend->addIdle([self, resource]() {
+            const auto SELF = self.lock();
+            if (!SELF)
+                return;
+            SELF->m_resource = resource;
+            SELF->upload();
         });
     });
-}
-
-CGLTexture::CGLTexture() {
-    ;
 }
 
 CGLTexture::~CGLTexture() {
