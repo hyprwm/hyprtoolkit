@@ -7,6 +7,7 @@
 #include "../../window/ToolkitWindow.hpp"
 
 #include "../Element.hpp"
+#include "../LinearLayout.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -40,134 +41,9 @@ void CColumnLayoutElement::replaceData(const SColumnLayoutData& data) {
         impl->window->scheduleReposition(impl->self);
 }
 
-// FIXME: de-dup with rowlayout?
 void CColumnLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(sbox);
-
-    const auto& box = impl->position;
-
-    const auto  C = impl->children;
-
-    // position children in this layout.
-
-    size_t              usedY = 0;
-    const size_t        MAX_Y = (uint64_t)impl->position.size().y;
-
-    size_t              i = 0;
-
-    std::vector<size_t> heights;
-    heights.resize(impl->children.size());
-
-    for (i = 0; i < C.size(); ++i) {
-        const auto& child = C.at(i);
-
-        Vector2D    cSize = childSize(child);
-        if (cSize == Vector2D{-1, -1})
-            cSize = {box.w, 1.F};
-
-        if (usedY + cSize.y > MAX_Y + 1) {
-            // doesn't fit: try to shrink any previous element if it allows to do so
-            // FIXME: if we resize and fail to fit, it will mess up the layout a bit
-            float needs = (usedY + cSize.y) - (MAX_Y + 1);
-            for (int j = i - 1; j >= 0; --j) {
-                const auto& prevChild = C.at(j);
-                const auto  MIN       = prevChild->minimumSize(impl->position.size());
-                if (!MIN.has_value()) {
-                    // we can shrink this child to zero
-                    if (needs > heights.at(j)) {
-                        heights.at(j) -= needs - heights.at(j);
-                        needs -= needs - heights.at(j);
-                        continue;
-                    }
-
-                    heights.at(j) -= needs;
-                    needs = 0;
-                    break; // done
-                } else if (MIN->y < heights.at(j)) {
-                    // we can shrink it a bit
-                    if (needs > (heights.at(j) - MIN->y)) {
-                        heights.at(j) -= needs - (heights.at(j) - MIN->y);
-                        needs -= needs - (heights.at(j) - MIN->y);
-                        continue;
-                    }
-
-                    heights.at(j) -= needs;
-                    needs = 0;
-                    break; // done
-                }
-            }
-
-            if (needs > 0) {
-                // doesn't fit: disable and expand the last if possible
-                child->impl->setFailedPositioning(true);
-                if (i != 0) {
-                    // try to expand last child
-                    const auto& lastChild = C.at(i - 1);
-
-                    if (lastChild->maximumSize(box.size()) && heights.at(i - 1) + MAX_Y - usedY > lastChild->maximumSize(box.size())->y)
-                        continue; // too bad, we'll have a gap
-
-                    heights.at(i - 1) += MAX_Y - usedY;
-                }
-                continue;
-            } else {
-
-                child->impl->setFailedPositioning(false);
-                heights.at(i) = cSize.y;
-
-                // recalc usedX cuz we changed stuff
-                usedY = 0;
-                for (const auto& h : heights) {
-                    usedY += h + m_impl->data.gap;
-                }
-
-                continue;
-            }
-        }
-
-        // can fit: use preferred
-        heights.at(i) = cSize.y;
-        child->impl->setFailedPositioning(false);
-        usedY += cSize.y + m_impl->data.gap;
-    }
-
-    if (!C.empty())
-        usedY -= m_impl->data.gap;
-
-    // check if any element grows and grow if applicable
-    if (usedY < MAX_Y) {
-        for (i = 0; i < C.size(); ++i) {
-            const auto& child = C.at(i);
-
-            if (!child->impl->growV)
-                continue;
-
-            heights.at(i) += MAX_Y - usedY;
-            break;
-        }
-    }
-
-    // widths done: lay out elements
-    size_t currentY = 0;
-
-    for (i = 0; i < C.size(); ++i) {
-        const auto& child = C.at(i);
-
-        if (child->impl->failedPositioning)
-            continue;
-
-        Vector2D cSize = childSize(child);
-
-        cSize.x = std::clamp(cSize.x, 0.0, impl->position.w);
-
-        CBox childBox = CBox{box.x + ((box.w - cSize.x) / 2), box.y + currentY, cSize.x, (double)heights.at(i)};
-
-        g_positioner->position(child, childBox, Vector2D{box.w, childBox.h + (MAX_Y - usedY) /* this can potentially cause problems... ↓ */});
-        //                                                                              This essentially tells each item it can grow, so if we have two
-        //                                                                              texts next to each other, they might fight for space. FIXME:
-
-        currentY += childBox.h + m_impl->data.gap;
-    }
+    LinearLayout::reposition<false>(this, impl->position, impl->children, m_impl->data.gap, [this](SP<IElement> c) { return childSize(c); });
 }
 
 Hyprutils::Math::Vector2D CColumnLayoutElement::size() {
