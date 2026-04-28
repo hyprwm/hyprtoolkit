@@ -436,10 +436,9 @@ void CWaylandPlatform::initSeat() {
                 if (!w)
                     return;
 
-                m_activeTouchId   = id;
-                m_currentWindow   = w;
-                m_lastEnterSerial = serial;
-                m_currentMods     = 0;
+                m_activeTouchId = id;
+                m_touchWindow   = w;
+                m_currentMods   = 0;
 
                 Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
                 w->mouseEnter(local);
@@ -453,21 +452,25 @@ void CWaylandPlatform::initSeat() {
 
                 m_activeTouchId = -1;
 
-                if (!m_currentWindow)
+                auto w = m_touchWindow.lock();
+                m_touchWindow.reset();
+                if (!w)
                     return;
 
-                auto w = m_currentWindow.lock();
                 w->mouseButton(Input::MOUSE_BUTTON_LEFT, false);
                 w->mouseLeave();
-                m_currentWindow.reset();
             });
 
             m_waylandState.touch->setMotion([this](CCWlTouch* r, uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) {
-                if (id != m_activeTouchId || !m_currentWindow)
+                if (id != m_activeTouchId)
+                    return;
+
+                auto w = m_touchWindow.lock();
+                if (!w)
                     return;
 
                 Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
-                m_currentWindow->mouseMove(local);
+                w->mouseMove(local);
             });
 
             m_waylandState.touch->setCancel([this](CCWlTouch* r) {
@@ -475,12 +478,12 @@ void CWaylandPlatform::initSeat() {
                     return;
 
                 m_activeTouchId = -1;
-                if (!m_currentWindow)
+                auto w          = m_touchWindow.lock();
+                m_touchWindow.reset();
+                if (!w)
                     return;
 
-                auto w = m_currentWindow.lock();
                 w->mouseLeave();
-                m_currentWindow.reset();
             });
 
             m_waylandState.touch->setFrame([](CCWlTouch* r) {
@@ -490,6 +493,7 @@ void CWaylandPlatform::initSeat() {
         } else if (!HAS_TOUCH && m_waylandState.touch) {
             m_waylandState.touch.reset();
             m_activeTouchId = -1;
+            m_touchWindow.reset();
         }
     });
 }
