@@ -60,15 +60,12 @@ CBackend::CBackend() {
 }
 
 CBackend::~CBackend() {
-    destroy();
-
-    g_openGL.reset();
-    g_renderer.reset();
-    g_config.reset();
-    g_palette.reset();
-    g_iconFactory.reset();
-    g_waylandPlatform.reset();
-    g_logger.reset();
+    // ~CBackend may run during static destruction, when other inline globals
+    // (g_renderer, g_openGL, g_logger, ...) may already be destroyed. touching
+    // them here is UB. cleanup of those globals has to happen earlier, see the
+    // atexit handler installed in IBackend::create, so we only release our own
+    // members here.
+    m_terminate = true;
 
     close(m_sLoopState.exitfd[0]);
     close(m_sLoopState.exitfd[1]);
@@ -111,6 +108,16 @@ SP<IBackend> IBackend::create() {
     }
     g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
     g_renderer = g_openGL;
+
+    // run cleanup while every inline static SP is still alive. by the time
+    // ~CBackend reaches static destruction, sibling globals like g_renderer
+    // may already have been freed, so any cleanup that touches them must run
+    // here. atexit fires after main returns but before static destructors.
+    static const int once = std::atexit([]() {
+        if (g_backend)
+            g_backend->destroy();
+    });
+    (void)once;
 
     return g_backend;
 };
