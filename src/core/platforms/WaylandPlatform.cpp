@@ -418,6 +418,79 @@ void CWaylandPlatform::initSeat() {
             m_waylandState.pointer.reset();
             m_waylandState.cursorShapeDev.reset();
         }
+
+        const bool HAS_TOUCH = ((uint32_t)cap) & WL_SEAT_CAPABILITY_TOUCH;
+
+        if (HAS_TOUCH && !m_waylandState.touch) {
+            m_waylandState.touch = makeShared<CCWlTouch>(m_waylandState.seat->sendGetTouch());
+
+            // route the first active touch point to the existing pointer-style
+            // path so buttons / sliders / checkboxes pick up taps as clicks.
+            // multitouch beyond one finger is ignored: the toolkit has no
+            // concept of multiple cursors yet.
+            m_waylandState.touch->setDown([this](CCWlTouch* r, uint32_t serial, uint32_t time, wl_proxy* surf, int32_t id, wl_fixed_t x, wl_fixed_t y) {
+                if (m_activeTouchId != -1)
+                    return; // another finger is already tracked
+
+                auto w = windowForSurf(surf);
+                if (!w)
+                    return;
+
+                m_activeTouchId   = id;
+                m_currentWindow   = w;
+                m_lastEnterSerial = serial;
+                m_currentMods     = 0;
+
+                Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
+                w->mouseEnter(local);
+                w->mouseMove(local);
+                w->mouseButton(Input::MOUSE_BUTTON_LEFT, true);
+            });
+
+            m_waylandState.touch->setUp([this](CCWlTouch* r, uint32_t serial, uint32_t time, int32_t id) {
+                if (id != m_activeTouchId)
+                    return;
+
+                m_activeTouchId = -1;
+
+                if (!m_currentWindow)
+                    return;
+
+                auto w = m_currentWindow.lock();
+                w->mouseButton(Input::MOUSE_BUTTON_LEFT, false);
+                w->mouseLeave();
+                m_currentWindow.reset();
+            });
+
+            m_waylandState.touch->setMotion([this](CCWlTouch* r, uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) {
+                if (id != m_activeTouchId || !m_currentWindow)
+                    return;
+
+                Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
+                m_currentWindow->mouseMove(local);
+            });
+
+            m_waylandState.touch->setCancel([this](CCWlTouch* r) {
+                if (m_activeTouchId == -1)
+                    return;
+
+                m_activeTouchId = -1;
+                if (!m_currentWindow)
+                    return;
+
+                auto w = m_currentWindow.lock();
+                w->mouseLeave();
+                m_currentWindow.reset();
+            });
+
+            m_waylandState.touch->setFrame([](CCWlTouch* r) {
+                // no batching needed for our single-finger model
+            });
+
+        } else if (!HAS_TOUCH && m_waylandState.touch) {
+            m_waylandState.touch.reset();
+            m_activeTouchId = -1;
+        }
     });
 }
 

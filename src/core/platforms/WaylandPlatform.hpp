@@ -84,6 +84,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWpViewporter>               viewporter;
             Hyprutils::Memory::CSharedPointer<CCWlKeyboard>                 keyboard;
             Hyprutils::Memory::CSharedPointer<CCWlPointer>                  pointer;
+            Hyprutils::Memory::CSharedPointer<CCWlTouch>                    touch;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeManagerV1>     cursorShapeMgr;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>      cursorShapeDev;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>      textInputManager;
@@ -131,6 +132,7 @@ namespace Hyprtoolkit {
         WP<IWaylandWindow>              m_currentWindow;
         uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial = 0;
+        int32_t                         m_activeTouchId   = -1;
 
         WP<CWaylandSessionLockState>    m_sessionLockState;
     };
