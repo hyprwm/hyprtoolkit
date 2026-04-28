@@ -56,7 +56,7 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
         if (cSize == Vector2D{-1, -1})
             cSize = {1.F, box.h};
 
-        if (usedX + cSize.x > MAX_X + 2 /* FIXME: WHERE THE FUCK IS THIS LOST??? */) {
+        if (usedX + cSize.x > MAX_X + 1) {
             // we exceeded our available space.
             if (!child->minimumSize(box.size())) {
                 // doesn't fit: disable
