@@ -377,12 +377,12 @@ void STextImpl::renderTex() {
 
     ASP<IAsyncResource> resourceGeneric(resource);
 
-    g_asyncResourceGatherer->enqueue(resourceGeneric);
-
     if (!data.async) {
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
         g_asyncResourceGatherer->await(resourceGeneric);
         postTexLoad();
     } else {
+        // attach listener before enqueueing, otherwise gatherer can finish first and we miss postTexLoad
         resource->m_events.finished.listenStatic([this, self = self->impl->self] {
             if (!self)
                 return;
@@ -394,6 +394,7 @@ void STextImpl::renderTex() {
                 postTexLoad();
             });
         });
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
     }
 }
 
