@@ -400,6 +400,7 @@ void STextImpl::renderTex() {
                 postTexLoad();
             });
         });
+
         g_asyncResourceGatherer->enqueue(resourceGeneric);
     }
 }
