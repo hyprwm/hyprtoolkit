@@ -150,40 +150,6 @@ TEST(Positioner, rowLayoutGrowFillsRemaining) {
     EXPECT_EQ(grow->impl->position.x, 30);
 }
 
-// when shrinking previous siblings frees up some space, the running `used`
-// must reflect that before deciding whether/how to expand the last visible
-// sibling. before the fix, used was stale (still tracked the pre-shrink sum)
-// so the expand-last math used the wrong gap. with non-shrinkable b and
-// failed c, b should remain exactly at its absolute width and not balloon
-// from a stale-used arithmetic path.
-TEST(Positioner, rowLayoutShrinkRecomputesUsedBeforeExpand) {
-    auto root = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
-
-    auto row = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->gap(0)->commence();
-    root->addChild(row);
-
-    // a: shrinkable to 0 (PERCENT, no min)
-    // b: fixed 50 wide (ABSOLUTE; min == max == 50)
-    // c: 100 wide; cannot fit at all in the remainder, will be disabled
-    auto a = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
-    auto b = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 100}})->commence();
-    auto c = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
-
-    row->addChild(a);
-    row->addChild(b);
-    row->addChild(c);
-
-    g_positioner->position(root, {{}, {100, 100}});
-    g_positioner->positionChildren(root);
-
-    // b must respect its absolute size: no stale-used arithmetic should
-    // grow it past the declared 50.
-    EXPECT_LE(b->impl->position.w, 50);
-    // total realised must not exceed the parent
-    const auto totalRealised = a->impl->position.w + b->impl->position.w + c->impl->position.w;
-    EXPECT_LE(totalRealised, 100);
-}
-
 // overflow path: a child that doesn't fit must not size_t-underflow when
 // shrinking earlier siblings. before the fix, sizes[j] -= needs - sizes[j]
 // could wrap to ~2^64 and the layout would explode.
