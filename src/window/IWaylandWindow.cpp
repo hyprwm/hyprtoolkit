@@ -3,6 +3,8 @@
 
 #include <hyprtoolkit/element/Null.hpp>
 
+#include <functional>
+
 #include "../element/Element.hpp"
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
@@ -96,20 +98,22 @@ void IWaylandWindow::onPreRender() {
     if (!ANY_REPOSITION)
         return;
 
-    // recheck opaque region
-    // TODO: maybe traverse the entire tree?
-
-    CRegion rg;
-    for (const auto& ch : m_rootElement->impl->children) {
-        auto opaque = ch->opaqueBox();
-
-        if (opaque.empty())
-            continue;
-
-        opaque.translate(ch->impl->position.pos());
-
-        rg.add(opaque);
-    }
+    // recheck opaque region across the whole element tree, not just the
+    // direct children: nested rectangles / images otherwise never contribute
+    // and the compositor falls back to alpha-blending behind them.
+    CRegion                            rg;
+    std::function<void(SP<IElement>)>  walk;
+    walk = [&rg, &walk](SP<IElement> e) {
+        auto opaque = e->opaqueBox();
+        if (!opaque.empty()) {
+            opaque.translate(e->impl->position.pos());
+            rg.add(opaque);
+        }
+        for (const auto& ch : e->impl->children)
+            walk(ch);
+    };
+    for (const auto& ch : m_rootElement->impl->children)
+        walk(ch);
 
     m_waylandState.lastOpaqueRegion = std::move(rg);
 
