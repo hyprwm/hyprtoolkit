@@ -83,6 +83,12 @@ namespace Hyprtoolkit::LinearLayout {
                         }
                     }
 
+                    // shrinking changed prior sizes: recompute used so the gap
+                    // available to the expand-last branch reflects reality.
+                    used = 0;
+                    for (size_t k = 0; k < i; ++k)
+                        used += sizes.at(k) + gap;
+
                     if (needs > 0) {
                         // doesn't fit: disable and expand the last if possible
                         child->impl->setFailedPositioning(true);
@@ -98,11 +104,7 @@ namespace Hyprtoolkit::LinearLayout {
                     } else {
                         child->impl->setFailedPositioning(false);
                         sizes.at(i) = axisPrimary(cSize);
-
-                        // recalc used, we changed prior sizes
-                        used = 0;
-                        for (const auto& s : sizes)
-                            used += s + gap;
+                        used += sizes.at(i) + gap;
 
                         continue;
                     }
