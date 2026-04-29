@@ -6,7 +6,6 @@ namespace Hyprtoolkit {
 
     class CWaylandWindow;
 
-    // TODO: de-dup this shit
     class CWaylandPopup : public IWaylandWindow {
       public:
         CWaylandPopup(const SWindowCreationData& data, SP<CWaylandWindow> parent);

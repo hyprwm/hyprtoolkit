@@ -38,12 +38,6 @@ namespace Hyprtoolkit {
         static constexpr eAnimatedVarType value = AVARTYPE_COLOR;
     };
 
-    // TODO:
-    // template <>
-    // struct STypeToAnimatedVarType_t<CGradientValueData> {
-    //     static constexpr eAnimatedVarType value = AVARTYPE_GRADIENT;
-    // };
-
     template <class T>
     inline constexpr eAnimatedVarType typeToeAnimatedVarType = STypeToAnimatedVarType_t<T>::value;
 
