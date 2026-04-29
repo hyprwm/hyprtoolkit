@@ -384,11 +384,17 @@ void STextImpl::renderTex() {
     } else {
         // attach listener before enqueueing, otherwise gatherer can finish first and we miss postTexLoad
         resource->m_events.finished.listenStatic([this, self = self->impl->self] {
-            if (!self)
+            // lock() returns null if the element is in/past destruction, so
+            // it's stricter than the implicit operator bool() (which only
+            // checks whether the data slot is non-null).
+            if (!self.lock())
+                return;
+            if (!g_backend)
                 return;
 
             g_backend->addIdle([this, self = self]() {
-                if (!self)
+                const auto SELF = self.lock();
+                if (!SELF)
                     return;
 
                 postTexLoad();
