@@ -383,11 +383,13 @@ void STextImpl::renderTex() {
         postTexLoad();
     } else {
         resource->m_events.finished.listenStatic([this, self = self->impl->self] {
-            if (!self)
+            if (self.expired())
+                return;
+            if (!g_backend)
                 return;
 
             g_backend->addIdle([this, self = self]() {
-                if (!self)
+                if (self.expired())
                     return;
 
                 postTexLoad();
