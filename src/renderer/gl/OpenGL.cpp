@@ -677,8 +677,13 @@ void COpenGLRenderer::endRendering() {
     m_currentRBO->unbind();
     m_currentRBO.reset();
 
-    // FIXME: explicit sync for nvidia!!!!
-    glFlush();
+    // explicit sync (linux-drm-syncobj-v1) handles GPU/compositor ordering
+    // through an EGL fence created in submitExplicit -> signalRenderPoint, so
+    // glFlush here would be redundant. when explicit sync is unavailable we
+    // still need it so drivers without implicit sync (notably the nvidia
+    // proprietary one) don't hand the compositor an unfinished frame.
+    if (!explicitSyncSupported())
+        glFlush();
 
     m_window->m_damageRing.rotate();
     m_window.reset();
