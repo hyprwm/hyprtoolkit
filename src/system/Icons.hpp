@@ -53,7 +53,6 @@ namespace Hyprtoolkit {
 
         std::vector<std::string> m_lookupPaths;
 
-        // TODO: stdlib's map is SLOW
         std::unordered_map<std::string, SIconCacheResult> m_pathCache;
 
         friend class CSystemIconDescription;
