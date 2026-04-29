@@ -95,3 +95,45 @@ TEST(Element, textBoxNewLines) {
     EXPECT_EQ(textbox->currentText(), "I am on the first line!");
     textbox.reset();
 }
+
+// imDeleteSurroundingText models the text-input-v3 delete_surrounding_text
+// action: chars before/after the cursor get removed, then a commit/preedit
+// can land on the freed space. before/after are byte counts, clamped to the
+// available text on each side.
+TEST(Element, textboxImDeleteSurroundingText) {
+    Tests::Tricks::createBackendSupport();
+
+    // delete two chars to the left of the cursor
+    auto textbox = CTextboxBuilder::begin()->defaultText("hello world")->commence();
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_End});
+    EXPECT_EQ(textbox->cursorPos(), 11);
+    static_cast<IElement*>(textbox.get())->imDeleteSurroundingText(2, 0);
+    EXPECT_EQ(textbox->currentText(), "hello wor");
+    EXPECT_EQ(textbox->cursorPos(), 9);
+    textbox.reset();
+
+    // delete one char on each side of the cursor
+    textbox = CTextboxBuilder::begin()->defaultText("abcde")->commence();
+    for (int i = 0; i < 3; ++i)
+        textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_Right});
+    EXPECT_EQ(textbox->cursorPos(), 3);
+    static_cast<IElement*>(textbox.get())->imDeleteSurroundingText(1, 1);
+    EXPECT_EQ(textbox->currentText(), "abe");
+    EXPECT_EQ(textbox->cursorPos(), 2);
+    textbox.reset();
+
+    // before and after both clamp to available text
+    textbox = CTextboxBuilder::begin()->defaultText("hi")->commence();
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_Right});
+    EXPECT_EQ(textbox->cursorPos(), 1);
+    static_cast<IElement*>(textbox.get())->imDeleteSurroundingText(100, 100);
+    EXPECT_EQ(textbox->currentText(), "");
+    EXPECT_EQ(textbox->cursorPos(), 0);
+    textbox.reset();
+
+    // (0, 0) is a no-op
+    textbox = CTextboxBuilder::begin()->defaultText("untouched")->commence();
+    static_cast<IElement*>(textbox.get())->imDeleteSurroundingText(0, 0);
+    EXPECT_EQ(textbox->currentText(), "untouched");
+    textbox.reset();
+}

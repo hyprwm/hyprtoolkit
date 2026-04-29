@@ -408,6 +408,24 @@ void CTextboxElement::imApplyText() {
     m_impl->updateLabel();
 }
 
+void CTextboxElement::imDeleteSurroundingText(size_t before, size_t after) {
+    auto&        cur = m_impl->inputState.cursor;
+    auto&        txt = m_impl->data.text;
+
+    const size_t bef = std::min(before, cur);
+    if (bef > 0) {
+        txt.erase(cur - bef, bef);
+        cur -= bef;
+    }
+
+    const size_t aft = std::min(after, txt.length() - cur);
+    if (aft > 0)
+        txt.erase(cur, aft);
+
+    if (bef > 0 || aft > 0)
+        m_impl->updateLabel();
+}
+
 void STextboxImpl::updateCursor() {
     inputState.cursor = std::clamp(inputState.cursor, (size_t)0, data.text.length());
 

@@ -181,6 +181,10 @@ void IElement::imApplyText() {
     ;
 }
 
+void IElement::imDeleteSurroundingText(size_t before, size_t after) {
+    ;
+}
+
 void IElement::setReceivesMouse(bool x) {
     impl->userRequestedMouseInput = true;
 }
