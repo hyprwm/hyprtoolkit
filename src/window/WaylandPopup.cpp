@@ -15,7 +15,7 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
-CWaylandPopup::CWaylandPopup(const SWindowCreationData& data, SP<IWaylandWindow> parent) : m_parent(parent), m_creationData(data) {
+CWaylandPopup::CWaylandPopup(const SWindowCreationData& data, SP<CWaylandWindow> window) : m_parent(window), m_creationData(data) {
     m_rootElement = CNullBuilder::begin()->commence();
 }
 
@@ -119,15 +119,6 @@ void CWaylandPopup::close() {
     if (m_parent)
         std::erase(m_parent->m_popups, m_self);
 
-    // close any nested popups we own. xdg-popup destroys cascade automatically
-    // on the protocol side, but we still need to drop our own bookkeeping so
-    // the popups release their state and emit popupClosed.
-    for (const auto& p : m_popups) {
-        if (p)
-            p->close();
-    }
-    m_popups.clear();
-
     if (!m_open)
         return;
 
@@ -145,4 +136,10 @@ void CWaylandPopup::close() {
     m_waylandState = {};
 
     m_events.popupClosed.emit();
+}
+
+SP<IWindow> CWaylandPopup::openPopup(const SWindowCreationData& data) {
+    // nested popups (popup-on-popup) are not implemented
+    g_logger->log(HT_LOG_WARNING, "CWaylandPopup::openPopup: nested popups are not supported");
+    return nullptr;
 }

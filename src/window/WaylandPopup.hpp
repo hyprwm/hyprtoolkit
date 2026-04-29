@@ -4,16 +4,19 @@
 
 namespace Hyprtoolkit {
 
+    class CWaylandWindow;
+
     class CWaylandPopup : public IWaylandWindow {
       public:
-        CWaylandPopup(const SWindowCreationData& data, SP<IWaylandWindow> parent);
+        CWaylandPopup(const SWindowCreationData& data, SP<CWaylandWindow> parent);
         virtual ~CWaylandPopup();
 
-        virtual void close();
-        virtual void open();
+        virtual void                                       close();
+        virtual void                                       open();
+        virtual Hyprutils::Memory::CSharedPointer<IWindow> openPopup(const SWindowCreationData& data);
 
       private:
-        WP<IWaylandWindow>  m_parent;
+        WP<CWaylandWindow>  m_parent;
         SWindowCreationData m_creationData;
 
         struct {
