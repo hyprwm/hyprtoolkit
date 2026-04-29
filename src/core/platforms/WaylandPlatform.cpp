@@ -245,33 +245,19 @@ void CWaylandPlatform::initIM() {
         if (!m_currentWindow || !m_currentWindow->m_keyboardFocus)
             return;
 
-        // text-input-v3: state accumulated since the last done event is
-        // applied atomically. order: delete_surrounding_text, then commit_string,
-        // then preedit_string is shown. only an empty commit means no actual
-        // text change, just a preedit display update.
+        // FIXME: this is incomplete. Very incomplete, but works for CJK IMEs just fine.
 
         const auto NEW_STR = m_waylandState.imState.commitString;
-        const auto BEFORE  = m_waylandState.imState.deleteBefore;
-        const auto AFTER   = m_waylandState.imState.deleteAfter;
-        const auto PREEDIT = m_waylandState.imState.preeditString;
 
-        if (NEW_STR.empty() && BEFORE == 0 && AFTER == 0) {
-            m_currentWindow->m_keyboardFocus->imCommitNewText(PREEDIT);
+        if (NEW_STR.empty()) {
+            m_currentWindow->m_keyboardFocus->imCommitNewText(m_waylandState.imState.preeditString);
             return;
         }
 
         m_waylandState.imState = {};
 
-        if (BEFORE > 0 || AFTER > 0)
-            m_currentWindow->m_keyboardFocus->imDeleteSurroundingText(BEFORE, AFTER);
-
-        if (!NEW_STR.empty()) {
-            m_currentWindow->m_keyboardFocus->imCommitNewText(NEW_STR);
-            m_currentWindow->m_keyboardFocus->imApplyText();
-        }
-
-        // restore the preedit display after the atomic apply
-        m_currentWindow->m_keyboardFocus->imCommitNewText(PREEDIT);
+        m_currentWindow->m_keyboardFocus->imCommitNewText(NEW_STR);
+        m_currentWindow->m_keyboardFocus->imApplyText();
     });
 }
 

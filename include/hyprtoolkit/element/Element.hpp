@@ -90,9 +90,6 @@ namespace Hyprtoolkit {
         virtual bool                                     alwaysGetMouseInput();
         virtual void                                     imCommitNewText(const std::string& text);
         virtual void                                     imApplyText();
-        // text-input-v3 delete_surrounding_text. before/after are byte counts
-        // around the cursor that the IME wants removed before its commit.
-        virtual void                                     imDeleteSurroundingText(size_t before, size_t after);
 
         virtual void                                     recheckColor();
         virtual bool                                     positioningDependsOnChild();

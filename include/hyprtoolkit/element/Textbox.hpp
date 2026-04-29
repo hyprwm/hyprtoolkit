@@ -64,7 +64,6 @@ namespace Hyprtoolkit {
         virtual bool                                     acceptsKeyboardInput();
         virtual void                                     imCommitNewText(const std::string&);
         virtual void                                     imApplyText();
-        virtual void                                     imDeleteSurroundingText(size_t before, size_t after);
         virtual bool                                     positioningDependsOnChild();
 
         Hyprutils::Memory::CUniquePointer<STextboxImpl>  m_impl;
