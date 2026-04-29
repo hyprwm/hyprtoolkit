@@ -22,7 +22,7 @@ namespace Hyprtoolkit {
 
     class CGLTexture : public IRendererTexture {
       public:
-        CGLTexture();
+        CGLTexture() = default;
         virtual ~CGLTexture();
 
         virtual size_t                    id();
