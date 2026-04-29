@@ -17,6 +17,11 @@ void CGLTexture::attachAsync(WP<CGLTexture> self, ASP<Hyprgraphics::IAsyncResour
     }
 
     resource->m_events.finished.listenStatic([self, resource] {
+        // backend may have been torn down between enqueue and finish (shutdown
+        // race). dropping the upload is safe: the texture is either gone too
+        // (lock fails below) or about to be.
+        if (!g_backend)
+            return;
         g_backend->addIdle([self, resource]() {
             const auto SELF = self.lock();
             if (!SELF)
