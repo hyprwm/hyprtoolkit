@@ -1,6 +1,3 @@
-
-// FIXME: These tests aren't very comprehensive.
-
 #include <gtest/gtest.h>
 
 #include <layout/Positioner.hpp>
