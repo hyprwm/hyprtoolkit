@@ -84,7 +84,6 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWpViewporter>               viewporter;
             Hyprutils::Memory::CSharedPointer<CCWlKeyboard>                 keyboard;
             Hyprutils::Memory::CSharedPointer<CCWlPointer>                  pointer;
-            Hyprutils::Memory::CSharedPointer<CCWlTouch>                    touch;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeManagerV1>     cursorShapeMgr;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>      cursorShapeDev;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>      textInputManager;
@@ -130,10 +129,8 @@ namespace Hyprtoolkit {
         std::vector<WP<CWaylandWindow>> m_windows;
         std::vector<WP<CWaylandLayer>>  m_layers;
         WP<IWaylandWindow>              m_currentWindow;
-        WP<IWaylandWindow>              m_touchWindow; // tracked separately so pointer enter/leave on a different window during a touch doesn't desync mouseButton(true)/(false)
         uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial = 0;
-        int32_t                         m_activeTouchId   = -1;
 
         WP<CWaylandSessionLockState>    m_sessionLockState;
     };
