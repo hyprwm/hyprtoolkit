@@ -22,7 +22,6 @@ namespace Hyprtoolkit::LinearLayout {
         using CBox     = Hyprutils::Math::CBox;
 
         auto axisPrimary = [](const Vector2D& v) -> double { return Horizontal ? v.x : v.y; };
-        auto axisCross   = [](const Vector2D& v) -> double { return Horizontal ? v.y : v.x; };
         auto boxPrimary  = [](const CBox& b) -> double { return Horizontal ? b.w : b.h; };
         auto grows       = [](const SP<IElement>& e) -> bool { return Horizontal ? e->impl->growH : e->impl->growV; };
 
