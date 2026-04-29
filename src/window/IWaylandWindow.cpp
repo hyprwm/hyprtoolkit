@@ -230,7 +230,11 @@ void IWaylandWindow::setCursor(ePointerShape shape) {
 }
 
 SP<IWindow> IWaylandWindow::openPopup(const SWindowCreationData& data) {
-    auto x    = makeShared<CWaylandPopup>(data, reinterpretPointerCast<CWaylandWindow>(m_self.lock()));
+    // m_self is WP<IToolkitWindow>; the runtime instance is always an
+    // IWaylandWindow subclass (CWaylandWindow / CWaylandLayer / CWaylandPopup),
+    // so passing it down as IWaylandWindow lets a popup itself become a parent
+    // without UB-downcasting to a sibling concrete type.
+    auto x    = makeShared<CWaylandPopup>(data, reinterpretPointerCast<IWaylandWindow>(m_self.lock()));
     x->m_self = x;
     m_popups.emplace_back(x);
     return x;
