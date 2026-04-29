@@ -1061,11 +1061,17 @@ void COpenGLRenderer::renderLine(const SLineRenderData& data) {
     if (data.points.size() <= 1)
         return;
 
-    // generate a polygon
-    // FIXME: inconsistent size on x/y, why?
+    // generate a polygon. line points are in normalized [0, 1] box space, so a
+    // perpendicular taken there isn't perpendicular in pixel space when the box
+    // aspect ratio isn't 1: the line ends up wider on whichever axis the box is
+    // shorter. project the direction into pixel space first, build the unit
+    // perpendicular there with pixel-space thickness, then map the offset back
+    // into normalized space for the vertices.
 
     std::vector<Vector2D> polyPoints;
     polyPoints.resize((data.points.size() * 4) - 2);
+
+    const Vector2D BOXPX = ROUNDEDBOX.size();
 
     for (size_t i = 0; i < data.points.size(); ++i) {
         Vector2D dir;
@@ -1076,12 +1082,21 @@ void COpenGLRenderer::renderLine(const SLineRenderData& data) {
         } else
             dir = (data.points.at(i + 1) - data.points.at(i));
 
-        // normalize vec
-        dir = dir / dir.size();
+        // direction in pixel space
+        Vector2D dirPx = Vector2D{dir.x * BOXPX.x, dir.y * BOXPX.y};
+        const double len = dirPx.size();
+        if (len <= 0)
+            continue;
+        dirPx = dirPx / len;
 
-        // rotate by 90 deg left and right
-        const auto V1              = Vector2D{-dir.y, dir.x} * data.thick / ROUNDEDBOX.size();
-        const auto V2              = Vector2D{dir.y, -dir.x} * data.thick / ROUNDEDBOX.size();
+        // perpendiculars in pixel space, scaled to thickness
+        const Vector2D perpA = Vector2D{-dirPx.y, dirPx.x} * (double)data.thick;
+        const Vector2D perpB = Vector2D{dirPx.y, -dirPx.x} * (double)data.thick;
+
+        // back to normalized [0, 1] box space for the polygon vertices
+        const Vector2D V1 = Vector2D{perpA.x / BOXPX.x, perpA.y / BOXPX.y};
+        const Vector2D V2 = Vector2D{perpB.x / BOXPX.x, perpB.y / BOXPX.y};
+
         polyPoints.at(i * 4)       = data.points.at(i) + V1;
         polyPoints.at(1 + (i * 4)) = data.points.at(i) + V2;
 
