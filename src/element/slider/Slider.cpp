@@ -161,11 +161,17 @@ void CSliderElement::replaceData(const SSliderData& data) {
 }
 
 float SSliderImpl::maxLabelSize() {
-    // TODO: maybe actually calculate it or something?
-    size_t maxChars = std::floor(std::log10(data.max));
+    // approximate width: count digits of the widest endpoint, add room for
+    // a sign / fractional suffix. still a heuristic (no pango pass), but at
+    // least correct for the common cases. avoids log10(<=0) UB.
+    const float absMax   = std::max(std::fabs(data.min), std::fabs(data.max));
+    size_t      maxChars = absMax > 1.F ? sc<size_t>(std::floor(std::log10(absMax))) + 1 : 1;
+
+    if (data.min < 0.F)
+        maxChars += 1; // minus sign
 
     if (!data.snapInt)
-        maxChars += 2;
+        maxChars += 2; // ".X" suffix from std::format("{:.1f}", ...)
 
     return maxChars * 10.F;
 }
