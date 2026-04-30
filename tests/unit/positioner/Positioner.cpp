@@ -109,3 +109,74 @@ TEST(Positioner, align) {
 
     EXPECT_EQ(child->impl->position, CBox(0, 990, 10, 10));
 }
+
+// fixed-size sibling + setGrow sibling should split parent height: fixed gets its size, grow gets the rest
+TEST(Positioner, columnLayoutGrowFillsRemaining) {
+    auto root = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {1000, 1000}})->commence();
+
+    auto col = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->gap(0)->commence();
+    root->addChild(col);
+
+    auto fixed = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {1000, 30}})->commence();
+    auto grow  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    grow->setGrow(true);
+
+    col->addChild(fixed);
+    col->addChild(grow);
+
+    g_positioner->position(root, {{}, {1000, 1000}});
+    g_positioner->positionChildren(root);
+
+    EXPECT_EQ(fixed->impl->position.h, 30);
+    EXPECT_EQ(grow->impl->position.h, 970);
+    EXPECT_EQ(grow->impl->position.y, 30);
+}
+
+TEST(Positioner, rowLayoutGrowFillsRemaining) {
+    auto root = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {1000, 1000}})->commence();
+
+    auto row = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->gap(0)->commence();
+    root->addChild(row);
+
+    auto fixed = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {30, 1000}})->commence();
+    auto grow  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    grow->setGrow(true);
+
+    row->addChild(fixed);
+    row->addChild(grow);
+
+    g_positioner->position(root, {{}, {1000, 1000}});
+    g_positioner->positionChildren(root);
+
+    EXPECT_EQ(fixed->impl->position.w, 30);
+    EXPECT_EQ(grow->impl->position.w, 970);
+    EXPECT_EQ(grow->impl->position.x, 30);
+}
+
+// overflow path: a child that doesn't fit must not size_t-underflow when
+// shrinking earlier siblings. before the fix, sizes[j] -= needs - sizes[j]
+// could wrap to ~2^64 and the layout would explode.
+TEST(Positioner, rowLayoutOverflowShrinkDoesNotUnderflow) {
+    auto root = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 100}})->commence();
+
+    auto row = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->gap(0)->commence();
+    root->addChild(row);
+
+    // three 100-px children, parent only has 200, last one cannot fit
+    auto a = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+    auto b = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+    auto c = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence();
+
+    row->addChild(a);
+    row->addChild(b);
+    row->addChild(c);
+
+    g_positioner->position(root, {{}, {200, 100}});
+    g_positioner->positionChildren(root);
+
+    // every realised width must be sane (<= parent width). underflow would
+    // produce nonsense in the gigabytes.
+    EXPECT_LE(a->impl->position.w, 200);
+    EXPECT_LE(b->impl->position.w, 200);
+    EXPECT_LE(c->impl->position.w, 200);
+}
