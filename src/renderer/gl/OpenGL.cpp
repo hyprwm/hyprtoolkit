@@ -767,8 +767,9 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 }
 
 SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
-    const auto TEX = makeShared<CGLTexture>(data.resource);
+    const auto TEX = makeShared<CGLTexture>();
     TEX->m_fitMode = data.fitMode;
+    TEX->attachAsync(TEX, data.resource);
     return TEX;
 }
 

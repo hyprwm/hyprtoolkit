@@ -22,8 +22,7 @@ namespace Hyprtoolkit {
 
     class CGLTexture : public IRendererTexture {
       public:
-        CGLTexture(ASP<Hyprgraphics::IAsyncResource>);
-        CGLTexture();
+        CGLTexture() = default;
         virtual ~CGLTexture();
 
         virtual size_t                    id();
@@ -31,6 +30,12 @@ namespace Hyprtoolkit {
         virtual void                      destroy();
         virtual eImageFitMode             fitMode();
         virtual Hyprutils::Math::Vector2D size();
+
+        // attaches an async resource. uploads immediately if ready, otherwise
+        // arms a listener that runs upload() when the resource is ready. self is
+        // captured weakly so the listener becomes a no-op if the texture is
+        // destroyed before the resource finishes loading.
+        void                              attachAsync(WP<CGLTexture> self, ASP<Hyprgraphics::IAsyncResource> resource);
 
         eGLTextureType                    m_type      = TEXTURE_RGBA;
         GLenum                            m_target    = GL_TEXTURE_2D;
