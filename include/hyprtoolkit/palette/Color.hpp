@@ -6,7 +6,7 @@
 namespace Hyprtoolkit {
     class CHyprColor {
       public:
-        CHyprColor();
+        CHyprColor() = default;
         CHyprColor(float r, float g, float b, float a = 1.F);
         CHyprColor(const Hyprgraphics::CColor& col, float a);
         CHyprColor(uint64_t);

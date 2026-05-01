@@ -6,7 +6,7 @@ namespace Hyprtoolkit {
 
     class CFramebuffer {
       public:
-        CFramebuffer();
+        CFramebuffer() = default;
         ~CFramebuffer();
 
         bool                      alloc(int w, int h, uint32_t format = GL_RGBA);
