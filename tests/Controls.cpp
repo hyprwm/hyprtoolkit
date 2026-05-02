@@ -10,6 +10,7 @@
 #include <hyprtoolkit/element/Null.hpp>
 #include <hyprtoolkit/element/Checkbox.hpp>
 #include <hyprtoolkit/element/Spinbox.hpp>
+#include <hyprtoolkit/element/ProgressBar.hpp>
 #include <hyprtoolkit/element/Slider.hpp>
 #include <hyprtoolkit/element/ScrollArea.hpp>
 #include <hyprtoolkit/element/Combobox.hpp>
@@ -200,6 +201,9 @@ int main(int argc, char** argv, char** envp) {
     auto slider2 = stretchLayout(
         "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
+    auto progress = stretchLayout(
+        "Progress", CProgressBarBuilder::begin()->value(0.42F)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 14.F}})->commence());
+
     auto combo = stretchLayout(
         "Combo",
         CComboboxBuilder::begin()
@@ -242,6 +246,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(spinbox);
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
+    mainLayout->addChild(progress);
     mainLayout->addChild(combo);
     mainLayout->addChild(textboxCont);
     mainLayout->addChild(text);
