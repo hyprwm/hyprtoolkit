@@ -112,7 +112,7 @@ static GLuint createProgram(const std::string& vert, const std::string& frag) {
 static void glMessageCallbackA(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     if (type != GL_DEBUG_TYPE_ERROR)
         return;
-    g_logger->log(Hyprtoolkit::HT_LOG_DEBUG, "[gl] {}", (const char*)message);
+    g_logger->log(Hyprtoolkit::HT_LOG_DEBUG, "[gl] {}", rc<const char*>(message));
 }
 
 static inline void loadGLProc(void* pProc, const char* name) {
@@ -952,7 +952,7 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     const auto           OKLAB = data.color.asOkLab();
     std::array<float, 4> grad  = {sc<float>(OKLAB.l), sc<float>(OKLAB.a), sc<float>(OKLAB.b), sc<float>(data.color.a)};
 
-    glUniform4fv(m_borderShader.gradient, grad.size() / 4, (float*)grad.data());
+    glUniform4fv(m_borderShader.gradient, grad.size() / 4, grad.data());
     glUniform1i(m_borderShader.gradientLength, grad.size() / 4);
     glUniform1f(m_borderShader.angle, (int)(0.F / (M_PI / 180.0)) % 360 * (M_PI / 180.0));
     glUniform1f(m_borderShader.alpha, 1.F);
