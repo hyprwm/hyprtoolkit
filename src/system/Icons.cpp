@@ -253,12 +253,11 @@ SP<ISystemIconDescription> CSystemIconFactory::lookupIcon(const std::string& ico
 }
 
 void CSystemIconFactory::cacheEntry(const std::string& iconName, SIconCacheResult&& result) {
-    m_pathCache[iconName] = std::move(result);
+    m_pathCache.set(iconName, std::move(result));
 }
 
 std::optional<CSystemIconFactory::SIconCacheResult> CSystemIconFactory::getCached(const std::string& name) {
-    auto x = m_pathCache.find(name);
-    if (x == m_pathCache.end())
-        return std::nullopt;
-    return x->second;
+    if (const auto* HIT = m_pathCache.get(name))
+        return *HIT;
+    return std::nullopt;
 }
