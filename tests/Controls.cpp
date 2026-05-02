@@ -10,6 +10,7 @@
 #include <hyprtoolkit/element/Null.hpp>
 #include <hyprtoolkit/element/Checkbox.hpp>
 #include <hyprtoolkit/element/Spinbox.hpp>
+#include <hyprtoolkit/element/RadioGroup.hpp>
 #include <hyprtoolkit/element/Slider.hpp>
 #include <hyprtoolkit/element/ScrollArea.hpp>
 #include <hyprtoolkit/element/Combobox.hpp>
@@ -200,6 +201,13 @@ int main(int argc, char** argv, char** envp) {
     auto slider2 = stretchLayout(
         "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
+    auto radioGroup = stretchLayout("Radio",
+                                    CRadioGroupBuilder::begin()
+                                        ->items({"option a", "option b", "option c"})
+                                        ->selected(1)
+                                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                                        ->commence());
+
     auto combo = stretchLayout(
         "Combo",
         CComboboxBuilder::begin()
@@ -242,6 +250,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(spinbox);
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
+    mainLayout->addChild(radioGroup);
     mainLayout->addChild(combo);
     mainLayout->addChild(textboxCont);
     mainLayout->addChild(text);
