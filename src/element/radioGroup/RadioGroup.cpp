@@ -17,15 +17,26 @@ SP<CRadioGroupElement> CRadioGroupElement::create(const SRadioGroupData& data) {
     auto p          = SP<CRadioGroupElement>(new CRadioGroupElement(data));
     p->impl->self   = p;
     p->m_impl->self = p;
+    p->m_impl->buildRows();
     return p;
 }
 
 CRadioGroupElement::CRadioGroupElement(const SRadioGroupData& data) : IElement(), m_impl(makeUnique<SRadioGroupImpl>()) {
-    m_impl->data = data;
-
+    m_impl->data   = data;
     m_impl->layout = CColumnLayoutBuilder::begin()->gap(m_impl->data.gap)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})->commence();
+    addChild(m_impl->layout);
 
-    for (size_t i = 0; i < m_impl->data.items.size(); ++i) {
+    impl->grouped = true;
+}
+
+void SRadioGroupImpl::buildRows() {
+    layout->clearChildren();
+    dots.clear();
+    rows.clear();
+    dots.reserve(data.items.size());
+    rows.reserve(data.items.size());
+
+    for (size_t i = 0; i < data.items.size(); ++i) {
         auto outer = CRectangleBuilder::begin()
                          ->color([] { return g_palette->m_colors.base; })
                          ->rounding(sc<int>(DOT_OUTER))
@@ -35,7 +46,7 @@ CRadioGroupElement::CRadioGroupElement(const SRadioGroupData& data) : IElement()
                          ->commence();
 
         CHyprColor col = g_palette->m_colors.accent;
-        col.a          = (sc<int>(i) == m_impl->data.selected) ? 1.F : 0.F;
+        col.a          = (sc<int>(i) == data.selected) ? 1.F : 0.F;
 
         auto inner = CRectangleBuilder::begin()
                          ->color([col] { return col; })
@@ -43,14 +54,11 @@ CRadioGroupElement::CRadioGroupElement(const SRadioGroupData& data) : IElement()
                          ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {DOT_INNER, DOT_INNER}})
                          ->commence();
 
-        inner->setPositionMode(HT_POSITION_ABSOLUTE);
-        inner->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+        inner->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+        inner->setPositionFlag(IElement::HT_POSITION_FLAG_CENTER, true);
         outer->addChild(inner);
 
-        auto label = CTextBuilder::begin() //
-                         ->text(std::string{m_impl->data.items[i]})
-                         ->color([] { return g_palette->m_colors.text; })
-                         ->commence();
+        auto label = CTextBuilder::begin()->text(std::string{data.items[i]})->color([] { return g_palette->m_colors.text; })->commence();
 
         auto row = CRowLayoutBuilder::begin()->gap(6)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})->commence();
         row->addChild(outer);
@@ -60,35 +68,36 @@ CRadioGroupElement::CRadioGroupElement(const SRadioGroupData& data) : IElement()
         row->impl->m_externalEvents.mouseButton.listenStatic([this, IDX](const Input::eMouseButton button, bool down) {
             if (down || button != Input::MOUSE_BUTTON_LEFT)
                 return;
-            m_impl->select(IDX);
+            select(IDX);
         });
         row->impl->userRequestedMouseInput = true;
 
-        m_impl->dots.emplace_back(inner);
-        m_impl->rows.emplace_back(row);
+        dots.emplace_back(inner);
+        rows.emplace_back(row);
 
-        m_impl->layout->addChild(row);
+        layout->addChild(row);
     }
 
-    addChild(m_impl->layout);
-
-    impl->grouped = true;
+    lastSelected = data.selected;
 }
 
-void SRadioGroupImpl::applySelection() {
-    for (size_t i = 0; i < dots.size(); ++i) {
-        CHyprColor col = g_palette->m_colors.accent;
-        col.a          = (sc<int>(i) == data.selected) ? 1.F : 0.F;
-        dots[i]->rebuild()->color([col] { return col; })->commence();
-    }
+void SRadioGroupImpl::applyDotAt(int idx, bool selected) {
+    if (idx < 0 || idx >= sc<int>(dots.size()))
+        return;
+    CHyprColor col = g_palette->m_colors.accent;
+    col.a          = selected ? 1.F : 0.F;
+    dots[idx]->rebuild()->color([col] { return col; })->commence();
 }
 
 void SRadioGroupImpl::select(int idx) {
     if (idx == data.selected || idx < 0 || idx >= sc<int>(data.items.size()))
         return;
 
-    data.selected = idx;
-    applySelection();
+    const int prev = data.selected;
+    data.selected  = idx;
+    applyDotAt(prev, false);
+    applyDotAt(idx, true);
+    lastSelected = idx;
 
     if (data.onSelected)
         data.onSelected(self.lock(), idx);
@@ -112,11 +121,21 @@ SP<CRadioGroupBuilder> CRadioGroupElement::rebuild() {
 }
 
 void CRadioGroupElement::replaceData(const SRadioGroupData& data) {
-    const bool SEL_CHANGED = data.selected != m_impl->data.selected;
-    m_impl->data           = data;
+    const bool ITEMS_CHANGED = data.items != m_impl->data.items;
+    const bool GAP_CHANGED   = data.gap != m_impl->data.gap;
+    const bool SEL_CHANGED   = data.selected != m_impl->data.selected;
+    const int  prevSelected  = m_impl->data.selected;
+    m_impl->data             = data;
 
-    if (SEL_CHANGED)
-        m_impl->applySelection();
+    if (ITEMS_CHANGED || GAP_CHANGED) {
+        if (GAP_CHANGED)
+            m_impl->layout->rebuild()->gap(m_impl->data.gap)->commence();
+        m_impl->buildRows();
+    } else if (SEL_CHANGED) {
+        m_impl->applyDotAt(prevSelected, false);
+        m_impl->applyDotAt(m_impl->data.selected, true);
+        m_impl->lastSelected = m_impl->data.selected;
+    }
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);

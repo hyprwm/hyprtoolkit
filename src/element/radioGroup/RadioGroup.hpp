@@ -32,7 +32,11 @@ namespace Hyprtoolkit {
         std::vector<SP<CRectangleElement>> dots;
         std::vector<SP<IElement>>          rows;
 
-        void                               applySelection();
+        // previous selected index, lets us only repaint the two dots that changed
+        int                                lastSelected = -1;
+
+        void                               buildRows();
+        void                               applyDotAt(int idx, bool selected);
         void                               select(int idx);
     };
 }
