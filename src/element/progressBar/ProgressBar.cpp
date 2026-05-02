@@ -79,6 +79,17 @@ void CProgressBarElement::replaceData(const SProgressBarData& data) {
         impl->window->scheduleReposition(impl->self);
 }
 
+float CProgressBarElement::value() {
+    return m_impl->data.value;
+}
+
+void CProgressBarElement::setValue(float v) {
+    if (v == m_impl->data.value)
+        return;
+    m_impl->data.value = v;
+    m_impl->applyValue();
+}
+
 Hyprutils::Math::Vector2D CProgressBarElement::size() {
     return impl->position.size();
 }

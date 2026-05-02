@@ -44,6 +44,10 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CProgressBarBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                      size();
 
+        // imperative updates that skip the builder allocation
+        float                                                  value();
+        void                                                   setValue(float);
+
       private:
         CProgressBarElement(const SProgressBarData& data);
         static Hyprutils::Memory::CSharedPointer<CProgressBarElement> create(const SProgressBarData& data);
