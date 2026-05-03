@@ -228,8 +228,8 @@ void CBackend::terminate() {
         g_iconFactory.reset();
         g_config.reset();
         g_palette.reset();
-        g_backend.reset();
         g_logger.reset();
+        g_backend.reset();
     }
 }
 
@@ -544,7 +544,6 @@ void CBackend::enterLoop() {
     g_animationManager.reset();
 
     g_palette.reset();
-    g_backend.reset();
     g_logger.reset();
 
     m_sLoopState.idleEvent = true;
@@ -554,6 +553,10 @@ void CBackend::enterLoop() {
     m_sLoopState.timerCV.notify_all();
 
     write(m_sLoopState.exitfd[1], "hello", 5);
+
+    // reset g_backend last: if this is the final strong reference, *this is
+    // destroyed here, no member access may follow this line in this scope.
+    g_backend.reset();
 
     if (timersThr.joinable())
         timersThr.join();
