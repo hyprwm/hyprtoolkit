@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/palette/Color.hpp>
+#include <hyprtoolkit/palette/Gradient.hpp>
 #include <hyprtoolkit/types/ImageTypes.hpp>
 #include <hyprutils/math/Box.hpp>
 #include <hyprgraphics/color/Color.hpp>
@@ -43,10 +44,10 @@ namespace Hyprtoolkit {
         };
 
         struct SBorderRenderData {
-            CBox       box;
-            CHyprColor color    = {1, 1, 1, 1};
-            int        rounding = 0;
-            int        thick    = 0;
+            CBox               box;
+            CGradientValueData gradient;
+            int                rounding = 0;
+            int                thick    = 0;
         };
 
         struct SPolygonRenderData {

@@ -9,16 +9,16 @@ namespace Hyprtoolkit {
     struct SRectangleData {
         colorFn      color           = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
         int          rounding        = 0;
-        colorFn      borderColor     = [] { return CHyprColor{1.F, 1.F, 1.F, 1.F}; };
+        gradientFn   borderColor     = [] { return CGradientValueData{CHyprColor{1.F, 1.F, 1.F, 1.F}}; };
         int          borderThickness = 0;
         CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
     struct SRectangleImpl {
-        SRectangleData         data;
+        SRectangleData                 data;
 
-        PHLANIMVAR<CHyprColor> color;
-        PHLANIMVAR<CHyprColor> borderColor;
+        PHLANIMVAR<CHyprColor>         color;
+        PHLANIMVAR<CGradientValueData> borderColor;
 
-        WP<CRectangleElement>  self;
+        WP<CRectangleElement>          self;
     };
 }
