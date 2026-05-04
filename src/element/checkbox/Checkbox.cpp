@@ -19,18 +19,6 @@ SP<CCheckboxElement> CCheckboxElement::create(const SCheckboxData& data) {
     return p;
 }
 
-std::function<CHyprColor()> SCheckboxImpl::getFgColor() {
-    if (data.toggled)
-        return [] { return g_palette->m_colors.accent; };
-    else {
-        return [] {
-            auto c = g_palette->m_colors.accent;
-            c.a    = 0.F;
-            return c;
-        };
-    }
-}
-
 CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_impl(makeUnique<SCheckboxImpl>()) {
     m_impl->data = data;
 
@@ -45,10 +33,14 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
     m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
     m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
-    CHyprColor col = g_palette->m_colors.accent;
-    col.a          = m_impl->data.toggled ? 1.F : 0.F;
-    m_impl->foreground =
-        CCheckmarkElement::create(SCheckmarkData{.size = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}}, .color = [col] { return col; }});
+    m_impl->foreground = CCheckmarkElement::create(SCheckmarkData{
+        .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+        .color = [impl = m_impl.get()] {
+            auto c = g_palette->m_colors.accent;
+            c.a    = impl->data.toggled ? 1.F : 0.F;
+            return c;
+        },
+    });
 
     m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
     m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
@@ -90,9 +82,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
             if (m_impl->data.onToggled)
                 m_impl->data.onToggled(m_impl->self.lock(), m_impl->data.toggled);
 
-            CHyprColor col               = g_palette->m_colors.accent;
-            col.a                        = m_impl->data.toggled ? 1.F : 0.F;
-            *m_impl->foreground->m_color = col;
+            m_impl->foreground->recheckColor();
         }
     });
 
@@ -120,9 +110,7 @@ SP<CCheckboxBuilder> CCheckboxElement::rebuild() {
 void CCheckboxElement::replaceData(const SCheckboxData& data) {
     m_impl->data = data;
 
-    CHyprColor col               = g_palette->m_colors.accent;
-    col.a                        = m_impl->data.toggled ? 1.F : 0.F;
-    *m_impl->foreground->m_color = col;
+    m_impl->foreground->recheckColor();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
