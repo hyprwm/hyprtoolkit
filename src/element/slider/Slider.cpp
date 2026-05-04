@@ -150,7 +150,7 @@ void CSliderElement::replaceData(const SSliderData& data) {
     m_impl->data = data;
 
     if (VALUE_CHANGED) {
-        m_impl->valueChanged(data.current);
+        m_impl->valueChanged(m_impl->data.max != 0 ? m_impl->data.current / m_impl->data.max : 0.F);
 
         if (data.onChanged)
             data.onChanged(m_impl->self.lock(), m_impl->data.current);
