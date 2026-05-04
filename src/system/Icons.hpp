@@ -11,7 +11,7 @@ namespace Hyprtoolkit {
     class CSystemIconDescription : public ISystemIconDescription {
       public:
         // invalid icon
-        CSystemIconDescription();
+        CSystemIconDescription() = default;
         // lookup icon
         CSystemIconDescription(const std::string& name);
         virtual ~CSystemIconDescription() = default;

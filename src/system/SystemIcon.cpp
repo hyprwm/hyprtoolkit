@@ -5,10 +5,6 @@
 
 using namespace Hyprtoolkit;
 
-CSystemIconDescription::CSystemIconDescription() {
-    ;
-}
-
 CSystemIconDescription::CSystemIconDescription(const std::string& name) {
     if (g_iconFactory->m_lookupPaths.empty() || name.empty())
         return;

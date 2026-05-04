@@ -11,10 +11,6 @@ using namespace Hyprutils::Memory;
 #define GREEN(c) ((double)(((c) >> 8) & 0xff) / 255.0)
 #define BLUE(c)  ((double)(((c)) & 0xff) / 255.0)
 
-CHyprColor::CHyprColor() {
-    ;
-}
-
 CHyprColor::CHyprColor(float r_, float g_, float b_, float a_) : r(r_), g(g_), b(b_), a(a_) {
     okLab = Hyprgraphics::CColor(Hyprgraphics::CColor::SSRGB{.r = r, .g = g, .b = b}).asOkLab();
 }
