@@ -106,9 +106,8 @@ void CImageElement::renderTex() {
 
     ASP<IAsyncResource> resourceGeneric(m_impl->resource);
 
-    g_asyncResourceGatherer->enqueue(resourceGeneric);
-
     if (!m_impl->data.sync) {
+        // attach listener before enqueueing to avoid missing the finished event
         m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
             if (!self)
                 return;
@@ -120,7 +119,10 @@ void CImageElement::renderTex() {
                 m_impl->postImageLoad();
             });
         });
+
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
     } else {
+        g_asyncResourceGatherer->enqueue(resourceGeneric);
         g_asyncResourceGatherer->await(resourceGeneric);
         m_impl->postImageLoad();
     }
