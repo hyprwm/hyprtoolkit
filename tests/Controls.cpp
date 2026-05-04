@@ -9,6 +9,7 @@
 #include <hyprtoolkit/element/Button.hpp>
 #include <hyprtoolkit/element/Null.hpp>
 #include <hyprtoolkit/element/Checkbox.hpp>
+#include <hyprtoolkit/element/RadioGroup.hpp>
 #include <hyprtoolkit/element/Spinbox.hpp>
 #include <hyprtoolkit/element/ProgressBar.hpp>
 #include <hyprtoolkit/element/Slider.hpp>
@@ -189,6 +190,23 @@ int main(int argc, char** argv, char** envp) {
     auto checkbox  = stretchLayout("checkbox 1", CCheckboxBuilder::begin()->commence());
     auto checkbox2 = stretchLayout("checkbox 2", CCheckboxBuilder::begin()->commence());
 
+    auto radio1 = CCheckboxBuilder::begin()->style(HT_CHECKBOX_STYLE_RADIO)->toggled(true)->commence();
+    auto radio2 = CCheckboxBuilder::begin()->style(HT_CHECKBOX_STYLE_RADIO)->commence();
+    auto radio3 = CCheckboxBuilder::begin()->style(HT_CHECKBOX_STYLE_RADIO)->commence();
+
+    auto radioGroup = CRadioGroup::create();
+    radioGroup->add(radio1);
+    radioGroup->add(radio2);
+    radioGroup->add(radio3);
+
+    auto radioRow = CRowLayoutBuilder::begin()->gap(8)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    radioRow->addChild(radio1);
+    radioRow->addChild(CTextBuilder::begin()->text("first")->color([] { return backend->getPalette()->m_colors.text; })->commence());
+    radioRow->addChild(radio2);
+    radioRow->addChild(CTextBuilder::begin()->text("second")->color([] { return backend->getPalette()->m_colors.text; })->commence());
+    radioRow->addChild(radio3);
+    radioRow->addChild(CTextBuilder::begin()->text("third")->color([] { return backend->getPalette()->m_colors.text; })->commence());
+
     auto spinbox = CSpinboxBuilder::begin()
                        ->label("Spinbox")
                        ->items({"Hello", "World", "Amongus"})
@@ -243,6 +261,7 @@ int main(int argc, char** argv, char** envp) {
     mainLayout->addChild(button4);
     mainLayout->addChild(checkbox);
     mainLayout->addChild(checkbox2);
+    mainLayout->addChild(radioRow);
     mainLayout->addChild(spinbox);
     mainLayout->addChild(slider);
     mainLayout->addChild(slider2);
