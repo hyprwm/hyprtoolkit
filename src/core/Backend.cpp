@@ -543,6 +543,8 @@ void CBackend::enterLoop() {
     g_asyncResourceGatherer.reset();
     g_animationManager.reset();
 
+    g_iconFactory.reset();
+    g_config.reset();
     g_palette.reset();
     g_logger.reset();
 
