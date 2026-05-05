@@ -38,7 +38,12 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->text(std::string{data.label})
                         ->fontSize(CFontSize{data.fontSize})
                         ->fontFamily(std::string{data.fontFamily})
-                        ->color([] { return g_palette->m_colors.text; })
+                        ->color([impl = m_impl.get()] {
+                            auto c = g_palette->m_colors.text;
+                            if (!impl->data.enabled)
+                                c.a *= 0.5F;
+                            return c;
+                        })
                         ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
                         ->callback([this] {
                             m_impl->labelChanged = true;
@@ -59,6 +64,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->label->setMargin(2);
 
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
+        if (!m_impl->data.enabled)
+            return;
         m_impl->background
             ->rebuild() //
             ->color([nb = m_impl->data.noBorder, nobg = m_impl->data.noBg] {
@@ -83,7 +90,7 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     });
 
     impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
-        if (!down)
+        if (!down || !m_impl->data.enabled)
             return;
 
         if (button == Input::MOUSE_BUTTON_RIGHT) {
@@ -108,6 +115,25 @@ void CButtonElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutil
     g_positioner->positionChildren(impl->self.lock());
 }
 
+void CButtonElement::setLabel(std::string label) {
+    if (label == m_impl->data.label)
+        return;
+
+    m_impl->data.label = std::move(label);
+    m_impl->label->setText(m_impl->data.label);
+}
+
+void CButtonElement::setEnabled(bool enabled) {
+    if (enabled == m_impl->data.enabled)
+        return;
+
+    m_impl->data.enabled = enabled;
+    m_impl->label->recheckColor();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 SP<CButtonBuilder> CButtonElement::rebuild() {
     auto p       = SP<CButtonBuilder>(new CButtonBuilder());
     p->m_self    = p;
@@ -120,6 +146,7 @@ void CButtonElement::replaceData(const SButtonData& data) {
     m_impl->data = data;
 
     m_impl->label->rebuild()->text(std::string{data.label})->commence();
+    m_impl->label->recheckColor();
 
     m_impl->label->setPositionFlag(HT_POSITION_FLAG_ALL, false);
     m_impl->label->setPositionFlag(

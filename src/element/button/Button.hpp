@@ -12,6 +12,7 @@ namespace Hyprtoolkit {
         std::string                                                            label      = "Click me";
         bool                                                                   noBorder   = false;
         bool                                                                   noBg       = false;
+        bool                                                                   enabled    = true;
         std::string                                                            fontFamily = g_palette ? g_palette->m_vars.fontFamily : "Sans Serif";
         CFontSize                                                              fontSize   = {CFontSize::HT_FONT_TEXT};
         eFontAlignment                                                         alignText  = HT_FONT_ALIGN_CENTER;

@@ -357,6 +357,30 @@ size_t CTextboxElement::cursorPos() const {
     return m_impl->inputState.cursor;
 }
 
+void CTextboxElement::setText(std::string text) {
+    if (text == m_impl->data.text)
+        return;
+
+    m_impl->data.text   = std::move(text);
+    m_impl->inputState.cursor = std::min(m_impl->inputState.cursor, m_impl->data.text.length());
+    m_impl->clearSelect();
+    m_impl->updateLabel();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
+void CTextboxElement::setPassword(bool password) {
+    if (password == m_impl->data.password)
+        return;
+
+    m_impl->data.password = password;
+    m_impl->updateLabel();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 std::tuple<ssize_t, ssize_t> CTextboxElement::selection() const {
     return {m_impl->inputState.selectBegin, m_impl->inputState.selectEnd};
 }

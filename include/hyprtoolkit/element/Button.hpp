@@ -23,6 +23,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBorder(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBg(bool);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        enabled(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        alignText(eFontAlignment);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontFamily(std::string&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontSize(CFontSize&&);
@@ -48,6 +49,8 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CButtonBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                 size();
+        void                                              setLabel(std::string label);
+        void                                              setEnabled(bool enabled);
 
       private:
         CButtonElement(const SButtonData& data);
