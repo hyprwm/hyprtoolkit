@@ -619,12 +619,21 @@ SP<CTextboxBuilder> CTextboxElement::rebuild() {
 }
 
 void CTextboxElement::replaceData(const STextboxData& data) {
-    const bool TEXTS_DIFFER = data.text != m_impl->data.text;
+    const bool MULTILINE_CHANGED   = data.multiline != m_impl->data.multiline;
+    const bool PLACEHOLDER_CHANGED = data.placeholder != m_impl->data.placeholder;
 
     m_impl->data = data;
 
-    if (TEXTS_DIFFER)
-        m_impl->updateLabel();
+    if (MULTILINE_CHANGED) {
+        m_impl->cursorCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, !data.multiline);
+        m_impl->placeholder->setPositionFlag(HT_POSITION_FLAG_VCENTER, !data.multiline);
+        m_impl->text->setPositionFlag(HT_POSITION_FLAG_VCENTER, !data.multiline);
+    }
+
+    if (PLACEHOLDER_CHANGED)
+        m_impl->placeholder->rebuild()->text(std::string{data.placeholder})->commence();
+
+    m_impl->updateLabel();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
