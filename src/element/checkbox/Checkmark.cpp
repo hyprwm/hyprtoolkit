@@ -32,6 +32,10 @@ void CCheckmarkElement::paint() {
     });
 }
 
+void CCheckmarkElement::recheckColor() {
+    *m_color = m_data.color();
+}
+
 void CCheckmarkElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 

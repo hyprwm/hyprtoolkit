@@ -24,6 +24,7 @@ namespace Hyprtoolkit {
         CCheckmarkElement(const SCheckmarkData& data);
 
         virtual void                                     paint();
+        virtual void                                     recheckColor();
         virtual void                                     reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
         virtual Hyprutils::Math::Vector2D                size();
         virtual std::optional<Hyprutils::Math::Vector2D> preferredSize(const Hyprutils::Math::Vector2D& parent);
@@ -53,7 +54,5 @@ namespace Hyprtoolkit {
         bool                        labelChanged = true;
 
         bool                        primedForUp = false;
-
-        std::function<CHyprColor()> getFgColor();
     };
 }
