@@ -35,7 +35,8 @@ namespace Hyprtoolkit {
         SP<CTextElement>                   text;
         SP<CTextElement>                   placeholder;
 
-        bool                               active = false;
+        bool                               active            = false;
+        bool                               firstAttachedPass = false;
 
         struct {
             CHyprSignalListener key;
