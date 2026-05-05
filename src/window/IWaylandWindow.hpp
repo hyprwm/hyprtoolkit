@@ -85,7 +85,7 @@ namespace Hyprtoolkit {
 
             Hyprutils::Math::Vector2D               size;
             Hyprutils::Math::Vector2D               logicalSize;
-            float                                   appliedScale;
+            float                                   appliedScale = 1.F;
             SP<CCWpFractionalScaleV1>               fractional = nullptr;
             SP<CCWpViewport>                        viewport   = nullptr;
             uint32_t                                serial     = 0;
