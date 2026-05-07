@@ -637,6 +637,11 @@ size_t STextboxImpl::moveCharForwards() const {
 void CTextboxElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
+    if (!m_impl->firstAttachedPass && impl->window) {
+        m_impl->firstAttachedPass = true;
+        m_impl->updateLabel();
+    }
+
     g_positioner->positionChildren(impl->self.lock());
 }
 
