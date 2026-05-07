@@ -24,6 +24,11 @@ SP<CButtonBuilder> CButtonBuilder::noBg(bool x) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::enabled(bool x) {
+    m_data->enabled = x;
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::fontFamily(std::string&& x) {
     m_data->fontFamily = std::move(x);
     return m_self.lock();

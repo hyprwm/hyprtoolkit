@@ -46,6 +46,8 @@ namespace Hyprtoolkit {
         std::string_view                                   currentText();
         size_t                                             cursorPos() const;
         std::tuple<ssize_t, ssize_t>                       selection() const;
+        void                                               setText(std::string text);
+        void                                               setPassword(bool password);
 
       private:
         static Hyprutils::Memory::CSharedPointer<CTextboxElement> create(const STextboxData& data);

@@ -48,6 +48,19 @@ CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUniqu
 
 CTextElement::~CTextElement() = default;
 
+void CTextElement::setText(std::string text) {
+    if (text == m_impl->data.text)
+        return;
+
+    m_impl->data.text = std::move(text);
+    m_impl->parseText();
+    m_impl->preferred = m_impl->getTextSizePreferred();
+    m_impl->scheduleTexRefresh();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 void CTextElement::replaceData(const STextData& data) {
     const bool TEXT_DIFFERENT = data.text != m_impl->data.text;
 
