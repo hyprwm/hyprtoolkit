@@ -64,6 +64,8 @@ namespace Hyprtoolkit {
         size_t                    moveCharForwards() const;
         void                      updateLabel();
         void                      updateCursor();
+        size_t                    srcToDisplay(size_t srcByte) const;
+        size_t                    displayToSrc(size_t displayByte) const;
 
         Hyprutils::Math::Vector2D lastCursorPos;
     };

@@ -214,7 +214,7 @@ void CTextboxElement::init() {
                 return;
 
             const auto oldCursorPos = m_impl->inputState.cursor;
-            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->inputState.cursor);
+            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->srcToDisplay(m_impl->inputState.cursor));
             const auto SCALE        = m_impl->self->impl->window ? m_impl->self->impl->window->scale() : 1.F;
 
             // move up by one line height, using the left edge of the character box
@@ -223,7 +223,7 @@ void CTextboxElement::init() {
 
             auto newOffset = m_impl->text->m_impl->vecToOffset(targetPos);
             if (newOffset.has_value())
-                m_impl->inputState.cursor = std::min(newOffset.value(), m_impl->data.text.length());
+                m_impl->inputState.cursor = std::min(m_impl->displayToSrc(*newOffset), m_impl->data.text.length());
 
             if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
                 if (!m_impl->hasSelect()) {
@@ -254,7 +254,7 @@ void CTextboxElement::init() {
                 return;
 
             const auto oldCursorPos = m_impl->inputState.cursor;
-            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->inputState.cursor);
+            const auto CHARBOX      = m_impl->text->m_impl->getCharBox(m_impl->srcToDisplay(m_impl->inputState.cursor));
             const auto SCALE        = m_impl->self->impl->window ? m_impl->self->impl->window->scale() : 1.F;
 
             // move down by one line height, using the left edge of the character box
@@ -263,7 +263,7 @@ void CTextboxElement::init() {
 
             auto newOffset = m_impl->text->m_impl->vecToOffset(targetPos);
             if (newOffset.has_value())
-                m_impl->inputState.cursor = std::min(newOffset.value(), m_impl->data.text.length());
+                m_impl->inputState.cursor = std::min(m_impl->displayToSrc(*newOffset), m_impl->data.text.length());
 
             if (ev.modMask & Input::HT_MODIFIER_SHIFT) {
                 if (!m_impl->hasSelect()) {
@@ -378,14 +378,11 @@ void STextboxImpl::updateLabel() {
 
         text->rebuild()->text(std::move(fullLabel))->commence();
     } else {
-        std::string pwdText = "";
-        for (size_t i = 0; i < data.text.size(); ++i) {
-            pwdText += '*';
-        }
+        std::string pwdText(UTF8::length(data.text), '*');
 
         auto fullLabel = inputState.imText.empty() ? //
             pwdText :                                //
-            pwdText.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
+            pwdText.insert(srcToDisplay(inputState.cursor), "<u>" + inputState.imText + "</u>");
 
         text->rebuild()->text(std::move(fullLabel))->commence();
     }
@@ -408,10 +405,18 @@ void CTextboxElement::imApplyText() {
     m_impl->updateLabel();
 }
 
+size_t STextboxImpl::srcToDisplay(size_t srcByte) const {
+    return data.password ? UTF8::offsetToUTF8Len(data.text, srcByte) : srcByte;
+}
+
+size_t STextboxImpl::displayToSrc(size_t displayByte) const {
+    return data.password ? UTF8::utf8ToOffset(data.text, displayByte) : displayByte;
+}
+
 void STextboxImpl::updateCursor() {
     inputState.cursor = std::clamp(inputState.cursor, (size_t)0, data.text.length());
 
-    const auto  CHARBOX = text->m_impl->getCharBox(inputState.cursor);
+    const auto  CHARBOX = text->m_impl->getCharBox(srcToDisplay(inputState.cursor));
     const float XPOS    = CHARBOX.x;
 
     if (data.multiline) {
@@ -459,8 +464,8 @@ void STextboxImpl::updateSelect() {
     }
 
     // get character boxes for selection start and end
-    auto beginBox = text->m_impl->getCharBox(inputState.selectBegin);
-    auto endBox   = text->m_impl->getCharBox(inputState.selectEnd);
+    auto beginBox = text->m_impl->getCharBox(srcToDisplay(inputState.selectBegin));
+    auto endBox   = text->m_impl->getCharBox(srcToDisplay(inputState.selectEnd));
 
     // check if selection spans multiple lines
     const float LINE_THRESHOLD = 1.F; // tolerance for Y position comparison
@@ -495,7 +500,7 @@ void STextboxImpl::updateSelect() {
 
             // scan forward on this line until we hit a line break or end of selection
             for (size_t i = currentOffset + 1; i <= (size_t)inputState.selectEnd; i++) {
-                auto nextBox = text->m_impl->getCharBox(i);
+                auto nextBox = text->m_impl->getCharBox(srcToDisplay(i));
 
                 // check if we moved to a new line
                 if (std::abs(nextBox.y - lineStartBox.y) > LINE_THRESHOLD)
@@ -530,7 +535,7 @@ void STextboxImpl::updateSelect() {
 
             currentOffset = lineEndOffset + 1;
             if (currentOffset < (size_t)inputState.selectEnd)
-                lineStartBox = text->m_impl->getCharBox(currentOffset);
+                lineStartBox = text->m_impl->getCharBox(srcToDisplay(currentOffset));
         }
     }
 
@@ -550,8 +555,9 @@ void STextboxImpl::removeSelectedText() {
 }
 
 void STextboxImpl::focusCursorAtClickedChar() {
-    const float SCALE = self->impl->window ? self->impl->window->scale() : 1.F;
-    inputState.cursor = text->m_impl->vecToOffset((lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())) * SCALE).value_or(data.text.size());
+    const float SCALE     = self->impl->window ? self->impl->window->scale() : 1.F;
+    const auto  DISPLAYED = text->m_impl->vecToOffset((lastCursorPos - (text->impl->position.pos() - self->impl->position.pos())) * SCALE);
+    inputState.cursor     = DISPLAYED.has_value() ? displayToSrc(*DISPLAYED) : data.text.size();
     updateCursor();
     clearSelect();
 }
