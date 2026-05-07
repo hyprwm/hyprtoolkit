@@ -112,7 +112,7 @@ static GLuint createProgram(const std::string& vert, const std::string& frag) {
 static void glMessageCallbackA(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     if (type != GL_DEBUG_TYPE_ERROR)
         return;
-    g_logger->log(Hyprtoolkit::HT_LOG_DEBUG, "[gl] {}", (const char*)message);
+    g_logger->log(Hyprtoolkit::HT_LOG_DEBUG, "[gl] {}", message);
 }
 
 static inline void loadGLProc(void* pProc, const char* name) {
@@ -749,8 +749,8 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     const auto FULLSIZE = Vector2D(UNTRANSFORMED.width, UNTRANSFORMED.height);
 
     // Rounded corners
-    glUniform2f(m_rectShader.topLeft, (float)TOPLEFT.x, (float)TOPLEFT.y);
-    glUniform2f(m_rectShader.fullSize, (float)FULLSIZE.x, (float)FULLSIZE.y);
+    glUniform2f(m_rectShader.topLeft, sc<float>(TOPLEFT.x), sc<float>(TOPLEFT.y));
+    glUniform2f(m_rectShader.fullSize, sc<float>(FULLSIZE.x), sc<float>(FULLSIZE.y));
     glUniform1f(m_rectShader.radius, data.rounding * m_scale);
     glUniform1f(m_rectShader.roundingPower, 2);
 
@@ -952,7 +952,7 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     const auto           OKLAB = data.color.asOkLab();
     std::array<float, 4> grad  = {sc<float>(OKLAB.l), sc<float>(OKLAB.a), sc<float>(OKLAB.b), sc<float>(data.color.a)};
 
-    glUniform4fv(m_borderShader.gradient, grad.size() / 4, (float*)grad.data());
+    glUniform4fv(m_borderShader.gradient, grad.size() / 4, grad.data());
     glUniform1i(m_borderShader.gradientLength, grad.size() / 4);
     glUniform1f(m_borderShader.angle, (int)(0.F / (M_PI / 180.0)) % 360 * (M_PI / 180.0));
     glUniform1f(m_borderShader.alpha, 1.F);
@@ -961,9 +961,9 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     const auto TOPLEFT  = Vector2D(UNTRANSFORMED.x, UNTRANSFORMED.y);
     const auto FULLSIZE = Vector2D(UNTRANSFORMED.width, UNTRANSFORMED.height);
 
-    glUniform2f(m_borderShader.topLeft, (float)TOPLEFT.x, (float)TOPLEFT.y);
-    glUniform2f(m_borderShader.fullSize, (float)FULLSIZE.x, (float)FULLSIZE.y);
-    glUniform2f(m_borderShader.fullSizeUntransformed, (float)UNTRANSFORMED.width, (float)UNTRANSFORMED.height);
+    glUniform2f(m_borderShader.topLeft, sc<float>(TOPLEFT.x), sc<float>(TOPLEFT.y));
+    glUniform2f(m_borderShader.fullSize, sc<float>(FULLSIZE.x), sc<float>(FULLSIZE.y));
+    glUniform2f(m_borderShader.fullSizeUntransformed, sc<float>(UNTRANSFORMED.width), sc<float>(UNTRANSFORMED.height));
     glUniform1f(m_borderShader.radius, data.rounding * m_scale);
     glUniform1f(m_borderShader.radiusOuter, data.rounding * m_scale);
     glUniform1f(m_borderShader.roundingPower, 2);
