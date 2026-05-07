@@ -12,8 +12,10 @@ CHTAnimationManager::CHTAnimationManager() {
     m_animationTree.createNode("global");
 
     m_animationTree.createNode("fast", "global");
+    m_animationTree.createNode("indeterminate", "global");
 
     m_animationTree.setConfigForNode("fast", 1, 3.3F, "easeOutQuint");
+    m_animationTree.setConfigForNode("indeterminate", 1, 0.7F, "linear");
 }
 
 template <Animable VarType>
