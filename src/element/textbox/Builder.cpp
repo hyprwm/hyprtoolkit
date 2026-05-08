@@ -39,6 +39,11 @@ SP<CTextboxBuilder> CTextboxBuilder::password(bool x) {
     return m_self.lock();
 }
 
+SP<CTextboxBuilder> CTextboxBuilder::eyeIcon(bool x) {
+    m_data->eyeIcon = x;
+    return m_self.lock();
+}
+
 SP<CTextboxElement> CTextboxBuilder::commence() {
     if (m_element) {
         m_element->replaceData(*m_data);

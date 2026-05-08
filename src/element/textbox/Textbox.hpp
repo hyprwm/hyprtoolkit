@@ -19,6 +19,7 @@ namespace Hyprtoolkit {
         std::function<void(Hyprutils::Memory::CSharedPointer<CTextboxElement>, const std::string&)> onTextEdited;
         bool                                                                                        multiline = true;
         bool                                                                                        password  = false;
+        bool                                                                                        eyeIcon   = false;
         CDynamicSize                                                                                size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
     struct STextboxImpl {
@@ -34,6 +35,10 @@ namespace Hyprtoolkit {
         std::vector<SP<CRectangleElement>> selectBgs;
         SP<CTextElement>                   text;
         SP<CTextElement>                   placeholder;
+        SP<CRectangleElement>              eyeBg;
+        SP<CTextElement>                   eyeText;
+
+        static constexpr float             EYE_W = 28.F;
 
         bool                               active            = false;
         bool                               firstAttachedPass = false;
@@ -54,6 +59,7 @@ namespace Hyprtoolkit {
 
         void                      clearSelect();
         void                      updateSelect();
+        void                      updateEyeSymbol();
         bool                      hasSelect() const;
         void                      removeSelectedText();
         void                      focusCursorAtClickedChar();
