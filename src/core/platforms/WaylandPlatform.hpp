@@ -49,9 +49,13 @@ namespace Hyprtoolkit {
         void                         initShell();
         bool                         initDmabuf();
         void                         initIM();
+        void                         initClipboard();
         void                         setCursor(ePointerShape shape);
 
         bool                         dispatchEvents();
+
+        void                         setClipboard(const std::string& text);
+        std::string                  readClipboard();
 
         SP<IWaylandWindow>           windowForSurf(wl_proxy* proxy);
         WP<CWaylandOutput>           outputForHandle(uint32_t handle);
@@ -91,6 +95,12 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCZwlrLayerShellV1>           layerShell;
             Hyprutils::Memory::CSharedPointer<CCWpLinuxDrmSyncobjManagerV1> syncobj;
             Hyprutils::Memory::CSharedPointer<CCExtSessionLockManagerV1>    sessionLock;
+            Hyprutils::Memory::CSharedPointer<CCWlDataDeviceManager>        dataDeviceManager;
+            Hyprutils::Memory::CSharedPointer<CCWlDataDevice>               dataDevice;
+            std::vector<Hyprutils::Memory::CSharedPointer<CCWlDataOffer>>   pendingOffers;
+            Hyprutils::Memory::CSharedPointer<CCWlDataOffer>                currentOffer;
+            Hyprutils::Memory::CSharedPointer<CCWlDataSource>               currentSource;
+            std::string                                                     currentSourceText;
 
             // control
             bool initialized  = false;
