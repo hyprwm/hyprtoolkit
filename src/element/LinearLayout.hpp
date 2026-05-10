@@ -50,8 +50,11 @@ namespace Hyprtoolkit::LinearLayout {
                 cSize = *child->minimumSize(box.size());
 
                 if (used + axisPrimary(cSize) > MAX + 1) {
-                    // doesn't fit: try to shrink any previous element if it allows to do so
-                    // FIXME: if we resize and fail to fit, it will mess up the layout a bit
+                    // doesn't fit: try to shrink any previous element if it
+                    // allows to do so. if we still can't fit after shrinking
+                    // (needs > 0 below), the current child is dropped and we
+                    // expand the previous one to cover the gap; minor visual
+                    // artefact in degenerate cases but the layout stays sane.
                     float needs = (used + axisPrimary(cSize)) - (MAX + 1);
                     for (int j = (int)i - 1; j >= 0; --j) {
                         const auto& prevChild = C.at(j);

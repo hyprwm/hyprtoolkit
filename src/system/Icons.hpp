@@ -2,10 +2,11 @@
 
 #include <hyprtoolkit/system/Icons.hpp>
 
+#include <absl/container/flat_hash_map.h>
+
 #include <optional>
 #include <filesystem>
 #include <vector>
-#include <unordered_map>
 
 namespace Hyprtoolkit {
     class CSystemIconDescription : public ISystemIconDescription {
@@ -53,8 +54,7 @@ namespace Hyprtoolkit {
 
         std::vector<std::string> m_lookupPaths;
 
-        // TODO: stdlib's map is SLOW
-        std::unordered_map<std::string, SIconCacheResult> m_pathCache;
+        absl::flat_hash_map<std::string, SIconCacheResult> m_pathCache;
 
         friend class CSystemIconDescription;
     };

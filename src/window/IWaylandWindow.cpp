@@ -96,20 +96,19 @@ void IWaylandWindow::onPreRender() {
     if (!ANY_REPOSITION)
         return;
 
-    // recheck opaque region
-    // TODO: maybe traverse the entire tree?
-
-    CRegion rg;
-    for (const auto& ch : m_rootElement->impl->children) {
-        auto opaque = ch->opaqueBox();
-
-        if (opaque.empty())
-            continue;
-
-        opaque.translate(ch->impl->position.pos());
-
-        rg.add(opaque);
-    }
+    // collect opaque rects across the full element tree, not just direct children
+    CRegion                                  rg;
+    std::function<void(const SP<IElement>&)> walk = [&](const SP<IElement>& el) {
+        for (const auto& ch : el->impl->children) {
+            auto opaque = ch->opaqueBox();
+            if (!opaque.empty()) {
+                opaque.translate(ch->impl->position.pos());
+                rg.add(opaque);
+            }
+            walk(ch);
+        }
+    };
+    walk(m_rootElement);
 
     m_waylandState.lastOpaqueRegion = std::move(rg);
 

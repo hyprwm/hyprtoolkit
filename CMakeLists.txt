@@ -39,7 +39,8 @@ pkg_check_modules(
   pangocairo
   iniparser
   hyprgraphics>=0.3.0
-  aquamarine>=0.10.0)
+  aquamarine>=0.10.0
+  absl_flat_hash_map)
 
 configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
 

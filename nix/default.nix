@@ -3,6 +3,7 @@
   stdenv,
   cmake,
   pkg-config,
+  abseil-cpp,
   aquamarine,
   cairo,
   epoll-shim,
@@ -42,6 +43,7 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
+    abseil-cpp
     aquamarine
     cairo
     gtest
