@@ -1061,8 +1061,10 @@ void COpenGLRenderer::renderLine(const SLineRenderData& data) {
     if (data.points.size() <= 1)
         return;
 
-    // generate a polygon
-    // FIXME: inconsistent size on x/y, why?
+    // generate a polygon. perpendicular thickness has to be computed in pixel
+    // space, otherwise diagonal lines in non-square boxes get the right
+    // magnitude but the wrong angle (the ndc perpendicular is not perpendicular
+    // in pixels when the aspect ratio is not 1:1).
 
     std::vector<Vector2D> polyPoints;
     polyPoints.resize((data.points.size() * 4) - 2);
@@ -1076,12 +1078,13 @@ void COpenGLRenderer::renderLine(const SLineRenderData& data) {
         } else
             dir = (data.points.at(i + 1) - data.points.at(i));
 
-        // normalize vec
-        dir = dir / dir.size();
+        // unit perpendicular in pixel space, then mapped back to ndc
+        const auto dirPx     = dir * ROUNDEDBOX.size();
+        const auto dirUnitPx = dirPx / dirPx.size();
+        const auto perpPx    = Vector2D{-dirUnitPx.y, dirUnitPx.x};
 
-        // rotate by 90 deg left and right
-        const auto V1              = Vector2D{-dir.y, dir.x} * data.thick / ROUNDEDBOX.size();
-        const auto V2              = Vector2D{dir.y, -dir.x} * data.thick / ROUNDEDBOX.size();
+        const auto V1              = perpPx * data.thick / ROUNDEDBOX.size();
+        const auto V2              = -V1;
         polyPoints.at(i * 4)       = data.points.at(i) + V1;
         polyPoints.at(1 + (i * 4)) = data.points.at(i) + V2;
 
