@@ -1,6 +1,8 @@
 #include "WaylandPlatform.hpp"
 
 #include <algorithm>
+#include <array>
+#include <ranges>
 #include <hyprutils/memory/Casts.hpp>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
@@ -110,6 +112,10 @@ bool CWaylandPlatform::attempt() {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
             m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
                 (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
+        } else if (NAME == wl_data_device_manager_interface.name) {
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 3, id));
+            m_waylandState.dataDeviceManager = makeShared<CCWlDataDeviceManager>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_data_device_manager_interface, 3));
         }
     });
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
@@ -134,6 +140,9 @@ bool CWaylandPlatform::attempt() {
 
     if (m_waylandState.textInputManager)
         initIM();
+
+    if (m_waylandState.dataDeviceManager)
+        initClipboard();
 
     dispatchEvents();
 
@@ -423,6 +432,93 @@ void CWaylandPlatform::initSeat() {
 
 void CWaylandPlatform::initShell() {
     m_waylandState.xdg->setPing([](CCXdgWmBase* r, uint32_t serial) { r->sendPong(serial); });
+}
+
+void CWaylandPlatform::initClipboard() {
+    if (!m_waylandState.dataDeviceManager || !m_waylandState.seat)
+        return;
+
+    m_waylandState.dataDevice = makeShared<CCWlDataDevice>(m_waylandState.dataDeviceManager->sendGetDataDevice(m_waylandState.seat.get()));
+
+    m_waylandState.dataDevice->setDataOffer([this](CCWlDataDevice*, wl_proxy* offer) {
+        auto wrapped = makeShared<CCWlDataOffer>(offer);
+        wrapped->setOffer([](CCWlDataOffer*, const char*) {});
+        m_waylandState.pendingOffers.push_back(wrapped);
+    });
+
+    m_waylandState.dataDevice->setSelection([this](CCWlDataDevice*, wl_proxy* offer) {
+        auto& pending = m_waylandState.pendingOffers;
+        if (!offer) {
+            m_waylandState.currentOffer.reset();
+            pending.clear();
+            return;
+        }
+        const auto IT               = std::ranges::find_if(pending, [offer](const auto& po) { return po && po->resource() == offer; });
+        m_waylandState.currentOffer = IT != pending.end() ? *IT : nullptr;
+        pending.clear();
+    });
+}
+
+void CWaylandPlatform::setClipboard(const std::string& text) {
+    if (!m_waylandState.dataDeviceManager || !m_waylandState.dataDevice)
+        return;
+
+    m_waylandState.currentSourceText = text;
+
+    m_waylandState.currentSource = makeShared<CCWlDataSource>(m_waylandState.dataDeviceManager->sendCreateDataSource());
+
+    m_waylandState.currentSource->sendOffer("text/plain");
+    m_waylandState.currentSource->sendOffer("text/plain;charset=utf-8");
+    m_waylandState.currentSource->sendOffer("UTF8_STRING");
+
+    m_waylandState.currentSource->setSend([this](CCWlDataSource*, const char* /*mime*/, int32_t fd) {
+        const auto& s = m_waylandState.currentSourceText;
+        size_t      sent = 0;
+        while (sent < s.size()) {
+            ssize_t n = write(fd, s.data() + sent, s.size() - sent);
+            if (n <= 0) {
+                if (errno == EINTR)
+                    continue;
+                break;
+            }
+            sent += (size_t)n;
+        }
+        close(fd);
+    });
+
+    m_waylandState.currentSource->setCancelled([this](CCWlDataSource*) {
+        m_waylandState.currentSource.reset();
+        m_waylandState.currentSourceText.clear();
+    });
+
+    m_waylandState.dataDevice->sendSetSelection(m_waylandState.currentSource.get(), m_lastEnterSerial);
+    wl_display_flush(m_waylandState.display);
+}
+
+std::string CWaylandPlatform::readClipboard() {
+    auto& offer = m_waylandState.currentOffer;
+    if (!offer)
+        return {};
+
+    int fds[2];
+    if (pipe2(fds, O_CLOEXEC) != 0)
+        return {};
+
+    offer->sendReceive("text/plain;charset=utf-8", fds[1]);
+    close(fds[1]);
+    wl_display_roundtrip(m_waylandState.display);
+
+    std::string         out;
+    std::array<char, 4096> buf{};
+    for (;;) {
+        const ssize_t N = read(fds[0], buf.data(), buf.size());
+        if (N > 0)
+            out.append(buf.data(), (size_t)N);
+        else if (N == 0 || errno != EINTR)
+            break;
+    }
+    close(fds[0]);
+    return out;
 }
 
 bool CWaylandPlatform::initDmabuf() {

@@ -10,6 +10,7 @@
 #include "../../renderer/Renderer.hpp"
 #include "../../window/ToolkitWindow.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/platforms/WaylandPlatform.hpp"
 #include "../Element.hpp"
 #include "../text/Text.hpp"
 #include "../../helpers/UTF8.hpp"
@@ -318,6 +319,46 @@ void CTextboxElement::init() {
             m_impl->inputState.cursor      = m_impl->inputState.selectEnd;
             m_impl->updateSelect();
             m_impl->updateCursor();
+            return;
+        }
+
+        if ((ev.xkbKeysym == XKB_KEY_C || ev.xkbKeysym == XKB_KEY_c) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
+            if (m_impl->hasSelect() && g_waylandPlatform) {
+                const auto begin = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                const auto end   = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                g_waylandPlatform->setClipboard(m_impl->data.text.substr(begin, end - begin));
+            }
+            return;
+        }
+
+        if ((ev.xkbKeysym == XKB_KEY_X || ev.xkbKeysym == XKB_KEY_x) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
+            if (m_impl->hasSelect() && g_waylandPlatform) {
+                const auto begin = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                const auto end   = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
+                g_waylandPlatform->setClipboard(m_impl->data.text.substr(begin, end - begin));
+                m_impl->removeSelectedText();
+                m_impl->updateLabel();
+            }
+            return;
+        }
+
+        if ((ev.xkbKeysym == XKB_KEY_V || ev.xkbKeysym == XKB_KEY_v) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
+            if (!g_waylandPlatform)
+                return;
+            const auto pasted = g_waylandPlatform->readClipboard();
+            if (pasted.empty())
+                return;
+
+            std::string text = pasted;
+            if (!m_impl->data.multiline) {
+                if (auto nl = text.find('\n'); nl != std::string::npos)
+                    text.resize(nl);
+            }
+
+            m_impl->removeSelectedText();
+            m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, text);
+            m_impl->inputState.cursor += text.length();
+            m_impl->updateLabel();
             return;
         }
 
