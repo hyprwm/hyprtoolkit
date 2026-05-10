@@ -45,7 +45,7 @@ void CRectangleElement::paint() {
     if (m_impl->data.borderThickness > 0) {
         g_renderer->renderBorder({
             .box      = impl->position,
-            .color    = m_impl->borderColor->value(),
+            .gradient = m_impl->borderColor->value(),
             .rounding = m_impl->data.rounding,
             .thick    = m_impl->data.borderThickness,
         });

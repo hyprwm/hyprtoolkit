@@ -15,6 +15,11 @@ SP<CRectangleBuilder> CRectangleBuilder::color(colorFn&& f) {
 }
 
 SP<CRectangleBuilder> CRectangleBuilder::borderColor(colorFn&& f) {
+    m_data->borderColor = [f = std::move(f)] { return CGradientValueData{f()}; };
+    return m_self.lock();
+}
+
+SP<CRectangleBuilder> CRectangleBuilder::borderGradient(gradientFn&& f) {
     m_data->borderColor = std::move(f);
     return m_self.lock();
 }

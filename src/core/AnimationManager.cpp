@@ -2,6 +2,8 @@
 
 #include "../Macros.hpp"
 
+#include <hyprtoolkit/palette/Gradient.hpp>
+
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
@@ -53,39 +55,40 @@ static void updateColorVariable(CAnimatedVariable<CHyprColor>& av, const float P
     av.value() = {lerped, lerp(av.begun().a, av.goal().a, POINTY)};
 }
 
-// void updateGradientVariable(CAnimatedVariable<CGradientValueData>& av, const float POINTY, bool warp = false) {
-//     if (warp || av.value() == av.goal()) {
-//         av.warp(true, false);
-//         return;
-//     }
+static void updateGradientVariable(CAnimatedVariable<CGradientValueData>& av, const float POINTY, bool warp = false) {
+    if (warp || !av.enabled() || av.value() == av.goal()) {
+        av.warp(true, false);
+        return;
+    }
 
-//     av.value().m_vColors.resize(av.goal().m_vColors.size(), av.goal().m_vColors.back());
+    if (av.goal().m_vColors.empty()) {
+        av.warp(true, false);
+        return;
+    }
 
-//     for (size_t i = 0; i < av.value().m_vColors.size(); ++i) {
-//         const CHyprColor&          sourceCol = (i < av.begun().m_vColors.size()) ? av.begun().m_vColors[i] : av.begun().m_vColors.back();
-//         const CHyprColor&          targetCol = (i < av.goal().m_vColors.size()) ? av.goal().m_vColors[i] : av.goal().m_vColors.back();
+    av.value().m_vColors.resize(av.goal().m_vColors.size(), av.goal().m_vColors.back());
 
-//         const auto&                L1 = sourceCol.asOkLab();
-//         const auto&                L2 = targetCol.asOkLab();
+    static const auto lerp = [](const float one, const float two, const float progress) -> float { return one + ((two - one) * progress); };
 
-//         static const auto          lerp = [](const float one, const float two, const float progress) -> float { return one + ((two - one) * progress); };
+    for (size_t i = 0; i < av.value().m_vColors.size(); ++i) {
+        const CHyprColor& sourceCol = (i < av.begun().m_vColors.size()) ? av.begun().m_vColors[i] : av.begun().m_vColors.back();
+        const CHyprColor& targetCol = av.goal().m_vColors[i];
 
-//         const Hyprgraphics::CColor lerped = Hyprgraphics::CColor::SOkLab{
-//             .l = lerp(L1.l, L2.l, POINTY),
-//             .a = lerp(L1.a, L2.a, POINTY),
-//             .b = lerp(L1.b, L2.b, POINTY),
-//         };
+        const auto&                L1 = sourceCol.asOkLab();
+        const auto&                L2 = targetCol.asOkLab();
 
-//         av.value().m_vColors[i] = {lerped, lerp(sourceCol.a, targetCol.a, POINTY)};
-//     }
+        const Hyprgraphics::CColor lerped = Hyprgraphics::CColor::SOkLab{
+            .l = lerp(L1.l, L2.l, POINTY),
+            .a = lerp(L1.a, L2.a, POINTY),
+            .b = lerp(L1.b, L2.b, POINTY),
+        };
 
-//     if (av.begun().m_fAngle != av.goal().m_fAngle) {
-//         const float DELTA   = av.goal().m_fAngle - av.begun().m_fAngle;
-//         av.value().m_fAngle = av.begun().m_fAngle + DELTA * POINTY;
-//     }
+        av.value().m_vColors[i] = {lerped, lerp(sourceCol.a, targetCol.a, POINTY)};
+    }
 
-//     av.value().updateColorsOk();
-// }
+    const float DELTA   = av.goal().m_fAngle - av.begun().m_fAngle;
+    av.value().m_fAngle = av.begun().m_fAngle + DELTA * POINTY;
+}
 
 void CHTAnimationManager::tick() {
     for (const auto& PAV : m_vActiveAnimatedVariables) {
@@ -113,11 +116,11 @@ void CHTAnimationManager::tick() {
                 RASSERT(pTypedAV, "Failed to upcast animated CHyprColor");
                 updateColorVariable(*pTypedAV, POINTY, WARP);
             } break;
-            // case AVARTYPE_GRADIENT: {
-            //     auto pTypedAV = dynamic_cast<CAnimatedVariable<CGradientValueData>*>(PAV.get());
-            //     RASSERT(pTypedAV, "Failed to upcast animated CGradientValueData");
-            //     updateGradientVariable(*pTypedAV, POINTY, WARP);
-            // } break;
+            case AVARTYPE_GRADIENT: {
+                auto pTypedAV = dynamic_cast<CAnimatedVariable<CGradientValueData>*>(PAV.get());
+                RASSERT(pTypedAV, "Failed to upcast animated CGradientValueData");
+                updateGradientVariable(*pTypedAV, POINTY, WARP);
+            } break;
             default: continue;
         }
 

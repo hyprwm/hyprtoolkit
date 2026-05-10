@@ -645,9 +645,9 @@ void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
                 BOX.h = 1;
 
             renderBorder(SBorderRenderData{
-                .box   = BOX,
-                .color = DEBUG_COLOR,
-                .thick = 1,
+                .box      = BOX,
+                .gradient = CGradientValueData{DEBUG_COLOR},
+                .thick    = 1,
             });
 
             auto hsl = DEBUG_COLOR.asHSL();
@@ -949,12 +949,20 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
 
     glUniformMatrix3fv(m_borderShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
 
-    const auto           OKLAB = data.color.asOkLab();
-    std::array<float, 4> grad  = {sc<float>(OKLAB.l), sc<float>(OKLAB.a), sc<float>(OKLAB.b), sc<float>(data.color.a)};
-
-    glUniform4fv(m_borderShader.gradient, grad.size() / 4, grad.data());
-    glUniform1i(m_borderShader.gradientLength, grad.size() / 4);
-    glUniform1f(m_borderShader.angle, (int)(0.F / (M_PI / 180.0)) % 360 * (M_PI / 180.0));
+    const int numStops = std::clamp(sc<int>(data.gradient.m_vColors.size()), 0, 10);
+    if (numStops > 0) {
+        std::array<float, 40> gradData{};
+        for (int i = 0; i < numStops; ++i) {
+            const auto OKL      = data.gradient.m_vColors[i].asOkLab();
+            gradData[i * 4 + 0] = sc<float>(OKL.l);
+            gradData[i * 4 + 1] = sc<float>(OKL.a);
+            gradData[i * 4 + 2] = sc<float>(OKL.b);
+            gradData[i * 4 + 3] = sc<float>(data.gradient.m_vColors[i].a);
+        }
+        glUniform4fv(m_borderShader.gradient, numStops, gradData.data());
+    }
+    glUniform1i(m_borderShader.gradientLength, numStops);
+    glUniform1f(m_borderShader.angle, data.gradient.m_fAngle);
     glUniform1f(m_borderShader.alpha, 1.F);
     glUniform1i(m_borderShader.gradient2Length, 0);
 

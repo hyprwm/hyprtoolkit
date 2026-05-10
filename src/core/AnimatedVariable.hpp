@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/palette/Color.hpp>
+#include <hyprtoolkit/palette/Gradient.hpp>
 #include <hyprutils/animation/AnimatedVariable.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
@@ -13,7 +14,7 @@ namespace Hyprtoolkit {
         AVARTYPE_FLOAT,
         AVARTYPE_VECTOR,
         AVARTYPE_COLOR,
-        AVARTYPE_GRADIENT
+        AVARTYPE_GRADIENT,
     };
 
     // Utility to bind a type with its corresponding eAnimatedVarType
@@ -38,11 +39,10 @@ namespace Hyprtoolkit {
         static constexpr eAnimatedVarType value = AVARTYPE_COLOR;
     };
 
-    // TODO:
-    // template <>
-    // struct STypeToAnimatedVarType_t<CGradientValueData> {
-    //     static constexpr eAnimatedVarType value = AVARTYPE_GRADIENT;
-    // };
+    template <>
+    struct STypeToAnimatedVarType_t<CGradientValueData> {
+        static constexpr eAnimatedVarType value = AVARTYPE_GRADIENT;
+    };
 
     template <class T>
     inline constexpr eAnimatedVarType typeToeAnimatedVarType = STypeToAnimatedVarType_t<T>::value;
@@ -55,7 +55,7 @@ namespace Hyprtoolkit {
     // This is mainly to get better errors if we put a type that's not supported
     // Otherwise template errors are ugly
     template <class T>
-    concept Animable = OneOf<T, Hyprutils::Math::Vector2D, float, CHyprColor /*, CGradientValueData*/>;
+    concept Animable = OneOf<T, Hyprutils::Math::Vector2D, float, CHyprColor, CGradientValueData>;
 
     struct SAnimationContext {};
 
