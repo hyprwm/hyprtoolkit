@@ -116,6 +116,22 @@ void CCheckboxElement::replaceData(const SCheckboxData& data) {
         impl->window->scheduleReposition(impl->self);
 }
 
+bool CCheckboxElement::state() {
+    return m_impl->data.toggled;
+}
+
+void CCheckboxElement::setState(bool state) {
+    if (m_impl->data.toggled == state)
+        return;
+
+    m_impl->data.toggled = state;
+
+    m_impl->foreground->recheckColor();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self);
+}
+
 Hyprutils::Math::Vector2D CCheckboxElement::size() {
     return impl->position.size();
 }
