@@ -46,7 +46,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
         m_impl->foreground = CRectangleBuilder::begin()
                                  ->color(fgColor)
                                  ->rounding(4)
-                                 ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {8.F, 8.F}})
+                                 ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {4.F / 7.F, 4.F / 7.F}})
                                  ->commence();
         m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
         m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
