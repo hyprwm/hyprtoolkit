@@ -22,9 +22,12 @@ SP<CCheckboxElement> CCheckboxElement::create(const SCheckboxData& data) {
 CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_impl(makeUnique<SCheckboxImpl>()) {
     m_impl->data = data;
 
+    const bool RADIO    = data.style == HT_CHECKBOX_STYLE_RADIO;
+    const int  ROUNDING = RADIO ? 7 : g_palette->m_vars.smallRounding;
+
     m_impl->background = CRectangleBuilder::begin()
                              ->color([] { return g_palette->m_colors.base; })
-                             ->rounding(g_palette->m_vars.smallRounding)
+                             ->rounding(ROUNDING)
                              ->borderColor([] { return g_palette->m_colors.alternateBase; })
                              ->borderThickness(1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {14.F, 14.F}})
@@ -33,17 +36,28 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
     m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
     m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
-    m_impl->foreground = CCheckmarkElement::create(SCheckmarkData{
-        .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
-        .color = [impl = m_impl.get()] {
-            auto c = g_palette->m_colors.accent;
-            c.a    = impl->data.toggled ? 1.F : 0.F;
-            return c;
-        },
-    });
+    auto fgColor = [impl = m_impl.get()] {
+        auto c = g_palette->m_colors.accent;
+        c.a    = impl->data.toggled ? 1.F : 0.F;
+        return c;
+    };
 
-    m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
-    m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    if (RADIO) {
+        m_impl->foreground = CRectangleBuilder::begin()
+                                 ->color(fgColor)
+                                 ->rounding(4)
+                                 ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {4.F / 7.F, 4.F / 7.F}})
+                                 ->commence();
+        m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
+        m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    } else {
+        m_impl->foreground = CCheckmarkElement::create(SCheckmarkData{
+            .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+            .color = fgColor,
+        });
+        m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
+        m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
+    }
 
     m_impl->background->addChild(m_impl->foreground);
 
@@ -77,6 +91,10 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
             return;
 
         if (button == Input::MOUSE_BUTTON_LEFT) {
+            // a radio is turned off by selecting another, never by clicking itself
+            if (m_impl->data.style == HT_CHECKBOX_STYLE_RADIO && m_impl->data.toggled)
+                return;
+
             m_impl->data.toggled = !m_impl->data.toggled;
 
             if (m_impl->data.onToggled)
