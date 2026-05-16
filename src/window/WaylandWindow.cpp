@@ -167,3 +167,71 @@ void CWaylandWindow::startInteractiveResize(eResizeEdge edges) {
     m_waylandState.xdgToplevel->sendResize(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastPointerButtonPressSerial,
                                            static_cast<xdgToplevelResizeEdge>(edges));
 }
+
+eResizeEdge CWaylandWindow::edgeForPos(const Vector2D& local) const {
+    if (!m_creationData.resizable)
+        return HT_RESIZE_EDGE_NONE;
+
+    const auto& sz = m_waylandState.logicalSize;
+    if (sz.x <= 0 || sz.y <= 0)
+        return HT_RESIZE_EDGE_NONE;
+
+    uint32_t e = HT_RESIZE_EDGE_NONE;
+    if (local.x < kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_LEFT;
+    else if (local.x > sz.x - kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_RIGHT;
+    if (local.y < kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_TOP;
+    else if (local.y > sz.y - kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_BOTTOM;
+
+    return static_cast<eResizeEdge>(e);
+}
+
+void CWaylandWindow::mouseMove(const Vector2D& local) {
+    // run normal dispatch first so elements get a chance to claim the position.
+    // hovered elements set their own cursor via updateFocus.
+    IWaylandWindow::mouseMove(local);
+
+    if (!m_creationData.resizable)
+        return;
+
+    // an element claimed the position. don't steal it for resize.
+    if (m_mainHoverElement && m_mainHoverElement->m_el)
+        return;
+
+    const auto edge = edgeForPos(local);
+    if (edge == HT_RESIZE_EDGE_NONE)
+        return;
+
+    ePointerShape shape = HT_POINTER_ARROW;
+    switch (edge) {
+        case HT_RESIZE_EDGE_TOP:
+        case HT_RESIZE_EDGE_BOTTOM: shape = HT_POINTER_RESIZE_NS; break;
+        case HT_RESIZE_EDGE_LEFT:
+        case HT_RESIZE_EDGE_RIGHT: shape = HT_POINTER_RESIZE_EW; break;
+        case HT_RESIZE_EDGE_TOP_LEFT:
+        case HT_RESIZE_EDGE_BOTTOM_RIGHT: shape = HT_POINTER_RESIZE_NWSE; break;
+        case HT_RESIZE_EDGE_TOP_RIGHT:
+        case HT_RESIZE_EDGE_BOTTOM_LEFT: shape = HT_POINTER_RESIZE_NESW; break;
+        default: break;
+    }
+    setCursor(shape);
+}
+
+void CWaylandWindow::mouseButton(const Input::eMouseButton button, bool state) {
+    if (m_creationData.resizable && state && button == Input::MOUSE_BUTTON_LEFT) {
+        // an element claimed the position. don't steal the click for resize.
+        const bool elementClaimed = m_mainHoverElement && m_mainHoverElement->m_el;
+        if (!elementClaimed) {
+            const auto edge = edgeForPos(m_mousePos);
+            if (edge != HT_RESIZE_EDGE_NONE) {
+                startInteractiveResize(edge);
+                return;
+            }
+        }
+    }
+
+    IWaylandWindow::mouseButton(button, state);
+}

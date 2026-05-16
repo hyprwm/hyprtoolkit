@@ -142,8 +142,6 @@ namespace Hyprtoolkit {
         uint32_t                        m_currentMods                  = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial              = 0;
         // xdg_toplevel.resize requires the serial of a button PRESS, not release.
-        // we track presses separately so callers wiring this from a click handler
-        // (which fires on release in hyprtoolkit) still get a valid serial.
         uint32_t                        m_lastPointerButtonPressSerial = 0;
 
         WP<CWaylandSessionLockState>    m_sessionLockState;

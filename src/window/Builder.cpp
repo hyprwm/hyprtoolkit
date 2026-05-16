@@ -42,6 +42,11 @@ SP<CWindowBuilder> CWindowBuilder::maxSize(const Hyprutils::Math::Vector2D& x) {
     return m_self.lock();
 }
 
+SP<CWindowBuilder> CWindowBuilder::resizable(bool x) {
+    m_data->resizable = x;
+    return m_self.lock();
+}
+
 SP<CWindowBuilder> CWindowBuilder::prefferedOutput(const SP<IOutput>& x) {
     m_data->prefferedOutputId = x->handle();
     return m_self.lock();

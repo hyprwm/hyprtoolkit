@@ -44,6 +44,9 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        minSize(const Hyprutils::Math::Vector2D&);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
 
+        // only for HT_WINDOW_TOPLEVEL: opt into edge-drag resize and resize cursors
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        resizable(bool);
+
         // only for LAYER and LOCK_SURFACE
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
 
