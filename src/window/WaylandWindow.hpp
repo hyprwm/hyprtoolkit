@@ -11,6 +11,9 @@ namespace Hyprtoolkit {
         virtual void close();
         virtual void open();
 
+        virtual void setSize(const Hyprutils::Math::Vector2D& size);
+        virtual void startInteractiveResize(eResizeEdge edges);
+
       private:
         SWindowCreationData m_creationData;
 

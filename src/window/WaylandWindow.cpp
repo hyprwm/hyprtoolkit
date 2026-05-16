@@ -135,3 +135,35 @@ void CWaylandWindow::close() {
 
     m_waylandState = {};
 }
+
+void CWaylandWindow::setSize(const Vector2D& size) {
+    if (!m_open || !m_waylandState.xdgSurface)
+        return;
+
+    Vector2D clamped = size;
+    if (m_creationData.minSize) {
+        clamped.x = std::max(clamped.x, m_creationData.minSize->x);
+        clamped.y = std::max(clamped.y, m_creationData.minSize->y);
+    }
+    if (m_creationData.maxSize) {
+        clamped.x = std::min(clamped.x, m_creationData.maxSize->x);
+        clamped.y = std::min(clamped.y, m_creationData.maxSize->y);
+    }
+
+    // advisory hint to the compositor. don't mutate logicalSize here: the real
+    // size update arrives via the xdg_toplevel.configure callback, which is the
+    // only authoritative source for what the compositor agreed to.
+    m_waylandState.xdgSurface->sendSetWindowGeometry(0, 0, clamped.x, clamped.y);
+    m_waylandState.surface->sendCommit();
+}
+
+void CWaylandWindow::startInteractiveResize(eResizeEdge edges) {
+    if (!m_open || !m_waylandState.xdgToplevel || edges == HT_RESIZE_EDGE_NONE)
+        return;
+
+    if (!g_waylandPlatform->m_waylandState.seat)
+        return;
+
+    m_waylandState.xdgToplevel->sendResize(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastPointerButtonPressSerial,
+                                           static_cast<xdgToplevelResizeEdge>(edges));
+}

@@ -19,6 +19,19 @@ namespace Hyprtoolkit {
         HT_WINDOW_LOCK_SURFACE = 3,
     };
 
+    // matches xdg_toplevel resize edges; combine with bitwise or for corners
+    enum eResizeEdge : uint32_t {
+        HT_RESIZE_EDGE_NONE         = 0,
+        HT_RESIZE_EDGE_TOP          = 1,
+        HT_RESIZE_EDGE_BOTTOM       = 2,
+        HT_RESIZE_EDGE_LEFT         = 4,
+        HT_RESIZE_EDGE_TOP_LEFT     = 5,
+        HT_RESIZE_EDGE_BOTTOM_LEFT  = 6,
+        HT_RESIZE_EDGE_RIGHT        = 8,
+        HT_RESIZE_EDGE_TOP_RIGHT    = 9,
+        HT_RESIZE_EDGE_BOTTOM_RIGHT = 10,
+    };
+
     class CWindowBuilder {
       public:
         ~CWindowBuilder() = default;
@@ -65,6 +78,17 @@ namespace Hyprtoolkit {
         virtual void                      close()     = 0;
         virtual void                      open()      = 0;
         virtual Hyprutils::Math::Vector2D cursorPos() = 0;
+
+        // request a new logical size. advisory only: the compositor has final
+        // authority over xdg_toplevel size and may ignore, clamp, or override.
+        // listen on m_events.resized for the size the compositor actually applied.
+        // no-op for layer, lock, popup.
+        virtual void                      setSize(const Hyprutils::Math::Vector2D& size) {}
+
+        // hand off to the compositor for an interactive edge/corner resize.
+        // must be called from a pointer-press handler so the latest button
+        // serial is fresh. no-op for layer, lock, popup.
+        virtual void                      startInteractiveResize(eResizeEdge edges) {}
 
         struct {
             // coordinates here are logical, meaning pixel size is this * scale()
