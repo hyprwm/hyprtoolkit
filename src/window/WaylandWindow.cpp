@@ -135,3 +135,103 @@ void CWaylandWindow::close() {
 
     m_waylandState = {};
 }
+
+void CWaylandWindow::setSize(const Vector2D& size) {
+    if (!m_open || !m_waylandState.xdgSurface)
+        return;
+
+    Vector2D clamped = size;
+    if (m_creationData.minSize) {
+        clamped.x = std::max(clamped.x, m_creationData.minSize->x);
+        clamped.y = std::max(clamped.y, m_creationData.minSize->y);
+    }
+    if (m_creationData.maxSize) {
+        clamped.x = std::min(clamped.x, m_creationData.maxSize->x);
+        clamped.y = std::min(clamped.y, m_creationData.maxSize->y);
+    }
+
+    // advisory hint to the compositor. don't mutate logicalSize here: the real
+    // size update arrives via the xdg_toplevel.configure callback, which is the
+    // only authoritative source for what the compositor agreed to.
+    m_waylandState.xdgSurface->sendSetWindowGeometry(0, 0, clamped.x, clamped.y);
+    m_waylandState.surface->sendCommit();
+}
+
+void CWaylandWindow::startInteractiveResize(eResizeEdge edges) {
+    if (!m_open || !m_waylandState.xdgToplevel || edges == HT_RESIZE_EDGE_NONE)
+        return;
+
+    if (!g_waylandPlatform->m_waylandState.seat)
+        return;
+
+    m_waylandState.xdgToplevel->sendResize(g_waylandPlatform->m_waylandState.seat->resource(), g_waylandPlatform->m_lastPointerButtonPressSerial,
+                                           static_cast<xdgToplevelResizeEdge>(edges));
+}
+
+eResizeEdge CWaylandWindow::edgeForPos(const Vector2D& local) const {
+    if (!m_creationData.resizable)
+        return HT_RESIZE_EDGE_NONE;
+
+    const auto& sz = m_waylandState.logicalSize;
+    if (sz.x <= 0 || sz.y <= 0)
+        return HT_RESIZE_EDGE_NONE;
+
+    uint32_t e = HT_RESIZE_EDGE_NONE;
+    if (local.x < kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_LEFT;
+    else if (local.x > sz.x - kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_RIGHT;
+    if (local.y < kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_TOP;
+    else if (local.y > sz.y - kResizeBorderPx)
+        e |= HT_RESIZE_EDGE_BOTTOM;
+
+    return static_cast<eResizeEdge>(e);
+}
+
+void CWaylandWindow::mouseMove(const Vector2D& local) {
+    // run normal dispatch first so elements get a chance to claim the position.
+    // hovered elements set their own cursor via updateFocus.
+    IWaylandWindow::mouseMove(local);
+
+    if (!m_creationData.resizable)
+        return;
+
+    // an element claimed the position. don't steal it for resize.
+    if (m_mainHoverElement && m_mainHoverElement->m_el)
+        return;
+
+    const auto edge = edgeForPos(local);
+    if (edge == HT_RESIZE_EDGE_NONE)
+        return;
+
+    ePointerShape shape = HT_POINTER_ARROW;
+    switch (edge) {
+        case HT_RESIZE_EDGE_TOP:
+        case HT_RESIZE_EDGE_BOTTOM: shape = HT_POINTER_RESIZE_NS; break;
+        case HT_RESIZE_EDGE_LEFT:
+        case HT_RESIZE_EDGE_RIGHT: shape = HT_POINTER_RESIZE_EW; break;
+        case HT_RESIZE_EDGE_TOP_LEFT:
+        case HT_RESIZE_EDGE_BOTTOM_RIGHT: shape = HT_POINTER_RESIZE_NWSE; break;
+        case HT_RESIZE_EDGE_TOP_RIGHT:
+        case HT_RESIZE_EDGE_BOTTOM_LEFT: shape = HT_POINTER_RESIZE_NESW; break;
+        default: break;
+    }
+    setCursor(shape);
+}
+
+void CWaylandWindow::mouseButton(const Input::eMouseButton button, bool state) {
+    if (m_creationData.resizable && state && button == Input::MOUSE_BUTTON_LEFT) {
+        // an element claimed the position. don't steal the click for resize.
+        const bool elementClaimed = m_mainHoverElement && m_mainHoverElement->m_el;
+        if (!elementClaimed) {
+            const auto edge = edgeForPos(m_mousePos);
+            if (edge != HT_RESIZE_EDGE_NONE) {
+                startInteractiveResize(edge);
+                return;
+            }
+        }
+    }
+
+    IWaylandWindow::mouseButton(button, state);
+}

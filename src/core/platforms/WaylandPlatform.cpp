@@ -411,6 +411,9 @@ void CWaylandPlatform::initSeat() {
                 if (!m_currentWindow)
                     return;
 
+                if (state == WL_POINTER_BUTTON_STATE_PRESSED)
+                    m_lastPointerButtonPressSerial = serial;
+
                 m_currentWindow->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
             });
 
@@ -637,6 +640,10 @@ void CWaylandPlatform::setCursor(ePointerShape shape) {
         case HT_POINTER_ARROW: break;
         case HT_POINTER_POINTER: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER; break;
         case HT_POINTER_TEXT: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_TEXT; break;
+        case HT_POINTER_RESIZE_NS: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NS_RESIZE; break;
+        case HT_POINTER_RESIZE_EW: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_EW_RESIZE; break;
+        case HT_POINTER_RESIZE_NESW: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NESW_RESIZE; break;
+        case HT_POINTER_RESIZE_NWSE: wlShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NWSE_RESIZE; break;
         default: break;
     }
 
