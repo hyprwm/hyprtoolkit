@@ -76,12 +76,18 @@ void CWaylandWindow::open() {
             }
         }
 
-        if (m_waylandState.logicalSize == Vector2D{w, h})
-            return;
+        if (m_waylandState.logicalSize != Vector2D{w, h}) {
+            configure({w, h}, m_waylandState.serial);
+            m_events.resized.emit(m_waylandState.logicalSize);
+        }
 
-        configure({w, h}, m_waylandState.serial);
-
-        m_events.resized.emit(m_waylandState.logicalSize);
+        // unpin the min == max lock from a previous setSize call now that the
+        // compositor has responded with a configure.
+        if (m_pendingResize.pending) {
+            restoreUserSizeConstraints();
+            m_waylandState.surface->sendCommit();
+            m_pendingResize.pending = false;
+        }
     });
 
     m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { m_events.closeRequest.emit(); });
@@ -137,7 +143,9 @@ void CWaylandWindow::close() {
 }
 
 void CWaylandWindow::setSize(const Vector2D& size) {
-    if (!m_open || !m_waylandState.xdgSurface)
+    if (!m_open || !m_waylandState.xdgToplevel)
+        return;
+    if (size.x <= 0 || size.y <= 0)
         return;
 
     Vector2D clamped = size;
@@ -150,11 +158,24 @@ void CWaylandWindow::setSize(const Vector2D& size) {
         clamped.y = std::min(clamped.y, m_creationData.maxSize->y);
     }
 
-    // advisory hint to the compositor. don't mutate logicalSize here: the real
-    // size update arrives via the xdg_toplevel.configure callback, which is the
-    // only authoritative source for what the compositor agreed to.
-    m_waylandState.xdgSurface->sendSetWindowGeometry(0, 0, clamped.x, clamped.y);
+    // xdg-shell has no client-side resize request. the standard workaround is to
+    // pin min == max so the compositor's next configure must use this size, then
+    // restore the user's constraints on that configure (see setConfigure handler).
+    m_waylandState.xdgToplevel->sendSetMinSize(clamped.x, clamped.y);
+    m_waylandState.xdgToplevel->sendSetMaxSize(clamped.x, clamped.y);
     m_waylandState.surface->sendCommit();
+
+    m_pendingResize.pending = true;
+    m_pendingResize.size    = clamped;
+}
+
+void CWaylandWindow::restoreUserSizeConstraints() {
+    const auto minW = m_creationData.minSize ? m_creationData.minSize->x : 0;
+    const auto minH = m_creationData.minSize ? m_creationData.minSize->y : 0;
+    const auto maxW = m_creationData.maxSize ? m_creationData.maxSize->x : 0;
+    const auto maxH = m_creationData.maxSize ? m_creationData.maxSize->y : 0;
+    m_waylandState.xdgToplevel->sendSetMinSize(minW, minH);
+    m_waylandState.xdgToplevel->sendSetMaxSize(maxW, maxH);
 }
 
 void CWaylandWindow::startInteractiveResize(eResizeEdge edges) {

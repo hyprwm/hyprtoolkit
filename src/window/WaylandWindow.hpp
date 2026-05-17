@@ -24,6 +24,14 @@ namespace Hyprtoolkit {
         static constexpr int kResizeBorderPx = 6;
         eResizeEdge          edgeForPos(const Hyprutils::Math::Vector2D& local) const;
 
+        // setSize pins min == max == requested temporarily; the next configure restores
+        // the user's original constraints from m_creationData.
+        struct {
+            bool                      pending = false;
+            Hyprutils::Math::Vector2D size;
+        } m_pendingResize;
+        void restoreUserSizeConstraints();
+
         friend class CWaylandPlatform;
         friend class CWaylandPopup;
     };
