@@ -65,6 +65,25 @@ void CWaylandWindow::open() {
 
     m_waylandState.xdgToplevel->setConfigure([this](CCXdgToplevel* r, int32_t w, int32_t h, wl_array* arr) {
         g_logger->log(HT_LOG_DEBUG, "wayland: configure toplevel with {}x{}", w, h);
+
+        m_isMaximized = m_isFullscreen = m_isResizing = m_isTiled = false;
+        if (arr) {
+            const auto  count  = arr->size / sizeof(uint32_t);
+            const auto* states = static_cast<const uint32_t*>(arr->data);
+            for (size_t i = 0; i < count; ++i) {
+                switch (states[i]) {
+                    case XDG_TOPLEVEL_STATE_MAXIMIZED: m_isMaximized = true; break;
+                    case XDG_TOPLEVEL_STATE_FULLSCREEN: m_isFullscreen = true; break;
+                    case XDG_TOPLEVEL_STATE_RESIZING: m_isResizing = true; break;
+                    case XDG_TOPLEVEL_STATE_TILED_LEFT:
+                    case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+                    case XDG_TOPLEVEL_STATE_TILED_TOP:
+                    case XDG_TOPLEVEL_STATE_TILED_BOTTOM: m_isTiled = true; break;
+                    default: break;
+                }
+            }
+        }
+
         if (w == 0 || h == 0) {
             if (m_creationData.preferredSize) {
                 w = m_creationData.preferredSize->x;
@@ -81,12 +100,18 @@ void CWaylandWindow::open() {
             m_events.resized.emit(m_waylandState.logicalSize);
         }
 
-        // unpin the min == max lock from a previous setSize call now that the
-        // compositor has responded with a configure.
+        // unpin the min == max lock only once the compositor's configure size
+        // actually matches our requested size. animating compositors send
+        // intermediate sizes between our request and the final target; relaxing
+        // constraints on those would let the compositor re-target away.
         if (m_pendingResize.pending) {
-            restoreUserSizeConstraints();
-            m_waylandState.surface->sendCommit();
-            m_pendingResize.pending = false;
+            const auto dx = std::abs(static_cast<int>(w) - static_cast<int>(m_pendingResize.size.x));
+            const auto dy = std::abs(static_cast<int>(h) - static_cast<int>(m_pendingResize.size.y));
+            if (dx <= 1 && dy <= 1) {
+                restoreUserSizeConstraints();
+                m_waylandState.surface->sendCommit();
+                m_pendingResize.pending = false;
+            }
         }
     });
 
@@ -255,4 +280,35 @@ void CWaylandWindow::mouseButton(const Input::eMouseButton button, bool state) {
     }
 
     IWaylandWindow::mouseButton(button, state);
+}
+
+void CWaylandWindow::onPreRender() {
+    // capture before the base call clears m_needsReposition
+    const bool hadReposition = !m_needsReposition.empty();
+
+    IWaylandWindow::onPreRender();
+
+    if (!m_creationData.autosize || !hadReposition || m_pendingResize.pending)
+        return;
+
+    // skip when the compositor must control our size. MAXIMIZED is intentionally
+    // not in this list: hyprland tags floating windows with it and we'd never
+    // autosize otherwise. on strict compositors this risks a protocol error.
+    if (m_isFullscreen || m_isResizing)
+        return;
+
+    if (!m_rootElement)
+        return;
+
+    // pass Vector2D{0, 0} so PERCENT-sized descendants contribute nothing to the
+    // natural size; only ABSOLUTE and AUTO content shape the window.
+    const auto preferred = m_rootElement->preferredSize(Vector2D{0, 0});
+
+    if (!preferred || preferred->x <= 0 || preferred->y <= 0)
+        return;
+
+    if (*preferred == m_waylandState.logicalSize)
+        return;
+
+    setSize(*preferred);
 }

@@ -47,6 +47,10 @@ namespace Hyprtoolkit {
         // only for HT_WINDOW_TOPLEVEL: opt into edge-drag resize and resize cursors
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        resizable(bool);
 
+        // only for HT_WINDOW_TOPLEVEL: window follows the root element's preferred
+        // size whenever the layout changes. requires an AUTO-sized root element.
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        autosize(bool);
+
         // only for LAYER and LOCK_SURFACE
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
 

@@ -47,6 +47,11 @@ SP<CWindowBuilder> CWindowBuilder::resizable(bool x) {
     return m_self.lock();
 }
 
+SP<CWindowBuilder> CWindowBuilder::autosize(bool x) {
+    m_data->autosize = x;
+    return m_self.lock();
+}
+
 SP<CWindowBuilder> CWindowBuilder::prefferedOutput(const SP<IOutput>& x) {
     m_data->prefferedOutputId = x->handle();
     return m_self.lock();

@@ -12,6 +12,7 @@ namespace Hyprtoolkit {
         std::optional<Hyprutils::Math::Vector2D> minSize;
         std::optional<Hyprutils::Math::Vector2D> maxSize;
         bool                                     resizable         = false;
+        bool                                     autosize          = false;
         std::string                              title             = "Hyprtoolkit App";
         std::string                              class_            = "hyprtoolkit-app";
         uint32_t                                 prefferedOutputId = 0;
