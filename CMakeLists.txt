@@ -155,6 +155,10 @@ if(BUILD_TESTING)
   target_link_libraries(controls PRIVATE PkgConfig::deps hyprtoolkit)
   add_dependencies(tests controls)
 
+  add_executable(autosizeTest "tests/AutosizeTest.cpp")
+  target_link_libraries(autosizeTest PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests autosizeTest)
+
   add_executable(simpleSessionLock "tests/SimpleSessionLock.cpp")
   target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
   add_dependencies(tests simpleSessionLock)

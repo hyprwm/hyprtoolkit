@@ -129,6 +129,7 @@ int main(int argc, char** argv, char** envp) {
                  ->preferredSize({480, 700})
                  ->minSize({480, 480})
                  ->maxSize({1280, 720})
+                 ->resizable(true)
                  ->appTitle("Controls")
                  ->appClass("hyprtoolkit-controls")
                  ->commence();

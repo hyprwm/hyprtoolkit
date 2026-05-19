@@ -139,8 +139,10 @@ namespace Hyprtoolkit {
         std::vector<WP<CWaylandWindow>> m_windows;
         std::vector<WP<CWaylandLayer>>  m_layers;
         WP<IWaylandWindow>              m_currentWindow;
-        uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
-        uint32_t                        m_lastEnterSerial = 0;
+        uint32_t                        m_currentMods                  = 0; // HT modifiers, not xkb
+        uint32_t                        m_lastEnterSerial              = 0;
+        // xdg_toplevel.resize requires the serial of a button PRESS, not release.
+        uint32_t                        m_lastPointerButtonPressSerial = 0;
 
         WP<CWaylandSessionLockState>    m_sessionLockState;
     };
