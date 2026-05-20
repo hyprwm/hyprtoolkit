@@ -14,6 +14,11 @@ namespace Hyprtoolkit {
     struct SCheckboxData;
     class CCheckboxElement;
 
+    enum eCheckboxStyle : uint8_t {
+        HT_CHECKBOX_STYLE_CHECKMARK = 0,
+        HT_CHECKBOX_STYLE_RADIO,
+    };
+
     class CCheckboxBuilder {
       public:
         ~CCheckboxBuilder() = default;
@@ -21,6 +26,7 @@ namespace Hyprtoolkit {
         static Hyprutils::Memory::CSharedPointer<CCheckboxBuilder> begin();
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        onToggled(std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)>&&);
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        toggled(bool);
+        Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        style(eCheckboxStyle);
         Hyprutils::Memory::CSharedPointer<CCheckboxBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CCheckboxElement>        commence();
@@ -62,5 +68,6 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CUniquePointer<SCheckboxImpl>           m_impl;
 
         friend class CCheckboxBuilder;
+        friend class CRadioGroup;
     };
 };

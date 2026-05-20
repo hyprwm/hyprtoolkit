@@ -40,16 +40,17 @@ namespace Hyprtoolkit {
 
     struct SCheckboxData {
         bool                                                                           toggled = false;
+        eCheckboxStyle                                                                 style   = HT_CHECKBOX_STYLE_CHECKMARK;
         std::function<void(Hyprutils::Memory::CSharedPointer<CCheckboxElement>, bool)> onToggled;
         CDynamicSize                                                                   size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {}};
     };
 
     struct SCheckboxImpl {
-        SCheckboxData               data;
+        SCheckboxData         data;
 
-        WP<CCheckboxElement>        self;
-        SP<CRectangleElement>       background;
-        SP<CCheckmarkElement>       foreground;
+        WP<CCheckboxElement>  self;
+        SP<CRectangleElement> background;
+        SP<IElement>          foreground;
 
         bool                        labelChanged = true;
 

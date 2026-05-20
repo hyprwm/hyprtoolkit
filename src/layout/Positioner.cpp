@@ -1,5 +1,7 @@
 #include "Positioner.hpp"
 
+#include <cmath>
+
 #include "../element/Element.hpp"
 #include "../window/ToolkitWindow.hpp"
 
@@ -63,9 +65,9 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
             }
 
             if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_HCENTER)
-                itemBox.translate(Vector2D{((BOX.size() - itemBox.size()) / 2.F).x, 0.F});
+                itemBox.translate(Vector2D{std::round(((BOX.size() - itemBox.size()) / 2.F).x), 0.F});
             if (c->impl->positionFlags & IElement::HT_POSITION_FLAG_VCENTER)
-                itemBox.translate(Vector2D{0.F, ((BOX.size() - itemBox.size()) / 2.F).y});
+                itemBox.translate(Vector2D{0.F, std::round(((BOX.size() - itemBox.size()) / 2.F).y)});
 
             itemBox.translate(c->impl->absoluteOffset);
         }

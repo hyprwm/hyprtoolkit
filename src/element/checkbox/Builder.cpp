@@ -19,6 +19,11 @@ SP<CCheckboxBuilder> CCheckboxBuilder::toggled(bool x) {
     return m_self.lock();
 }
 
+SP<CCheckboxBuilder> CCheckboxBuilder::style(eCheckboxStyle s) {
+    m_data->style = s;
+    return m_self.lock();
+}
+
 SP<CCheckboxBuilder> CCheckboxBuilder::size(CDynamicSize&& s) {
     m_data->size = std::move(s);
     return m_self.lock();
