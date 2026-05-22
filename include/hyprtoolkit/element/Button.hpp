@@ -23,6 +23,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        label(std::string&&);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBorder(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBg(bool);
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        accent(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        enabled(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        alignText(eFontAlignment);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontFamily(std::string&&);

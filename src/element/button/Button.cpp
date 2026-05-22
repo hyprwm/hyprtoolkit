@@ -23,13 +23,19 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleBuilder::begin()
-                             ->color([nobg = m_impl->data.noBg] {
+                             ->color([acc = m_impl->data.accent, nobg = m_impl->data.noBg] {
+                                 if (acc)
+                                     return g_palette->m_colors.accent;
                                  if (nobg)
                                      return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
                                  return g_palette->m_colors.base;
                              })
                              ->rounding(g_palette->m_vars.smallRounding)
-                             ->borderColor([] { return g_palette->m_colors.alternateBase; })
+                             ->borderColor([acc = m_impl->data.accent] {
+                                 if (acc)
+                                     return g_palette->m_colors.accent;
+                                 return g_palette->m_colors.alternateBase;
+                             })
                              ->borderThickness(data.noBorder ? 0 : 1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                              ->commence();
@@ -38,8 +44,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->text(std::string{data.label})
                         ->fontSize(CFontSize{data.fontSize})
                         ->fontFamily(std::string{data.fontFamily})
-                        ->color([impl = m_impl.get()] {
-                            auto c = g_palette->m_colors.text;
+                        ->color([impl = m_impl.get(), acc = m_impl->data.accent] {
+                            auto c = acc ? g_palette->m_colors.accentText : g_palette->m_colors.text;
                             if (!impl->data.enabled)
                                 c.a *= 0.5F;
                             return c;
@@ -68,7 +74,9 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
             return;
         m_impl->background
             ->rebuild() //
-            ->color([nb = m_impl->data.noBorder, nobg = m_impl->data.noBg] {
+            ->color([acc = m_impl->data.accent, nb = m_impl->data.noBorder, nobg = m_impl->data.noBg] {
+                if (acc)
+                    return g_palette->m_colors.accent.brighten(0.1F);
                 if (nobg)
                     return g_palette->m_colors.base.brighten(0.05F);
                 return g_palette->m_colors.base.brighten(nb ? 0.3F : 0.11F);
@@ -80,12 +88,18 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
         m_impl->background
             ->rebuild() //
-            ->color([nobg = m_impl->data.noBg] {
+            ->color([acc = m_impl->data.accent, nobg = m_impl->data.noBg] {
+                if (acc)
+                    return g_palette->m_colors.accent;
                 if (nobg)
                     return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
                 return g_palette->m_colors.base;
             })
-            ->borderColor([] { return g_palette->m_colors.alternateBase; })
+            ->borderColor([acc = m_impl->data.accent] {
+                if (acc)
+                    return g_palette->m_colors.accent;
+                return g_palette->m_colors.alternateBase;
+            })
             ->commence();
     });
 

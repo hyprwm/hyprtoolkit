@@ -163,6 +163,10 @@ if(BUILD_TESTING)
   target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
   add_dependencies(tests simpleSessionLock)
 
+  add_executable(accentButton "tests/AccentButton.cpp")
+  target_link_libraries(accentButton PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests accentButton)
+
 
   # GTest
   find_package(GTest CONFIG REQUIRED)

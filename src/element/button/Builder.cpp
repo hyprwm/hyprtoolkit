@@ -24,6 +24,11 @@ SP<CButtonBuilder> CButtonBuilder::noBg(bool x) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::accent(bool x) {
+    m_data->accent = x;
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::enabled(bool x) {
     m_data->enabled = x;
     return m_self.lock();
