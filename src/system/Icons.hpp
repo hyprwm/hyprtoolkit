@@ -7,6 +7,7 @@
 #include <optional>
 #include <filesystem>
 #include <vector>
+#include <unordered_set>
 
 namespace Hyprtoolkit {
     class CSystemIconDescription : public ISystemIconDescription {
@@ -52,7 +53,10 @@ namespace Hyprtoolkit {
         void                     parseThemes(const std::vector<std::string>& themeDirs);
         void                     parseTheme(const std::string& themeDir);
 
-        std::vector<std::string> m_lookupPaths;
+        std::vector<std::string>        m_lookupPaths;
+
+        // theme dirs already walked, to break cyclic Inherits= chains
+        std::unordered_set<std::string> m_parsedThemes;
 
         absl::flat_hash_map<std::string, SIconCacheResult> m_pathCache;
 
