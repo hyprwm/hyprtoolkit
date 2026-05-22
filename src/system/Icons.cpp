@@ -168,6 +168,11 @@ static std::optional<std::vector<std::string>> getIconThemeDirs() {
 }
 
 void CSystemIconFactory::parseTheme(const std::string& themeDir) {
+    if (!m_parsedThemes.insert(themeDir).second) {
+        g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: theme {} already parsed, skipping", themeDir);
+        return;
+    }
+
     const auto THEME_DATA = readFileAsString(themeDir + "/index.theme");
 
     if (!THEME_DATA)
