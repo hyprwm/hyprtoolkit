@@ -45,7 +45,9 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->fontSize(CFontSize{data.fontSize})
                         ->fontFamily(std::string{data.fontFamily})
                         ->color([impl = m_impl.get(), acc = m_impl->data.accent] {
-                            auto c = acc ? g_palette->m_colors.accentText : g_palette->m_colors.text;
+                            auto c = g_palette->m_colors.text;
+                            if (acc)
+                                c = g_palette->m_colors.accent.asOkLab().l > 0.5 ? g_palette->m_colors.background : g_palette->m_colors.brightText;
                             if (!impl->data.enabled)
                                 c.a *= 0.5F;
                             return c;
