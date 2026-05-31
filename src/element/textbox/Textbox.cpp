@@ -398,7 +398,7 @@ void CTextboxElement::init() {
                             ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {STextboxImpl::EYE_W, 1.F}})
                             ->commence();
         m_impl->eyeText = CTextBuilder::begin()
-                              ->text(std::string{"\xef\x81\xae"})
+                              ->text(std::string{""})
                               ->color([] { return g_palette->m_colors.text.darken(0.4F); })
                               ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                               ->commence();
@@ -453,7 +453,7 @@ void CTextboxElement::setPassword(bool password) {
 void STextboxImpl::updateEyeSymbol() {
     if (!eyeText)
         return;
-    eyeText->rebuild()->text(std::string{data.password ? "\xef\x81\xae" : "\xef\x81\xb0"})->commence();
+    eyeText->rebuild()->text(std::string{data.password ? "" : ""})->commence();
 }
 
 std::tuple<ssize_t, ssize_t> CTextboxElement::selection() const {
