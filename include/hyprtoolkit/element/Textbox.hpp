@@ -64,6 +64,7 @@ namespace Hyprtoolkit {
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
         virtual bool                                     acceptsMouseInput();
         virtual ePointerShape                            pointerShape();
+        virtual std::function<ePointerShape()>           pointerShapeFn();
         virtual bool                                     acceptsKeyboardInput();
         virtual void                                     imCommitNewText(const std::string&);
         virtual void                                     imApplyText();
