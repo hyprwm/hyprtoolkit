@@ -74,7 +74,29 @@ void CTextboxElement::init() {
     if (!m_impl->data.multiline)
         m_impl->text->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
 
-    m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) { m_impl->lastCursorPos = pos; });
+    m_impl->listeners.mouseMove = impl->m_externalEvents.mouseMove.listen([this](Vector2D pos) {
+        m_impl->lastCursorPos = pos;
+        if (!m_impl->eyeBg)
+            return;
+        const bool IN_EYE = pos.x >= impl->position.w - STextboxImpl::EYE_W;
+        if (IN_EYE == m_impl->eyeHover)
+            return;
+        m_impl->eyeHover = IN_EYE;
+        m_impl->eyeText
+            ->rebuild() //
+            ->color([hover = IN_EYE] { return hover ? g_palette->m_colors.text : g_palette->m_colors.text.darken(0.4F); })
+            ->commence();
+    });
+
+    m_impl->listeners.mouseLeave = impl->m_externalEvents.mouseLeave.listen([this] {
+        if (!m_impl->eyeBg || !m_impl->eyeHover)
+            return;
+        m_impl->eyeHover = false;
+        m_impl->eyeText
+            ->rebuild() //
+            ->color([] { return g_palette->m_colors.text.darken(0.4F); })
+            ->commence();
+    });
 
     m_impl->listeners.mouseButton = impl->m_externalEvents.mouseButton.listen([this](Input::eMouseButton button, bool down) {
         if (!down)
@@ -778,6 +800,14 @@ bool CTextboxElement::acceptsMouseInput() {
 
 ePointerShape CTextboxElement::pointerShape() {
     return HT_POINTER_TEXT;
+}
+
+std::function<ePointerShape()> CTextboxElement::pointerShapeFn() {
+    return [this] {
+        if (m_impl->eyeBg && m_impl->lastCursorPos.x >= impl->position.w - STextboxImpl::EYE_W)
+            return HT_POINTER_POINTER;
+        return HT_POINTER_TEXT;
+    };
 }
 
 bool CTextboxElement::acceptsKeyboardInput() {

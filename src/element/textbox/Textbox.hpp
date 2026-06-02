@@ -42,6 +42,7 @@ namespace Hyprtoolkit {
 
         bool                               active            = false;
         bool                               firstAttachedPass = false;
+        bool                               eyeHover          = false;
 
         struct {
             CHyprSignalListener key;
@@ -49,6 +50,7 @@ namespace Hyprtoolkit {
             CHyprSignalListener leave;
             CHyprSignalListener mouseMove;
             CHyprSignalListener mouseButton;
+            CHyprSignalListener mouseLeave;
         } listeners;
 
         struct {
