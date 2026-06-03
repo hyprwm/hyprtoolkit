@@ -16,6 +16,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        scrollX(bool);
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        scrollY(bool);
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        blockUserScroll(bool);
+        Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        showScrollbar(bool);
         Hyprutils::Memory::CSharedPointer<CScrollAreaBuilder>        size(CDynamicSize&&);
 
         Hyprutils::Memory::CSharedPointer<CScrollAreaElement>        commence();
@@ -40,11 +41,22 @@ namespace Hyprtoolkit {
         Hyprutils::Math::Vector2D                             getCurrentScroll();
         void                                                  setScroll(const Hyprutils::Math::Vector2D&);
 
+        // user children are routed into the inner scrolled layer
+        virtual void addChild(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void removeChild(Hyprutils::Memory::CSharedPointer<IElement> child);
+        virtual void clearChildren();
+
       private:
         CScrollAreaElement(const SScrollAreaData& data);
         static Hyprutils::Memory::CSharedPointer<CScrollAreaElement> create(const SScrollAreaData& data);
 
+        void                                                         init();
         void                                                         replaceData(const SScrollAreaData& data);
+
+        // builds or tears down the scrollbar elements to match showScrollbar
+        void rebuildScrollbars();
+        // sizes, places and shows/hides the scrollbars for the current scroll state
+        void                                                         layoutScrollbars();
 
         virtual void                                                 paint();
         virtual void                                                 reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize = {-1, -1});
