@@ -605,7 +605,13 @@ void STextboxImpl::updateSelect() {
                             ->commence();
 
         selectBg->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
-        selectBg->setAbsolutePosition(Vector2D{beginBox.x, beginBox.y});
+        if (!data.multiline) {
+            // single-line text is vertically centered (CTextElement::paint applies the VCENTER offset),
+            // but getCharBox y is relative to the layout top, so center the highlight to land on the glyphs.
+            selectBg->setPositionFlag(IElement::HT_POSITION_FLAG_VCENTER, true);
+            selectBg->setAbsolutePosition(Vector2D{beginBox.x, 0.F});
+        } else
+            selectBg->setAbsolutePosition(Vector2D{beginBox.x, beginBox.y});
 
         selectBgCont->addChild(selectBg);
         selectBgs.push_back(selectBg);
