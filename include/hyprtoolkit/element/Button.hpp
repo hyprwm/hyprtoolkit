@@ -24,6 +24,9 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBorder(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        noBg(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        accent(bool);
+        // ellipsize the label with "…" when it doesn't fit. requires a constrained
+        // button width; an auto-width button simply grows to fit instead.
+        Hyprutils::Memory::CSharedPointer<CButtonBuilder>        ellipsize(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        enabled(bool);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        alignText(eFontAlignment);
         Hyprutils::Memory::CSharedPointer<CButtonBuilder>        fontFamily(std::string&&);
