@@ -29,6 +29,11 @@ SP<CButtonBuilder> CButtonBuilder::accent(bool x) {
     return m_self.lock();
 }
 
+SP<CButtonBuilder> CButtonBuilder::ellipsize(bool x) {
+    m_data->ellipsize = x;
+    return m_self.lock();
+}
+
 SP<CButtonBuilder> CButtonBuilder::enabled(bool x) {
     m_data->enabled = x;
     return m_self.lock();

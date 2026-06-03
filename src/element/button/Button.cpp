@@ -12,6 +12,8 @@
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
+constexpr double BUTTON_PAD = 5;
+
 SP<CButtonElement> CButtonElement::create(const SButtonData& data) {
     auto p          = SP<CButtonElement>(new CButtonElement(data));
     p->impl->self   = p;
@@ -52,13 +54,15 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                                 c.a *= 0.5F;
                             return c;
                         })
-                        ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
+                        ->size(m_impl->data.ellipsize ? CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}}
+                                                      : CDynamicSize{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
+                        ->align(m_impl->data.alignText)
                         ->callback([this] {
                             m_impl->labelChanged = true;
                             if (impl->window)
                                 impl->window->scheduleReposition(impl->self);
                         })
-                        ->noEllipsize(true)
+                        ->noEllipsize(!m_impl->data.ellipsize)
                         ->commence();
 
     m_impl->label->setPositionMode(HT_POSITION_ABSOLUTE);
@@ -129,6 +133,20 @@ void CButtonElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutil
     IElement::reposition(box);
 
     g_positioner->positionChildren(impl->self.lock());
+
+    // positionChildren gives an absolute-positioned label its full preferred width
+    // and no maxSize, so a long label overflows. when ellipsize is requested, clamp
+    // the label box to the button's inner width and re-position with that as maxSize
+    // so the text element ellipsizes instead of spilling past the background.
+    if (m_impl->data.ellipsize && m_impl->label) {
+        const double INNER_W = std::max(0.0, impl->position.w - BUTTON_PAD * 2);
+        auto         lbox    = m_impl->label->impl->position;
+        if (lbox.w > INNER_W) {
+            lbox.x = impl->position.x + BUTTON_PAD;
+            lbox.w = INNER_W;
+            g_positioner->position(m_impl->label, lbox, Vector2D{INNER_W, lbox.h});
+        }
+    }
 }
 
 void CButtonElement::setLabel(std::string label) {
@@ -176,8 +194,6 @@ void CButtonElement::replaceData(const SButtonData& data) {
 Hyprutils::Math::Vector2D CButtonElement::size() {
     return impl->position.size();
 }
-
-constexpr double        BUTTON_PAD = 5;
 
 std::optional<Vector2D> CButtonElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
     auto s = m_impl->data.size.calculate(parent);
