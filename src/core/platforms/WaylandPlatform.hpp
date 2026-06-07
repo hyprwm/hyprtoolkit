@@ -138,7 +138,8 @@ namespace Hyprtoolkit {
 
         std::vector<WP<CWaylandWindow>> m_windows;
         std::vector<WP<CWaylandLayer>>  m_layers;
-        WP<IWaylandWindow>              m_currentWindow;
+        WP<IWaylandWindow>              m_currentWindow;                    // window the pointer is over
+        WP<IWaylandWindow>              m_keyboardWindow;                   // window the compositor gave keyboard focus
         uint32_t                        m_currentMods                  = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial              = 0;
         // xdg_toplevel.resize requires the serial of a button PRESS, not release.
