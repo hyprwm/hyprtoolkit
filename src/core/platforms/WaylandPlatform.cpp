@@ -359,6 +359,16 @@ void CWaylandPlatform::initSeat() {
                 m_waylandState.seatState.repeatDelay = delay;
             });
 
+            // keyboard focus follows what the compositor focuses, not where the pointer is. without
+            // this a freshly opened dialog (e.g. a polkit prompt) gets no keys until the pointer
+            // enters it, so a programmatically focused field could not be typed into.
+            m_waylandState.keyboard->setEnter([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf, wl_array* keys) {
+                if (auto w = windowForSurf(surf); w)
+                    m_keyboardWindow = w;
+            });
+
+            m_waylandState.keyboard->setLeave([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf) { m_keyboardWindow.reset(); });
+
         } else if (!HAS_KEYBOARD && m_waylandState.keyboard)
             m_waylandState.keyboard.reset();
 
@@ -667,7 +677,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
     else
         std::erase(m_waylandState.seatState.pressedKeys, keycode);
 
-    if (!m_currentWindow)
+    if (!m_keyboardWindow)
         return;
 
     Input::SKeyboardKeyEvent e;
@@ -680,7 +690,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down) {
             // skip compose
             e.xkbKeysym = SYM;
-            m_currentWindow->keyboardKey(e);
+            m_keyboardWindow->keyboardKey(e);
             m_waylandState.seatState.repeatKeyEvent = e;
             startRepeatTimer();
             return;
@@ -701,7 +711,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         if (len > 1) {
             e.xkbKeysym = SYM;
             e.utf8      = std::string{buf, sc<size_t>(len - 1)};
-            m_currentWindow->keyboardKey(e);
+            m_keyboardWindow->keyboardKey(e);
             m_waylandState.seatState.repeatKeyEvent = e;
         }
 
@@ -713,15 +723,15 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
 
     m_waylandState.seatState.repeatKeyEvent = e;
-    m_currentWindow->keyboardKey(e);
+    m_keyboardWindow->keyboardKey(e);
     stopRepeatTimer();
 }
 
 void CWaylandPlatform::onRepeatTimerFire() {
-    if (!m_currentWindow)
+    if (!m_keyboardWindow)
         return;
 
-    m_currentWindow->keyboardKey(m_waylandState.seatState.repeatKeyEvent);
+    m_keyboardWindow->keyboardKey(m_waylandState.seatState.repeatKeyEvent);
 
     // add a repeat timer
     m_waylandState.seatState.repeatTimer =
