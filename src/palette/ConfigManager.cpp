@@ -91,7 +91,7 @@ void CConfigManager::replantWatch() {
 
     m_watches.clear();
 
-    m_watches.emplace_back(inotify_add_watch(m_inotifyFd.get(), m_configPath.c_str(), IN_MODIFY | IN_DONT_FOLLOW));
+    m_watches.emplace_back(inotify_add_watch(m_inotifyFd.get(), m_configPath.c_str(), IN_MODIFY | IN_DELETE_SELF | IN_MOVE_SELF | IN_DONT_FOLLOW));
 }
 
 void CConfigManager::parse() {
@@ -155,23 +155,29 @@ void CConfigManager::onInotifyEvent() {
     if (bytesRead <= 0)
         return;
 
-    for (size_t offset = 0; offset < sc<size_t>(bytesRead);) {
-        const auto* ev = rc<const inotify_event*>(buffer.data() + offset);
+    bool replant = false;
 
+    for (size_t offset = 0; offset < sc<size_t>(bytesRead);) {
         if (offset + sizeof(inotify_event) > sc<size_t>(bytesRead)) {
             // err
             break;
         }
+
+        const auto* ev = rc<const inotify_event*>(buffer.data() + offset);
 
         if (offset + sizeof(inotify_event) + ev->len > sc<size_t>(bytesRead)) {
             // err
             break;
         }
 
+        if (ev->mask & (IN_DELETE_SELF | IN_MOVE_SELF))
+            replant = true;
+
         offset += sizeof(inotify_event) + ev->len;
     }
 
-    replantWatch();
+    if (replant)
+        replantWatch();
 
     parse();
 }
