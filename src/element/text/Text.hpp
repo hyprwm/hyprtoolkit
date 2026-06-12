@@ -51,12 +51,16 @@ namespace Hyprtoolkit {
         SP<IRendererTexture>                                                                           oldTex; // while loading a new one
         ASP<Hyprgraphics::CTextResource>                                                               resource;
         Hyprutils::Math::Vector2D                                                                      size, preferred;
+        // the text's full size with no dynamic ellipsize clamp. stable across the fit/elide
+        // boundary, so the layout cannot flip-flop the preferred size every frame.
+        Hyprutils::Math::Vector2D                                                                      naturalSize;
 
         Hyprutils::Math::Vector2D                                                                      lastCursorPos;
 
         bool                                                                                           waitingForTex = false;
 
         Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
+        Hyprutils::Math::Vector2D                                                                      getNaturalSize();
         Hyprutils::Math::CBox                                                                          getCharBox(size_t offset);
         std::optional<size_t>                                                                          vecToOffset(const Hyprutils::Math::Vector2D& vec);
         float                                                                                          getCursorPos(size_t offset);
