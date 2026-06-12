@@ -32,6 +32,7 @@ CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUniqu
     m_impl->parseText();
     m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
     m_impl->preferred            = m_impl->getTextSizePreferred();
+    m_impl->naturalSize          = m_impl->getNaturalSize();
 
     impl->m_externalEvents.mouseMove.listenStatic([this](const Vector2D& pos) {
         m_impl->lastCursorPos = pos;
@@ -54,7 +55,8 @@ void CTextElement::setText(std::string text) {
 
     m_impl->data.text = std::move(text);
     m_impl->parseText();
-    m_impl->preferred = m_impl->getTextSizePreferred();
+    m_impl->preferred   = m_impl->getTextSizePreferred();
+    m_impl->naturalSize = m_impl->getNaturalSize();
     m_impl->scheduleTexRefresh();
 
     if (impl->window)
@@ -70,6 +72,7 @@ void CTextElement::replaceData(const STextData& data) {
         m_impl->parseText();
         m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
         m_impl->preferred            = m_impl->getTextSizePreferred();
+        m_impl->naturalSize          = m_impl->getNaturalSize();
         m_impl->scheduleTexRefresh();
     }
 
@@ -98,8 +101,11 @@ void CTextElement::paint() {
     }
 
     if ((impl->window && impl->window->scale() != m_impl->lastScale) || m_impl->needsTexRefresh) {
-        m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
-        m_impl->preferred = m_impl->getTextSizePreferred();
+        const bool SCALE_CHANGED = impl->window && impl->window->scale() != m_impl->lastScale;
+        m_impl->lastScale        = impl->window ? impl->window->scale() : 1.F;
+        m_impl->preferred        = m_impl->getTextSizePreferred();
+        if (SCALE_CHANGED)
+            m_impl->naturalSize = m_impl->getNaturalSize();
         if (!m_impl->resource)
             m_impl->renderTex();
         textureToUse = m_impl->oldTex;
@@ -133,7 +139,10 @@ void CTextElement::paint() {
 void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    const auto DESIRED = m_impl->preferred;
+    // compare against the natural (unclamped) size, not the live preferred. the preferred
+    // shrinks when the text ellipsizes, which would let the layout hand it more room and grow
+    // it back, flip-flopping every frame at the boundary. the natural size does not move.
+    const auto DESIRED = m_impl->naturalSize;
     if (DESIRED.x > 0 && DESIRED.y > 0 && !m_impl->data.noEllipsize) {
         const auto PREV     = m_impl->lastMaxSize;
         m_impl->lastMaxSize = {-1, -1};
@@ -142,9 +151,11 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
             m_impl->lastMaxSize.x = maxSize.x;
         if (maxSize.y > 0)
             m_impl->lastMaxSize.y = maxSize.y;
-        if (SIZE.x + 1 < DESIRED.x)
+        // ignore a degenerate, not-yet-laid-out box. clamping on a transient 0 would lock the
+        // text ellipsized forever, since the natural size never grows back to clear it.
+        if (SIZE.x > 1.F && SIZE.x + 1 < DESIRED.x)
             m_impl->lastMaxSize.x = SIZE.x;
-        if (SIZE.y + 1 < DESIRED.y)
+        if (SIZE.y > 1.F && SIZE.y + 1 < DESIRED.y)
             m_impl->lastMaxSize.y = SIZE.y;
 
         if (PREV != m_impl->lastMaxSize) {
@@ -269,6 +280,17 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
     cairo_destroy(CAIRO);
 
     return LAYOUTSIZE / lastScale;
+}
+
+// the text size with the dynamic ellipsize clamp removed. a user-set clampSize still applies.
+// reposition compares the allocated box against this stable value instead of the live, clamped
+// preferred, so a box at the fit/elide boundary cannot make the preferred flip every frame.
+Hyprutils::Math::Vector2D STextImpl::getNaturalSize() {
+    const auto SAVED = lastMaxSize;
+    lastMaxSize      = {-1, -1};
+    const auto SIZE  = getTextSizePreferred();
+    lastMaxSize      = SAVED;
+    return SIZE;
 }
 
 CBox STextImpl::getCharBox(size_t offset) {
