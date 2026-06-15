@@ -25,27 +25,59 @@ TEST(Element, text) {
     text.reset();
 }
 
-// regression: a text at the fit/elide boundary used to flicker between full and ellipsized
-// every frame, and a transient zero-width box (before the layout settles) could lock it
-// ellipsized forever. the clamp now compares against the stable natural size and ignores the
-// not-yet-laid-out box, so the text does not lock and recovers when room returns.
-TEST(Element, textEllipsizeRecoversAndDoesNotLock) {
+// an auto label gets no room hint and its box tracks its own clamped preferred, so the box feeds
+// back into the next layout. a transient narrow box on first layout (e.g. before an async icon
+// sibling reflows the row) must not lock the text ellipsized: once the box equals the clamped
+// preferred the clamp has to release and the text recover. #94 compared the box against a cached
+// natural size, so the box-feedback condition stayed true and the ellipsis locked forever. this is
+// the hyprlauncher regression.
+TEST(Element, textEllipsizeRecoversFromTransientClamp) {
+    Tests::Tricks::createBackendSupport();
+
+    auto text = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
+
+    // natural width: a generous box, no room hint
+    g_positioner->position(text, {{}, {1000.F, 20.F}}, {-1.F, -1.F});
+    const float NATURAL = text->preferredSize({}).value_or(Vector2D{}).x;
+    EXPECT_GT(NATURAL, 40.F);
+
+    // a transient narrow box on first layout clamps it
+    g_positioner->position(text, {{}, {NATURAL * 0.3F, 20.F}}, {-1.F, -1.F});
+    EXPECT_LT(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+
+    // from here the layout hands the auto label a box equal to its own preferred. feed that back a
+    // few frames: it must converge back to NATURAL, not stay locked at the clamped width.
+    for (int i = 0; i < 4; ++i) {
+        const auto PREF = text->preferredSize({}).value_or(Vector2D{});
+        g_positioner->position(text, {{}, PREF}, {-1.F, -1.F});
+    }
+    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+
+    text.reset();
+}
+
+// a stable room hint (e.g. the combobox row layout) clamps to the room and stays put, no per-frame
+// flicker at the fit/elide boundary.
+TEST(Element, textEllipsizeStableUnderRoomHint) {
     Tests::Tricks::createBackendSupport();
 
     auto        text    = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
     const float NATURAL = text->preferredSize({}).value_or(Vector2D{}).x;
     EXPECT_GT(NATURAL, 20.F);
 
-    // a transient zero-width box (layout not settled yet) must not clamp the text
-    g_positioner->position(text, {{}, {0.F, 20.F}});
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    const CBox     widebox = {{}, {NATURAL, 20.F}};
+    const Vector2D tight   = {NATURAL * 0.4F, 20.F};
 
-    // a genuinely narrow box ellipsizes
-    g_positioner->position(text, {{}, {NATURAL / 2.F, 20.F}});
-    EXPECT_LT(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    g_positioner->position(text, widebox, tight);
+    const float CLAMPED = text->preferredSize({}).value_or(Vector2D{}).x;
+    EXPECT_LT(CLAMPED, NATURAL);
 
-    // room returns: the text recovers to its full size, no permanent ellipsis
-    g_positioner->position(text, {{}, {NATURAL + 80.F, 20.F}});
+    // same room again does not flip the size
+    g_positioner->position(text, widebox, tight);
+    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, CLAMPED);
+
+    // room grows back: recover to full
+    g_positioner->position(text, widebox, {NATURAL + 80.F, 20.F});
     EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
 
     text.reset();
