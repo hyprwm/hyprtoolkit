@@ -68,7 +68,9 @@ void CImageElement::renderTex() {
     const auto CACHE_STR = m_impl->getCacheString();
 
     const auto ASSET = Asset::assetCache()->get(CACHE_STR);
-    if (ASSET) {
+	
+	// If using different fitMode value don't use cached asset 
+    if (ASSET && ASSET->tex() && ASSET->tex()->fitMode() == m_impl->data.fitMode) {
         g_logger->log(HT_LOG_DEBUG, "CImageElement: path {} was already cached, reusing entry", m_impl->data.path);
         m_impl->failed     = false;
         m_impl->cacheEntry = ASSET;
