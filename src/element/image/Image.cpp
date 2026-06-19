@@ -68,9 +68,7 @@ void CImageElement::renderTex() {
     const auto CACHE_STR = m_impl->getCacheString();
 
     const auto ASSET = Asset::assetCache()->get(CACHE_STR);
-	
-	// If using different fitMode value don't use cached asset 
-    if (ASSET && ASSET->tex() && ASSET->tex()->fitMode() == m_impl->data.fitMode) {
+    if (ASSET) {
         g_logger->log(HT_LOG_DEBUG, "CImageElement: path {} was already cached, reusing entry", m_impl->data.path);
         m_impl->failed     = false;
         m_impl->cacheEntry = ASSET;
@@ -172,9 +170,11 @@ std::string SImageImpl::getCacheString() {
         return std::format("data-{:x}", rc<uintptr_t>(data.data.data()));
 
     if (!data.icon)
-        return data.path.ends_with(".svg") ? std::format("{}-{}x{}", data.path, preferredSvgSize().x, preferredSvgSize().y) : data.path;
+        return data.path.ends_with(".svg") ? std::format("{}-{}x{}-{}", data.path, preferredSvgSize().x, preferredSvgSize().y, sc<int>(data.fitMode)) :
+                                             std::format("{}-{}", data.path, sc<int>(data.fitMode));
     else
-        return std::format("icon-{}-{}x{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y);
+        return std::format("icon-{}-{}x{}-{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y,
+                           sc<int>(data.fitMode));
 }
 
 SP<CImageBuilder> CImageElement::rebuild() {
