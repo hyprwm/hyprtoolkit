@@ -170,9 +170,11 @@ std::string SImageImpl::getCacheString() {
         return std::format("data-{:x}", rc<uintptr_t>(data.data.data()));
 
     if (!data.icon)
-        return data.path.ends_with(".svg") ? std::format("{}-{}x{}", data.path, preferredSvgSize().x, preferredSvgSize().y) : data.path;
+        return data.path.ends_with(".svg") ? std::format("{}-{}x{}-{}", data.path, preferredSvgSize().x, preferredSvgSize().y, sc<int>(data.fitMode)) :
+                                             std::format("{}-{}", data.path, sc<int>(data.fitMode));
     else
-        return std::format("icon-{}-{}x{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y);
+        return std::format("icon-{}-{}x{}-{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y,
+                           sc<int>(data.fitMode));
 }
 
 SP<CImageBuilder> CImageElement::rebuild() {
