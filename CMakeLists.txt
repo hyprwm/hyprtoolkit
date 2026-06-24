@@ -21,28 +21,38 @@ set(LIBDIR ${CMAKE_INSTALL_FULL_LIBDIR})
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED COMPONENTS "GLES3")
 find_package(hyprwayland-scanner 0.4.0 REQUIRED)
-pkg_check_modules(
-  deps
-  REQUIRED
-  IMPORTED_TARGET
-  wayland-client
-  wayland-protocols
-  egl
-  hyprutils>=0.11.0
-  hyprlang>=0.6.0
-  pixman-1
-  libdrm
-  gbm
-  xkbcommon
-  pango
-  cairo
-  pangocairo
-  iniparser
-  hyprgraphics>=0.3.0
-  aquamarine>=0.10.0
-  absl_flat_hash_map)
 
-configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
+set(AQUAMARINE_MINIMUM_VERSION 0.10.0)
+set(HYPRLANG_MINIMUM_VERSION 0.6.0)
+set(HYPRUTILS_MINIMUM_VERSION 0.11.0)
+set(HYPRGRAPHICS_MINIMUM_VERSION 0.3.0)
+
+# quotes and the spaces around '>=' in the list below are necessary for compability with pkg-config grama
+set(PUBLIC_PKG_DEPS
+    "aquamarine >= ${AQUAMARINE_MINIMUM_VERSION}"
+    "hyprgraphics >= ${HYPRGRAPHICS_MINIMUM_VERSION}"
+    "hyprutils >= ${HYPRUTILS_MINIMUM_VERSION}"
+)
+set(PRIVATE_PKG_DEPS
+    wayland-client
+    wayland-protocols
+    egl
+    "hyprlang >= ${HYPRLANG_MINIMUM_VERSION}"
+    pixman-1
+    libdrm
+    gbm
+    xkbcommon
+    pango
+    cairo
+    pangocairo
+    iniparser
+    absl_flat_hash_map)
+
+set(ALL_PKG_DEPS ${PUBLIC_PKG_DEPS} ${PRIVATE_PKG_DEPS})
+set(HYPRTOOLKIT_PUBLIC_REQUIRES ${PUBLIC_PKG_DEPS})
+set(HYPRTOOLKIT_PRIVATE_REQUIRES ${PRIVATE_PKG_DEPS})
+
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET ${ALL_PKG_DEPS})
 
 set(CMAKE_CXX_STANDARD 23)
 add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value
@@ -81,13 +91,23 @@ check_include_file("sys/timerfd.h" HAS_TIMERFD)
 pkg_check_modules(epoll IMPORTED_TARGET epoll-shim)
 if(NOT HAS_TIMERFD AND epoll_FOUND)
   target_link_libraries(hyprtoolkit PUBLIC PkgConfig::epoll)
+  list(APPEND HYPRTOOLKIT_PRIVATE_REQUIRES "epoll-shim")
 endif()
 
 check_include_file("sys/inotify.h" HAS_INOTIFY)
 pkg_check_modules(inotify IMPORTED_TARGET libinotify)
 if(NOT HAS_INOTIFY AND inotify_FOUND)
   target_link_libraries(hyprtoolkit PUBLIC PkgConfig::inotify)
+  list(APPEND HYPRTOOLKIT_PRIVATE_REQUIRES "libinotify")
 endif()
+
+# convert cmake list to pkg-config `Requires` string
+string(REPLACE ";" ", " HYPRTOOLKIT_PUBLIC_REQUIRES "${HYPRTOOLKIT_PUBLIC_REQUIRES}")
+string(REPLACE ";" ", " HYPRTOOLKIT_PRIVATE_REQUIRES "${HYPRTOOLKIT_PRIVATE_REQUIRES}")
+
+# configure pkg-config after all actual dependencies have been determined,
+# so that conditional dependencies can be correctly included.
+configure_file(hyprtoolkit.pc.in hyprtoolkit.pc @ONLY)
 
 # Protocols
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
