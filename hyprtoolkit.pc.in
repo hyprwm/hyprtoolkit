@@ -6,5 +6,7 @@ Name: hyprtoolkit
 URL: https://github.com/hyprwm/hyprtoolkit
 Description: A modern C++ Wayland-native GUI toolkit
 Version: @HYPRTOOLKIT_VERSION@
+Requires: @HYPRTOOLKIT_PUBLIC_REQUIRES@
+Requires.private: @HYPRTOOLKIT_PRIVATE_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lhyprtoolkit
