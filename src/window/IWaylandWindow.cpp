@@ -126,7 +126,7 @@ void IWaylandWindow::prepareExplicit(SP<CWaylandBuffer> buffer) {
         return;
 
     if (!m_waylandState.syncobjSurf)
-        m_waylandState.syncobjSurf = makeShared<CCWpLinuxDrmSyncobjSurfaceV1>(g_waylandPlatform->m_waylandState.syncobj->sendGetSurface(m_waylandState.surface->proxy()));
+        m_waylandState.syncobjSurf = makeShared<CCWpLinuxDrmSyncobjSurfaceV1>(g_waylandPlatform->m_waylandState.syncobj->sendGetSurface(m_waylandState.surface->resource()));
 
     auto sync = g_renderer->exportSync(buffer->m_buffer.lock());
 
