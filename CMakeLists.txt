@@ -135,6 +135,7 @@ protocolnew("stable/tablet" "tablet-v2" false)
 protocolnew("unstable/text-input" "text-input-unstable-v3" false)
 protocolnew("staging/linux-drm-syncobj" "linux-drm-syncobj-v1" false)
 protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
+protocolnew("unstable/keyboard-shortcuts-inhibit" "keyboard-shortcuts-inhibit-unstable-v1" false)
 
 # Tests
 if(BUILD_TESTING)
@@ -162,6 +163,10 @@ if(BUILD_TESTING)
   add_executable(simpleSessionLock "tests/SimpleSessionLock.cpp")
   target_link_libraries(simpleSessionLock PRIVATE PkgConfig::deps hyprtoolkit)
   add_dependencies(tests simpleSessionLock)
+
+  add_executable(shortcutsInhibit "tests/ShortcutsInhibit.cpp")
+  target_link_libraries(shortcutsInhibit PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests shortcutsInhibit)
 
   add_executable(accentButton "tests/AccentButton.cpp")
   target_link_libraries(accentButton PRIVATE PkgConfig::deps hyprtoolkit)

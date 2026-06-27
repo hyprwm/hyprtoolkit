@@ -41,6 +41,10 @@ void CWaylandWindow::open() {
         return;
     }
 
+    if (m_creationData.inhibitShortcuts && g_waylandPlatform->m_waylandState.shortcutsInhibitMgr && g_waylandPlatform->m_waylandState.seat)
+        m_waylandState.shortcutsInhibitor = makeShared<CCZwpKeyboardShortcutsInhibitorV1>(
+            g_waylandPlatform->m_waylandState.shortcutsInhibitMgr->sendInhibitShortcuts(m_waylandState.surface->resource(), g_waylandPlatform->m_waylandState.seat->resource()));
+
     m_waylandState.xdgSurface = makeShared<CCXdgSurface>(g_waylandPlatform->m_waylandState.xdg->sendGetXdgSurface(m_waylandState.surface->resource()));
 
     if (!m_waylandState.xdgSurface->resource()) {

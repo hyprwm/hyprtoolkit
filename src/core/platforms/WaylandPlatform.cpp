@@ -114,8 +114,11 @@ bool CWaylandPlatform::attempt() {
                 (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
         } else if (NAME == wl_data_device_manager_interface.name) {
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 3, id));
-            m_waylandState.dataDeviceManager = makeShared<CCWlDataDeviceManager>(
-                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_data_device_manager_interface, 3));
+            m_waylandState.dataDeviceManager =
+                makeShared<CCWlDataDeviceManager>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_data_device_manager_interface, 3));
+        } else if (NAME == zwp_keyboard_shortcuts_inhibit_manager_v1_interface.name) {
+            m_waylandState.shortcutsInhibitMgr = makeShared<CCZwpKeyboardShortcutsInhibitManagerV1>(
+                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_keyboard_shortcuts_inhibit_manager_v1_interface, 1));
         }
     });
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
@@ -485,7 +488,7 @@ void CWaylandPlatform::setClipboard(const std::string& text) {
     m_waylandState.currentSource->sendOffer("UTF8_STRING");
 
     m_waylandState.currentSource->setSend([this](CCWlDataSource*, const char* /*mime*/, int32_t fd) {
-        const auto& s = m_waylandState.currentSourceText;
+        const auto& s    = m_waylandState.currentSourceText;
         size_t      sent = 0;
         while (sent < s.size()) {
             ssize_t n = write(fd, s.data() + sent, s.size() - sent);
@@ -521,7 +524,7 @@ std::string CWaylandPlatform::readClipboard() {
     close(fds[1]);
     wl_display_roundtrip(m_waylandState.display);
 
-    std::string         out;
+    std::string            out;
     std::array<char, 4096> buf{};
     for (;;) {
         const ssize_t N = read(fds[0], buf.data(), buf.size());

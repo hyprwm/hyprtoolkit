@@ -45,11 +45,11 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder>        maxSize(const Hyprutils::Math::Vector2D&);
 
         // only for HT_WINDOW_TOPLEVEL: opt into edge-drag resize and resize cursors
-        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        resizable(bool);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> resizable(bool);
 
         // only for HT_WINDOW_TOPLEVEL: window follows the root element's preferred
         // size whenever the layout changes. requires an AUTO-sized root element.
-        Hyprutils::Memory::CSharedPointer<CWindowBuilder>        autosize(bool);
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> autosize(bool);
 
         // only for LAYER and LOCK_SURFACE
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> prefferedOutput(const Hyprutils::Memory::CSharedPointer<IOutput>& output);
@@ -62,6 +62,10 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> exclusiveEdge(uint32_t);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> exclusiveZone(int32_t);
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> kbInteractive(uint32_t);
+
+        // only for HT_WINDOW_TOPLEVEL: request a keyboard shortcuts inhibitor so the compositor does
+        // not fire its global keybinds while this window is focused. useful for modal prompts.
+        Hyprutils::Memory::CSharedPointer<CWindowBuilder> inhibitShortcuts(bool);
 
         // only for HT_WINDOW_POPUP
         Hyprutils::Memory::CSharedPointer<CWindowBuilder> parent(const Hyprutils::Memory::CSharedPointer<IWindow>& parent);
@@ -90,12 +94,12 @@ namespace Hyprtoolkit {
         // authority over xdg_toplevel size and may ignore, clamp, or override.
         // listen on m_events.resized for the size the compositor actually applied.
         // no-op for layer, lock, popup.
-        virtual void                      setSize(const Hyprutils::Math::Vector2D& size) {}
+        virtual void setSize(const Hyprutils::Math::Vector2D& size) {}
 
         // hand off to the compositor for an interactive edge/corner resize.
         // must be called from a pointer-press handler so the latest button
         // serial is fresh. no-op for layer, lock, popup.
-        virtual void                      startInteractiveResize(eResizeEdge edges) {}
+        virtual void startInteractiveResize(eResizeEdge edges) {}
 
         struct {
             // coordinates here are logical, meaning pixel size is this * scale()
