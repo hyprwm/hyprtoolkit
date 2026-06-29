@@ -102,6 +102,11 @@ SP<CWindowBuilder> CWindowBuilder::kbInteractive(uint32_t x) {
     return m_self.lock();
 }
 
+SP<CWindowBuilder> CWindowBuilder::inhibitShortcuts(bool x) {
+    m_data->inhibitShortcuts = x;
+    return m_self.lock();
+}
+
 SP<IWindow> CWindowBuilder::commence() {
     switch (m_data->type) {
         case HT_WINDOW_POPUP:
