@@ -1,6 +1,7 @@
 #include "Env.hpp"
 
 #include <cstdlib>
+#include <optional>
 #include <string_view>
 
 using namespace Hyprtoolkit;
@@ -19,4 +20,12 @@ bool Hyprtoolkit::Env::envEnabled(const std::string& env) {
 bool Hyprtoolkit::Env::isTrace() {
     static bool TRACE = envEnabled("HT_TRACE");
     return TRACE;
+}
+
+std::optional<std::string_view> Hyprtoolkit::Env::getEnv(const std::string& env) {
+    auto ret = getenv(env.c_str());
+    if (!ret)
+        return std::nullopt;
+
+    return ret;
 }
