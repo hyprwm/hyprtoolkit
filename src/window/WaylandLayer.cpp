@@ -142,3 +142,12 @@ void CWaylandLayer::render() {
 
     IWaylandWindow::render();
 }
+
+void CWaylandLayer::setSize(const Hyprutils::Math::Vector2D& size) {
+    if (m_waylandState.logicalSize == size)
+        return;
+
+    m_layerState.layerSurface->sendSetSize(size.x, size.y);
+
+    configure(size, 0);
+}

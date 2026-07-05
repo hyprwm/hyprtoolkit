@@ -2,6 +2,7 @@
 
 #include "IWaylandWindow.hpp"
 #include <wlr-layer-shell-unstable-v1.hpp>
+#include <hyprutils/math/Vector2D.hpp>
 
 namespace Hyprtoolkit {
 
@@ -13,6 +14,7 @@ namespace Hyprtoolkit {
         virtual void close();
         virtual void open();
         virtual void render();
+        virtual void setSize(const Hyprutils::Math::Vector2D& size);
 
       private:
         SWindowCreationData m_creationData;
