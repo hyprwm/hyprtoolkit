@@ -21,7 +21,7 @@ namespace Hyprtoolkit {
         float                                    a           = 1.F;
         bool                                     noEllipsize = false;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
-        CDynamicSize                             size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+        CDynamicSize                             size{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}};
         std::function<void()>                    callback; // called after resource is loaded
         bool                                     async = true;
         std::optional<bool>                      interactable;
@@ -33,6 +33,23 @@ namespace Hyprtoolkit {
         Hyprutils::Math::CRegion region;
     };
 
+    struct SPangoData {
+        PangoLayout*  layout;
+        PangoContext* context;
+
+        SPangoData();
+        SPangoData(PangoLayout* layout, PangoContext* context);
+        SPangoData(const SPangoData&) = delete;
+        SPangoData(SPangoData&&) noexcept;
+        SPangoData& operator=(const SPangoData&) = delete;
+        SPangoData& operator=(SPangoData&&) noexcept;
+
+        void        ref() const;
+        void        unref() const;
+
+        ~SPangoData();
+    };
+
     struct STextImpl {
         STextData                                                                                      data;
 
@@ -42,18 +59,17 @@ namespace Hyprtoolkit {
 
         WP<CTextElement>                                                                               self;
 
-        size_t                                                                                         lastFontSizeUnscaled = 0;
-        float                                                                                          lastScale            = 1.F;
+        float                                                                                          lastScale       = 1.F;
         bool                                                                                           needsTexRefresh = false, newTex = false;
 
-        Hyprutils::Math::Vector2D                                                                      lastMaxSize;
+        SPangoData                                                                                     pangoData;
 
         SP<IRendererTexture>                                                                           tex;
         SP<IRendererTexture>                                                                           oldTex; // while loading a new one
         PHLANIMVAR<CHyprColor>                                                                         color;
         SP<Hyprutils::Animation::SAnimationPropertyConfig>                                             colorAnimationConfig;
         ASP<Hyprgraphics::CTextResource>                                                               resource;
-        Hyprutils::Math::Vector2D                                                                      size, preferred;
+        Hyprutils::Math::Vector2D                                                                      size;
 
         Hyprutils::Math::Vector2D                                                                      lastCursorPos;
 
@@ -61,13 +77,17 @@ namespace Hyprtoolkit {
         bool                                                                                           colorAnimationEnabled = false;
         bool                                                                                           renderColorAtPaint    = false;
 
-        Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
         Hyprutils::Math::CBox                                                                          getCharBox(size_t offset);
         std::optional<size_t>                                                                          vecToOffset(const Hyprutils::Math::Vector2D& vec);
         float                                                                                          getCursorPos(size_t offset);
         float                                                                                          getCursorPos(const Hyprutils::Math::Vector2D& click);
         Hyprutils::Math::Vector2D                                                                      unscale(const Hyprutils::Math::Vector2D& x);
-        std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Hyprutils::Math::Vector2D> prepPangoLayout();
+        void                                                                                           setPangoData();
+        void                                                                                           setPangoFont();
+        void                                                                                           setPangoAlign();
+        void                                                                                           setPangoText();
+        void                                                                                           setPangoEllipsize();
+        void                                                                                           updateScale();
         void                                                                                           scheduleTexRefresh();
         void                                                                                           renderTex();
         void                                                                                           postTexLoad();
@@ -75,6 +95,7 @@ namespace Hyprtoolkit {
         void                                                                                           recheckTextBoxes();
         void                                                                                           onMouseDown();
         void                                                                                           onMouseMove();
+        Hyprutils::Math::Vector2D                                                                      applyClampSize(Hyprutils::Math::Vector2D);
 
         friend class CTextboxElement;
         friend struct STextboxImpl;
