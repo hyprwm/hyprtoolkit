@@ -48,10 +48,37 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CImageBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                size();
 
+        // Starts a transition to the image at `path`.
+        //
+        // duration <= 0 means an immediate (non-animated) swap: the transition
+        // completes on the first rendered frame.
+        //
+        // The caller supplies the fragment stage only; the vertex stage is the fixed
+        // built-in tex300.vert (declares `in vec2 pos; in vec2 texcoord; uniform mat3 proj;`
+        // and emits v_texcoord). The custom fragment must declare
+        // `uniform sampler2D tex1, tex2; uniform float progress;` and should consume
+        // v_texcoord (a fragment that ignores v_texcoord can have the attribute
+        // dead-stripped). Optional uniforms: alpha, topLeft, fullSize, radius,
+        // randomPixel, u_duration. A shader that fails to compile/link, or that is
+        // missing any of pos/texcoord/proj/tex1/tex2/progress, is rejected and the
+        // default transition shader is used instead.
+        void transitionTo(const std::string& path,
+                          eImageFitMode fitMode,
+                          float duration,
+                          const std::string& shaderSource = "");
+
+        bool isTransitioning() const;
+
+        float getTransitionProgressOut() const;
+        float getTransitionProgressIn() const;
+
       private:
         CImageElement(const SImageData& data);
         static Hyprutils::Memory::CSharedPointer<CImageElement> create(const SImageData& data);
 
+        // NOTE: calling replaceData() while a transitionTo()-driven transition is
+        // active is not a supported interleaving: replaceData bumps the request
+        // generation and updates the data, but does not touch transition state.
         void                                                    replaceData(const SImageData& data);
 
         //
@@ -64,8 +91,11 @@ namespace Hyprtoolkit {
 
         void                                             renderTex();
 
+        void                                             renderTransition();
+
         Hyprutils::Memory::CUniquePointer<SImageImpl>    m_impl;
 
         friend class CImageBuilder;
+        friend struct SImageImpl;
     };
 };
