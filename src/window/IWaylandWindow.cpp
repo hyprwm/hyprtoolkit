@@ -130,6 +130,11 @@ void IWaylandWindow::prepareExplicit(SP<CWaylandBuffer> buffer) {
 
     auto sync = g_renderer->exportSync(buffer->m_buffer.lock());
 
+    if (!sync) {
+        g_logger->log(HT_LOG_ERROR, "wayland: failed to export sync timeline in prepareExplicit");
+        return;
+    }
+
     if (!buffer->m_waylandState.syncTimeline) {
         buffer->m_waylandState.syncTimeline = makeShared<CCWpLinuxDrmSyncobjTimelineV1>(g_waylandPlatform->m_waylandState.syncobj->sendImportTimeline(sync->m_syncobjFD.get()));
         buffer->m_timeline                  = sync;
@@ -147,6 +152,11 @@ void IWaylandWindow::submitExplicit(SP<CWaylandBuffer> buffer) {
     auto sync = g_renderer->exportSync(buffer->m_buffer.lock());
 
     sync->m_releasePoint = sync->m_acquirePoint + 1;
+
+    if (!sync) {
+        g_logger->log(HT_LOG_ERROR, "wayland: failed to export sync timeline in submitExplicit");
+        return;
+    }
 
     TRACE(g_logger->log(HT_LOG_TRACE, "wayland: Submitting points acq: {}, rel: {} for ES", sync->m_acquirePoint, sync->m_releasePoint));
 
