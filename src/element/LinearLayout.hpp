@@ -113,17 +113,18 @@ namespace Hyprtoolkit::LinearLayout {
 
                 // squeeze the last element in
                 sizes.at(i) = MAX - used;
+                used = MAX;
                 continue;
             }
 
             // can fit: use preferred
             sizes.at(i) = axisPrimary(cSize);
             child->impl->setFailedPositioning(false);
-            used += axisPrimary(cSize) + gap;
+            used += axisPrimary(cSize);
+            if (i != C.size() - 1)
+                used += gap;
         }
 
-        if (!C.empty())
-            used -= gap;
 
         // grow the first element marked as growing on this axis to fill remaining space
         if (used < MAX) {
@@ -131,6 +132,7 @@ namespace Hyprtoolkit::LinearLayout {
                 if (!grows(C.at(i)))
                     continue;
                 sizes.at(i) += MAX - used;
+                used = MAX;
                 break;
             }
         }
