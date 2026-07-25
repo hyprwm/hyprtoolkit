@@ -33,6 +33,7 @@ namespace Hyprtoolkit {
         struct SIconCacheResult {
             bool                  badIcon = true;
             std::filesystem::path path;
+            bool                  scalable = false;
         };
 
         /*

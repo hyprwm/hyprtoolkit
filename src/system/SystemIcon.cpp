@@ -15,6 +15,7 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
 
     if (const auto CK = g_iconFactory->getCached(name); CK) {
         m_bestPath = CK->badIcon ? "" : CK->path;
+        m_scalable = CK->badIcon ? false : CK->scalable;
         return;
     }
 
@@ -24,10 +25,13 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
         std::filesystem::path fullDirPath = lookupDir + "/";
 
         auto                  iconPath = fullDirPath / (name + ".svg");
+        m_scalable = true;
         std::error_code       ec;
 
-        if (!std::filesystem::exists(iconPath, ec) || ec)
+        if (!std::filesystem::exists(iconPath, ec) || ec) {
             iconPath = fullDirPath / (name + ".png");
+            m_scalable = false;
+        }
 
         if (!std::filesystem::exists(iconPath, ec) || ec)
             continue;
@@ -42,17 +46,19 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
         std::error_code ec;
         if (std::filesystem::exists("/usr/share/pixmaps/" + name + ".svg", ec) && !ec) {
             found      = true;
+            m_scalable = true;
             m_bestPath = "/usr/share/pixmaps/" + name + ".svg";
         }
 
         if (!found && std::filesystem::exists("/usr/share/pixmaps/" + name + ".png", ec) && !ec) {
             found      = true;
+            m_scalable = false;
             m_bestPath = "/usr/share/pixmaps/" + name + ".png";
         }
     }
 
     if (found)
-        g_iconFactory->cacheEntry(name, CSystemIconFactory::SIconCacheResult{.badIcon = false, .path = m_bestPath});
+        g_iconFactory->cacheEntry(name, CSystemIconFactory::SIconCacheResult{.badIcon = false, .path = m_bestPath, .scalable = m_scalable});
     else
         g_iconFactory->cacheEntry(name, CSystemIconFactory::SIconCacheResult{});
 }
