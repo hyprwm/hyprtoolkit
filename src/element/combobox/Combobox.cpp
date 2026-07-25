@@ -255,12 +255,12 @@ Hyprutils::Math::Vector2D CComboboxElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CComboboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+std::optional<Vector2D> CComboboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    return m_impl->data.size.calculate(parent, grow);
 }
 
 std::optional<Vector2D> CComboboxElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+    return m_impl->data.size.calculate(parent, false);
 }
 
 std::optional<Vector2D> CComboboxElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {

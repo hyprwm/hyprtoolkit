@@ -195,13 +195,13 @@ Hyprutils::Math::Vector2D CButtonElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CButtonElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
+std::optional<Vector2D> CButtonElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    auto s = m_impl->data.size.calculate(parent, grow);
 
     if (s.x != -1 && s.y != -1)
         return s;
 
-    const auto CALC = m_impl->label->preferredSize(parent).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
+    const auto CALC = m_impl->label->preferredSize(parent, grow).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
 
     if (s.x == -1)
         s.x = CALC.x;
@@ -212,11 +212,11 @@ std::optional<Vector2D> CButtonElement::preferredSize(const Hyprutils::Math::Vec
 }
 
 std::optional<Vector2D> CButtonElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
+    auto s = m_impl->data.size.calculate(parent, false);
     if (s.x != -1 && s.y != -1)
         return s;
 
-    const auto CALC = m_impl->label->preferredSize(parent).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
+    const auto CALC = m_impl->label->preferredSize(parent, false).value() + Vector2D{BUTTON_PAD * 2, BUTTON_PAD * 2};
 
     if (s.x == -1)
         s.x = CALC.x;

@@ -16,7 +16,7 @@ namespace Hyprtoolkit {
 
         CDynamicSize(eSizingType typeX, eSizingType typeY, const Hyprutils::Math::Vector2D& size);
 
-        Hyprutils::Math::Vector2D calculate(Hyprutils::Math::Vector2D elSize) const;
+        Hyprutils::Math::Vector2D calculate(Hyprutils::Math::Vector2D elSize, bool grow = true) const;
 
         HT_HIDDEN :
 

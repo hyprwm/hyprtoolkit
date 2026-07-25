@@ -187,50 +187,16 @@ Hyprutils::Math::Vector2D CSliderElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CSliderElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+std::optional<Vector2D> CSliderElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, grow);
 }
 
 std::optional<Vector2D> CSliderElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, false);
 }
 
 std::optional<Vector2D> CSliderElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
-    if (s.x != -1 && s.y != -1)
-        return s;
-
-    const auto CALC = m_impl->layout->preferredSize(parent).value() + Vector2D{1, 1};
-
-    if (s.x == -1)
-        s.x = CALC.x;
-    if (s.y == -1)
-        s.y = CALC.y;
-
-    return s;
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, true);
 }
 
 bool CSliderElement::acceptsMouseInput() {

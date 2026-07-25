@@ -205,8 +205,8 @@ Hyprutils::Math::Vector2D CImageElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
+std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    auto s = m_impl->data.size.calculate(parent, grow);
     if (s.x != -1 && s.y != -1)
         return s;
 
@@ -216,7 +216,7 @@ std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vect
         return m_impl->size / SCALE;
 
     if (m_impl->size.y == 0)
-        return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+        return impl->getPreferredSizeGeneric(m_impl->data.size, parent, grow);
 
     const double ASPECT_RATIO = m_impl->size.x / m_impl->size.y;
 
@@ -227,7 +227,7 @@ std::optional<Vector2D> CImageElement::preferredSize(const Hyprutils::Math::Vect
 }
 
 std::optional<Vector2D> CImageElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
+    auto s = m_impl->data.size.calculate(parent, false);
     if (s.x != -1 && s.y != -1)
         return s;
     return Vector2D{0, 0};

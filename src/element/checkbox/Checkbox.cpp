@@ -154,16 +154,16 @@ Hyprutils::Math::Vector2D CCheckboxElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CCheckboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+std::optional<Vector2D> CCheckboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, grow);
 }
 
 std::optional<Vector2D> CCheckboxElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, false);
 }
 
 std::optional<Vector2D> CCheckboxElement::maximumSize(const Hyprutils::Math::Vector2D& parent) {
-    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, true);
 }
 
 bool CCheckboxElement::acceptsMouseInput() {

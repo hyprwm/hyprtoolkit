@@ -784,12 +784,12 @@ Hyprutils::Math::Vector2D CTextboxElement::size() {
     return impl->position.size();
 }
 
-std::optional<Vector2D> CTextboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->data.size.calculate(parent);
+std::optional<Vector2D> CTextboxElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    return m_impl->data.size.calculate(parent, grow);
 }
 
 std::optional<Vector2D> CTextboxElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    auto s = m_impl->data.size.calculate(parent);
+    auto s = m_impl->data.size.calculate(parent, false);
     if (s.x != -1 && s.y != -1)
         return s;
     return Vector2D{0, 0};
