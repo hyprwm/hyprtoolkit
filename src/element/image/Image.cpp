@@ -41,7 +41,7 @@ void CImageElement::paint() {
     if (impl->window)
         m_impl->lastScale = impl->window->scale();
 
-    if (m_impl->data.icon && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
+    if (m_impl->data.icon && m_impl->data.icon->scalable() && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
         renderTex();
         assetToUse = m_impl->oldCacheEntry;
     }
