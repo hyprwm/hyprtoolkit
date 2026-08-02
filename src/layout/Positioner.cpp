@@ -28,6 +28,7 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
 void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& data) {
     const auto C   = element->impl->children;
     const auto BOX = element->impl->position.copy().translate(data.offset);
+    const auto CLIP_BOX = CBox{BOX.pos(), {data.growX ? 99999999 : BOX.width, data.growY ? 99999999 : BOX.height}};
 
     // position children according to how they wanna be positioned
 
@@ -36,18 +37,12 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 
         if (!itemSize) {
             // no size to base off of, just position
-            CBox itemBox = BOX;
-            if (data.growX)
-                itemBox.w = 99999999;
-            if (data.growY)
-                itemBox.h = 99999999;
-
-            position(c, itemBox);
+            position(c, CLIP_BOX);
             continue;
         }
 
         // it has a size, let's see what it wants.
-        CBox itemBox = {BOX.pos(), *itemSize};
+        CBox itemBox = CBox{BOX.pos(), *itemSize}.intersection(CLIP_BOX);
 
         if (c->impl->positionMode == IElement::HT_POSITION_ABSOLUTE) {
 

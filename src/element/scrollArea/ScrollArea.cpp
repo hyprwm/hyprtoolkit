@@ -280,7 +280,7 @@ void CScrollAreaElement::reposition(const Hyprutils::Math::CBox& sbox, const Vec
     // move the whole content layer by the scroll offset, then lay it (and the scrollbar
     // strips) out. the strips carry no offset of their own, so they stay pinned to the edge.
     m_impl->inner->setAbsolutePosition(-m_impl->data.currentScroll.round());
-    g_positioner->positionChildren(impl->self.lock());
+    g_positioner->positionChildren(impl->self.lock(), { .growY = true });
 
     // content is laid out at its natural size now, so this reads the real overflow.
     m_impl->recalcMaxScroll();
