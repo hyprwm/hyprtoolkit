@@ -39,10 +39,10 @@ void CRowLayoutElement::reposition(const Hyprutils::Math::CBox& sbox, const Hypr
 }
 
 Hyprutils::Math::Vector2D CRowLayoutElement::childSize(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (child->preferredSize(impl->position.size()))
-        return *child->preferredSize(impl->position.size());
-    else if (child->minimumSize(impl->position.size()))
-        return *child->minimumSize(impl->position.size());
+    if (const auto PREFERRED = child->preferredSize(impl->position.size()); PREFERRED)
+        return *PREFERRED;
+    if (const auto MINIMUM = child->minimumSize(impl->position.size()); MINIMUM)
+        return *MINIMUM;
     return {-1, -1};
 }
 
@@ -58,8 +58,9 @@ std::optional<Hyprutils::Math::Vector2D> CRowLayoutElement::preferredSize(const 
 
     Vector2D max;
     for (const auto& child : impl->children) {
-        max.x += childSize(child).x + m_impl->data.gap;
-        max.y = std::max(max.y, childSize(child).y);
+        const auto CSIZE = childSize(child);
+        max.x += CSIZE.x + m_impl->data.gap;
+        max.y = std::max(max.y, CSIZE.y);
     }
 
     if (!impl->children.empty())

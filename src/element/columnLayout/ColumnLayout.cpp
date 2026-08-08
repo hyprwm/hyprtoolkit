@@ -51,10 +51,10 @@ Hyprutils::Math::Vector2D CColumnLayoutElement::size() {
 }
 
 Hyprutils::Math::Vector2D CColumnLayoutElement::childSize(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (child->preferredSize(impl->position.size()))
-        return *child->preferredSize(impl->position.size());
-    else if (child->minimumSize(impl->position.size()))
-        return *child->minimumSize(impl->position.size());
+    if (const auto PREFERRED = child->preferredSize(impl->position.size()); PREFERRED)
+        return *PREFERRED;
+    if (const auto MINIMUM = child->minimumSize(impl->position.size()); MINIMUM)
+        return *MINIMUM;
     return {-1, -1};
 }
 
@@ -66,8 +66,9 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
 
     Vector2D max;
     for (const auto& child : impl->children) {
-        max.x = std::max(childSize(child).x, max.x);
-        max.y += childSize(child).y + m_impl->data.gap;
+        const auto CSIZE = childSize(child);
+        max.x            = std::max(CSIZE.x, max.x);
+        max.y += CSIZE.y + m_impl->data.gap;
     }
 
     if (!impl->children.empty())
