@@ -15,6 +15,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <gbm.h>
+#include <mutex>
 
 namespace Hyprtoolkit {
     class IToolkitWindow;
@@ -27,9 +28,11 @@ namespace Hyprtoolkit {
     class COpenGLRenderer : public IRenderer {
       public:
         COpenGLRenderer(int drmFD);
+        COpenGLRenderer();
         virtual ~COpenGLRenderer();
 
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf);
+        virtual void                 beginRenderingExternal(SP<IToolkitWindow> window, uint32_t bufferAge);
         virtual void                 render(bool ignoreSync);
         virtual void                 endRendering();
         virtual void                 renderRectangle(const SRectangleRenderData& data);
@@ -56,6 +59,7 @@ namespace Hyprtoolkit {
         void                           waitOnSync();
 
         void                           initEGL(bool gbm);
+        void                           initGLResources();
         EGLDeviceEXT                   eglDeviceFromDRMFD(int drmFD);
         EGLImageKHR                    createEGLImage(const Aquamarine::SDMABUFAttrs& attrs);
         void                           makeEGLCurrent();
@@ -71,7 +75,8 @@ namespace Hyprtoolkit {
         bool                           m_hasModifiers     = true;
         int                            m_drmFD            = -1;
         bool                           m_syncobjSupported = false;
-        const GLint                    m_maxTextureSize   = 0;
+        bool                           m_borrowedContext  = false;
+        GLint                          m_maxTextureSize   = 0;
 
         struct {
             PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC glEGLImageTargetRenderbufferStorageOES = nullptr;
@@ -108,22 +113,78 @@ namespace Hyprtoolkit {
 
         std::vector<SP<CRenderbuffer>> m_rbos;
         SP<CRenderbuffer>              m_currentRBO;
+        GLuint                         m_targetFB = 0;
+        GLuint                         m_vao      = 0;
+        GLuint                         m_vbo      = 0;
 
-        std::vector<CBox>              m_clipBoxes;
-        std::vector<SP<IElement>>      m_alreadyRendered;
         SP<IElement>                   m_currentElement;
 
-        CShader                        m_rectShader;
-        CShader                        m_texShader;
-        CShader                        m_borderShader;
+        struct SGLState {
+            GLint     program             = 0;
+            GLint     drawFramebuffer     = 0;
+            GLint     readFramebuffer     = 0;
+            GLint     vertexArray         = 0;
+            GLint     arrayBuffer         = 0;
+            GLint     pixelUnpackBuffer   = 0;
+            GLint     activeTexture       = GL_TEXTURE0;
+            GLint     texture2D           = 0;
+            GLint     texture2DUnit0      = 0;
+            GLint     viewport[4]         = {};
+            GLint     scissorBox[4]       = {};
+            GLfloat   clearColor[4]       = {};
+            GLint     blendSrcRGB         = GL_ONE;
+            GLint     blendDstRGB         = GL_ZERO;
+            GLint     blendSrcAlpha       = GL_ONE;
+            GLint     blendDstAlpha       = GL_ZERO;
+            GLint     blendEquationRGB    = GL_FUNC_ADD;
+            GLint     blendEquationAlpha  = GL_FUNC_ADD;
+            GLint     samplerUnit0        = 0;
+            GLint     unpackAlignment     = 4;
+            GLint     unpackRowLength     = 0;
+            GLint     unpackSkipPixels    = 0;
+            GLint     unpackSkipRows      = 0;
+            GLint     unpackImageHeight   = 0;
+            GLint     unpackSkipImages    = 0;
+            GLboolean blend               = GL_FALSE;
+            GLboolean scissor             = GL_FALSE;
+            GLboolean depth               = GL_FALSE;
+            GLboolean stencil             = GL_FALSE;
+            GLboolean cull                = GL_FALSE;
+            GLboolean rasterizerDiscard   = GL_FALSE;
+            GLboolean sampleCoverage      = GL_FALSE;
+            GLboolean sampleAlphaCoverage = GL_FALSE;
+            GLboolean colorMask[4]        = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
+        } m_savedState;
 
-        Mat3x3                         m_projMatrix = Mat3x3::identity();
-        Mat3x3                         m_projection;
+        void                               saveGLState();
+        void                               restoreGLState();
+        bool                               contextCurrent();
+        void                               enqueueGL(std::function<void()>&& callback);
+        void                               runQueuedGL();
+        void                               prepareRenderState();
+        void                               uploadVertices(const float* data, size_t size);
+        void                               registerTexture(const SP<CGLTexture>& texture);
 
-        Vector2D                       m_currentViewport;
+        std::mutex                         m_queuedGLMutex;
+        std::vector<std::function<void()>> m_queuedGL;
+        std::vector<WP<CGLTexture>>        m_textures;
+
+        std::vector<CBox>                  m_clipBoxes;
+        std::vector<SP<IElement>>          m_alreadyRendered;
+
+        CShader                            m_rectShader;
+        CShader                            m_texShader;
+        CShader                            m_borderShader;
+
+        Mat3x3                             m_projMatrix = Mat3x3::identity();
+        Mat3x3                             m_projection;
+
+        Vector2D                           m_currentViewport;
+        CBox                               m_lastScissorBox;
 
         friend class CRenderbuffer;
         friend class CGLTexture;
+        friend class CFramebuffer;
         friend class CEGLSync;
     };
 

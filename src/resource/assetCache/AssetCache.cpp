@@ -1,4 +1,5 @@
 #include "AssetCache.hpp"
+#include "../../core/BackendContext.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprtoolkit::Asset;
@@ -9,8 +10,11 @@ SP<CAssetCache> Asset::assetCache() {
 }
 
 SP<CAssetCacheEntry> CAssetCache::get(const std::string_view& source) {
+    if (!g_backendServices)
+        return nullptr;
+
     for (const auto& e : m_entries) {
-        if (e && e->source() == source)
+        if (e && e->source() == source && e->generation() == g_backendServices->lifetime->generation)
             return e.lock();
     }
 

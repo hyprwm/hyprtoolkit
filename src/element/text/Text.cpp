@@ -9,6 +9,7 @@
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../../core/Logger.hpp"
 #include "../../core/AnimationManager.hpp"
 #include "../../helpers/Memory.hpp"
@@ -443,14 +444,14 @@ void STextImpl::renderTex() {
         g_asyncResourceGatherer->await(resourceGeneric);
         postTexLoad();
     } else {
-        resource->m_events.finished.listenStatic([this, self = self->impl->self] {
-            if (self.expired())
+        resource->m_events.finished.listenStatic([this, self = self->impl->self, lifetime = WP<SBackendLifetime>{g_backendServices->lifetime}] {
+            if (self.expired() || !lifetime)
                 return;
             if (!g_backend)
                 return;
 
-            g_backend->addIdle([this, self = self]() {
-                if (self.expired())
+            g_backend->addIdle([this, self = self, lifetime] {
+                if (self.expired() || !lifetime)
                     return;
 
                 postTexLoad();

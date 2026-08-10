@@ -17,7 +17,8 @@ CShader::~CShader() {
 }
 
 void CShader::destroy() {
-    glDeleteProgram(program);
+    if (program)
+        glDeleteProgram(program);
 
     program = 0;
 }

@@ -34,6 +34,7 @@ namespace Hyprtoolkit {
         bool                                                     growH                   = false;
         float                                                    margin                  = 0;
         bool                                                     userRequestedMouseInput = false;
+        bool                                                     userRequestedTouchInput = false;
         bool                                                     grouped                 = false;
         bool                                                     hasBeenPresented        = false;
 
@@ -64,6 +65,10 @@ namespace Hyprtoolkit {
             Hyprutils::Signal::CSignalT<>                          mouseLeave;
             Hyprutils::Signal::CSignalT<Input::eAxisAxis, float>   mouseAxis;
             Hyprutils::Signal::CSignalT<Input::SKeyboardKeyEvent>  key;
+            Hyprutils::Signal::CSignalT<Input::STouchEvent>        touchDown;
+            Hyprutils::Signal::CSignalT<Input::STouchEvent>        touchMotion;
+            Hyprutils::Signal::CSignalT<Input::STouchEvent>        touchUp;
+            Hyprutils::Signal::CSignalT<Input::STouchEvent>        touchCancel;
             Hyprutils::Signal::CSignalT<>                          keyboardEnter;
             Hyprutils::Signal::CSignalT<>                          keyboardLeave;
         } m_externalEvents;
@@ -74,6 +79,10 @@ namespace Hyprtoolkit {
             std::function<void(const Hyprutils::Math::Vector2D&)> mouseMove;
             std::function<void(Input::eMouseButton, bool)>        mouseButton;
             std::function<void(Input::eAxisAxis, float)>          mouseAxis;
+            std::function<void(const Input::STouchEvent&)>        touchDown;
+            std::function<void(const Input::STouchEvent&)>        touchMotion;
+            std::function<void(const Input::STouchEvent&)>        touchUp;
+            std::function<void(const Input::STouchEvent&)>        touchCancel;
             std::function<void()>                                 repositioned;
         } userFns;
 

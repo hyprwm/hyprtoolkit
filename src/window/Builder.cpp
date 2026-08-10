@@ -1,5 +1,6 @@
 #include "Window.hpp"
 #include "../core/InternalBackend.hpp"
+#include "../core/BackendContext.hpp"
 #include <hyprtoolkit/core/Output.hpp>
 #include "ToolkitWindow.hpp"
 
@@ -116,7 +117,10 @@ SP<IWindow> CWindowBuilder::commence() {
             return reinterpretPointerCast<IToolkitWindow>(m_data->parent)->openPopup(*m_data);
         case HT_WINDOW_TOPLEVEL:
         case HT_WINDOW_LAYER:
-        case HT_WINDOW_LOCK_SURFACE: return g_backend->openWindow(*m_data);
+        case HT_WINDOW_LOCK_SURFACE:
+            if (!g_backendServices || !g_backendServices->openWindow)
+                return nullptr;
+            return g_backendServices->openWindow(*m_data);
     }
     return nullptr;
 }

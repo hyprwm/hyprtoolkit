@@ -83,7 +83,7 @@ target_include_directories(
   PUBLIC "./include"
   PRIVATE "./src" "./src/include" "./protocols" "${CMAKE_BINARY_DIR}")
 set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
-                                             SOVERSION 5)
+                                              SOVERSION 5)
 target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL
                                          PkgConfig::deps)
 
@@ -213,6 +213,10 @@ if(BUILD_TESTING)
                                      OpenGL::OpenGL PkgConfig::deps)
 
   gtest_discover_tests(hyprtoolkit_tests)
+
+  add_executable(embeddedRendererTest "tests/EmbeddedRenderer.cpp")
+  target_link_libraries(embeddedRendererTest PRIVATE hyprtoolkit GTest::gtest_main OpenGL::EGL OpenGL::OpenGL PkgConfig::deps)
+  gtest_discover_tests(embeddedRendererTest)
 
   # Add coverage to hyprtoolkit
   target_compile_options(hyprtoolkit PRIVATE --coverage)

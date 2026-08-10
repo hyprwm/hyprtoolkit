@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprtoolkit/core/BackendServices.hpp>
 #include <hyprutils/os/FileDescriptor.hpp>
 #include <hyprutils/cli/Logger.hpp>
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
@@ -14,21 +15,22 @@ namespace Hyprtoolkit {
     class CConfigManager;
     class CSystemIconFactory;
 
-    class CBackend : public IBackend {
+    class CBackend : public IBackend, public IEventLoop {
       public:
         CBackend();
         virtual ~CBackend();
 
-        virtual void                   destroy();
-        virtual void                   setLogFn(LogFn&& fn);
-        virtual void                   addFd(int fd, std::function<void()>&& callback);
-        virtual void                   removeFd(int fd);
-        virtual SP<ISystemIconFactory> systemIcons();
-        virtual ASP<CTimer> addTimer(const std::chrono::system_clock::duration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force = false);
-        virtual void        addIdle(const std::function<void()>& fn);
-        virtual void        enterLoop();
-        virtual std::vector<SP<IOutput>>                                getOutputs();
-        virtual SP<CPalette>                                            getPalette();
+        virtual void                     destroy();
+        virtual void                     setLogFn(LogFn&& fn);
+        virtual void                     addFd(int fd, std::function<void()>&& callback);
+        virtual void                     removeFd(int fd);
+        virtual SP<ISystemIconFactory>   systemIcons();
+        virtual ASP<CTimer>              addTimer(const TimerDuration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force = false);
+        virtual void                     addIdle(const std::function<void()>& fn);
+        virtual void                     cancelPending();
+        virtual void                     enterLoop();
+        virtual std::vector<SP<IOutput>> getOutputs();
+        virtual SP<CPalette>             getPalette();
         virtual std::expected<SP<ISessionLockState>, eSessionLockError> aquireSessionLock();
 
         // ======================= Internal fns ======================= //

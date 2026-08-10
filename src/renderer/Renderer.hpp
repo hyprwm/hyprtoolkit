@@ -66,6 +66,7 @@ namespace Hyprtoolkit {
         };
 
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) = 0;
+        virtual void                 beginRenderingExternal(SP<IToolkitWindow> window, uint32_t bufferAge)  = 0;
         virtual void                 render(bool ignoreSync = false)                                        = 0;
         virtual void                 endRendering()                                                         = 0;
         virtual void                 renderRectangle(const SRectangleRenderData& data)                      = 0;

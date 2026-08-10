@@ -9,10 +9,11 @@ namespace Hyprtoolkit {
 
     class CSyncTimeline;
     class CEGLSync;
+    class COpenGLRenderer;
 
     class CRenderbuffer {
       public:
-        CRenderbuffer(SP<Aquamarine::IBuffer> buffer, uint32_t format);
+        CRenderbuffer(COpenGLRenderer& renderer, SP<Aquamarine::IBuffer> buffer, uint32_t format);
         ~CRenderbuffer();
 
         bool                    good();
@@ -27,11 +28,12 @@ namespace Hyprtoolkit {
         SP<CSyncTimeline>       m_syncTimeline;
 
       private:
-        void*        m_image = nullptr;
-        GLuint       m_rbo   = 0;
-        CFramebuffer m_framebuffer;
-        uint32_t     m_drmFormat = 0;
-        bool         m_good      = false;
+        COpenGLRenderer& m_renderer;
+        void*            m_image = nullptr;
+        GLuint           m_rbo   = 0;
+        CFramebuffer     m_framebuffer;
+        uint32_t         m_drmFormat = 0;
+        bool             m_good      = false;
 
         struct {
             Hyprutils::Signal::CHyprSignalListener destroyBuffer;

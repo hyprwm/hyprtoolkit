@@ -1,6 +1,7 @@
 #include "SyncTimeline.hpp"
 #include "../../Macros.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../Renderer.hpp"
 
 #include <xf86drm.h>
@@ -73,6 +74,9 @@ std::optional<bool> CSyncTimeline::check(uint64_t point, uint32_t flags) {
 }
 
 bool CSyncTimeline::addWaiter(std::function<void()>&& waiter, uint64_t point, uint32_t flags) {
+    if (!g_backendServices || !g_backendServices->doOnReadable)
+        return false;
+
     auto eventFd = CFileDescriptor(eventfd(0, EFD_CLOEXEC));
 
     if (!eventFd.isValid()) {
@@ -85,7 +89,7 @@ bool CSyncTimeline::addWaiter(std::function<void()>&& waiter, uint64_t point, ui
         return false;
     }
 
-    g_backend->doOnReadable(std::move(eventFd), std::move(waiter));
+    g_backendServices->doOnReadable(std::move(eventFd), std::move(waiter));
 
     return true;
 }

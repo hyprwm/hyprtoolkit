@@ -6,6 +6,7 @@
 #include "../element/Element.hpp"
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
+#include "../core/BackendContext.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../renderer/sync/SyncTimeline.hpp"
 #include "../core/AnimationManager.hpp"
@@ -71,7 +72,7 @@ void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     m_damageRing.setSize(pixelSize);
 
     if (!m_waylandState.swapchain)
-        m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_backend->m_aqBackend->getImplementations().at(0));
+        m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_waylandBackend->m_aqBackend->getImplementations().at(0));
 
     m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
         .length = 2,
@@ -233,7 +234,7 @@ float IWaylandWindow::scale() {
 }
 
 void IWaylandWindow::setCursor(ePointerShape shape) {
-    g_waylandPlatform->setCursor(shape);
+    g_backendServices->cursor->setShape(0, shape);
 }
 
 SP<IWindow> IWaylandWindow::openPopup(const SWindowCreationData& data) {
@@ -275,22 +276,14 @@ void IWaylandWindow::mouseAxis(const Input::eAxisAxis axis, float delta) {
 }
 
 void IWaylandWindow::setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor) {
-    if (!g_waylandPlatform->m_waylandState.imState.enabled) {
-        g_waylandPlatform->m_waylandState.textInput->sendEnable();
-        g_waylandPlatform->m_waylandState.imState.enabled = true;
-    }
-    g_waylandPlatform->m_waylandState.textInput->sendSetCursorRectangle(box.x, box.y, box.w, box.h);
-    g_waylandPlatform->m_waylandState.textInput->sendCommit();
+    g_backendServices->textInput->activate(0, box, str, cursor);
 
     m_currentInput       = str;
     m_currentInputCursor = cursor;
 }
 
 void IWaylandWindow::resetIM() {
-    if (g_waylandPlatform->m_waylandState.imState.enabled) {
-        g_waylandPlatform->m_waylandState.textInput->sendDisable();
-        g_waylandPlatform->m_waylandState.imState.enabled = false;
-    }
+    g_backendServices->textInput->deactivate(0);
 
     m_currentInput       = "";
     m_currentInputCursor = 0;

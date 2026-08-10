@@ -3,6 +3,7 @@
 #include "../../window/ToolkitWindow.hpp"
 #include "../../Macros.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../../element/Element.hpp"
 #include "../sync/SyncTimeline.hpp"
 #include "./shaders/Shaders.hpp"
@@ -330,6 +331,11 @@ EGLDeviceEXT COpenGLRenderer::eglDeviceFromDRMFD(int drmFD) {
 }
 
 void COpenGLRenderer::makeEGLCurrent() {
+    if (m_borrowedContext) {
+        RASSERT(eglGetCurrentContext() == m_eglContext, "Embedded GL renderer used without its borrowed context current");
+        return;
+    }
+
     if (eglGetCurrentContext() != m_eglContext)
         eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
 }
@@ -358,6 +364,87 @@ static std::string processShader(const std::string& filename, const std::map<std
     auto source = loadShader(filename);
     processShaderIncludes(source, includes);
     return source;
+}
+
+void COpenGLRenderer::initGLResources() {
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_maxTextureSize);
+
+    auto* const EXTENSIONS = rc<const char*>(glGetString(GL_EXTENSIONS));
+    RASSERT(EXTENSIONS, "Couldn't retrieve openGL extensions!");
+
+    std::map<std::string, std::string> includes;
+    loadShaderInclude("rounding.glsl", includes);
+    loadShaderInclude("CM.glsl", includes);
+
+    const auto VERTSRC        = processShader("tex300.vert", includes);
+    const auto FRAGBORDER1    = processShader("border.frag", includes);
+    const auto QUADFRAGSRC    = processShader("quad.frag", includes);
+    const auto TEXFRAGSRCRGBA = processShader("rgba.frag", includes);
+
+    GLuint     prog            = createProgram(VERTSRC, QUADFRAGSRC);
+    m_rectShader.program       = prog;
+    m_rectShader.proj          = glGetUniformLocation(prog, "proj");
+    m_rectShader.color         = glGetUniformLocation(prog, "color");
+    m_rectShader.posAttrib     = glGetAttribLocation(prog, "pos");
+    m_rectShader.topLeft       = glGetUniformLocation(prog, "topLeft");
+    m_rectShader.fullSize      = glGetUniformLocation(prog, "fullSize");
+    m_rectShader.radius        = glGetUniformLocation(prog, "radius");
+    m_rectShader.roundingPower = glGetUniformLocation(prog, "roundingPower");
+
+    prog                          = createProgram(VERTSRC, TEXFRAGSRCRGBA);
+    m_texShader.program           = prog;
+    m_texShader.proj              = glGetUniformLocation(prog, "proj");
+    m_texShader.tex               = glGetUniformLocation(prog, "tex");
+    m_texShader.alphaMatte        = glGetUniformLocation(prog, "texMatte");
+    m_texShader.alpha             = glGetUniformLocation(prog, "alpha");
+    m_texShader.texAttrib         = glGetAttribLocation(prog, "texcoord");
+    m_texShader.matteTexAttrib    = glGetAttribLocation(prog, "texcoordMatte");
+    m_texShader.posAttrib         = glGetAttribLocation(prog, "pos");
+    m_texShader.discardOpaque     = glGetUniformLocation(prog, "discardOpaque");
+    m_texShader.discardAlpha      = glGetUniformLocation(prog, "discardAlpha");
+    m_texShader.discardAlphaValue = glGetUniformLocation(prog, "discardAlphaValue");
+    m_texShader.topLeft           = glGetUniformLocation(prog, "topLeft");
+    m_texShader.fullSize          = glGetUniformLocation(prog, "fullSize");
+    m_texShader.radius            = glGetUniformLocation(prog, "radius");
+    m_texShader.applyTint         = glGetUniformLocation(prog, "applyTint");
+    m_texShader.tint              = glGetUniformLocation(prog, "tint");
+    m_texShader.useAlphaMatte     = glGetUniformLocation(prog, "useAlphaMatte");
+    m_texShader.roundingPower     = glGetUniformLocation(prog, "roundingPower");
+
+    prog                                 = createProgram(VERTSRC, FRAGBORDER1);
+    m_borderShader.program               = prog;
+    m_borderShader.proj                  = glGetUniformLocation(prog, "proj");
+    m_borderShader.thick                 = glGetUniformLocation(prog, "thick");
+    m_borderShader.posAttrib             = glGetAttribLocation(prog, "pos");
+    m_borderShader.texAttrib             = glGetAttribLocation(prog, "texcoord");
+    m_borderShader.topLeft               = glGetUniformLocation(prog, "topLeft");
+    m_borderShader.bottomRight           = glGetUniformLocation(prog, "bottomRight");
+    m_borderShader.fullSize              = glGetUniformLocation(prog, "fullSize");
+    m_borderShader.fullSizeUntransformed = glGetUniformLocation(prog, "fullSizeUntransformed");
+    m_borderShader.radius                = glGetUniformLocation(prog, "radius");
+    m_borderShader.radiusOuter           = glGetUniformLocation(prog, "radiusOuter");
+    m_borderShader.gradient              = glGetUniformLocation(prog, "gradient");
+    m_borderShader.gradientLength        = glGetUniformLocation(prog, "gradientLength");
+    m_borderShader.angle                 = glGetUniformLocation(prog, "angle");
+    m_borderShader.gradient2             = glGetUniformLocation(prog, "gradient2");
+    m_borderShader.gradient2Length       = glGetUniformLocation(prog, "gradient2Length");
+    m_borderShader.angle2                = glGetUniformLocation(prog, "angle2");
+    m_borderShader.gradientLerp          = glGetUniformLocation(prog, "gradientLerp");
+    m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
+    m_borderShader.roundingPower         = glGetUniformLocation(prog, "roundingPower");
+
+    glGenVertexArrays(1, &m_vao);
+    glGenBuffers(1, &m_vbo);
+    m_polyRenderFb = makeShared<CFramebuffer>();
+}
+
+COpenGLRenderer::COpenGLRenderer() : m_borrowedContext(true) {
+    m_eglDisplay = eglGetCurrentDisplay();
+    m_eglContext = eglGetCurrentContext();
+
+    RASSERT(m_eglDisplay != EGL_NO_DISPLAY && m_eglContext != EGL_NO_CONTEXT, "Embedded GL renderer requires a current EGL GLES context");
+
+    initGLResources();
 }
 
 COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
@@ -431,10 +518,6 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
     RASSERT(success, "EGL does not support KHR_platform_gbm or EXT_platform_device, this is an issue with your gpu driver.");
 
     makeEGLCurrent();
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, cc<GLint*>(&m_maxTextureSize));
-
-    auto* const EXTENSIONS = rc<const char*>(glGetString(GL_EXTENSIONS));
-    RASSERT(EXTENSIONS, "Couldn't retrieve openGL extensions!");
 
 #if defined(__linux__)
     auto syncObjSupport = [](auto fd) {
@@ -458,73 +541,39 @@ COpenGLRenderer::COpenGLRenderer(int drmFD) : m_drmFD(drmFD) {
     glDebugMessageCallback(glMessageCallbackA, nullptr);
 #endif
 
-    std::map<std::string, std::string> includes;
-    loadShaderInclude("rounding.glsl", includes);
-    loadShaderInclude("CM.glsl", includes);
-
-    const auto VERTSRC        = processShader("tex300.vert", includes);
-    const auto FRAGBORDER1    = processShader("border.frag", includes);
-    const auto QUADFRAGSRC    = processShader("quad.frag", includes);
-    const auto TEXFRAGSRCRGBA = processShader("rgba.frag", includes);
-
-    GLuint     prog            = createProgram(VERTSRC, QUADFRAGSRC);
-    m_rectShader.program       = prog;
-    m_rectShader.proj          = glGetUniformLocation(prog, "proj");
-    m_rectShader.color         = glGetUniformLocation(prog, "color");
-    m_rectShader.posAttrib     = glGetAttribLocation(prog, "pos");
-    m_rectShader.topLeft       = glGetUniformLocation(prog, "topLeft");
-    m_rectShader.fullSize      = glGetUniformLocation(prog, "fullSize");
-    m_rectShader.radius        = glGetUniformLocation(prog, "radius");
-    m_rectShader.roundingPower = glGetUniformLocation(prog, "roundingPower");
-
-    prog                          = createProgram(VERTSRC, TEXFRAGSRCRGBA);
-    m_texShader.program           = prog;
-    m_texShader.proj              = glGetUniformLocation(prog, "proj");
-    m_texShader.tex               = glGetUniformLocation(prog, "tex");
-    m_texShader.alphaMatte        = glGetUniformLocation(prog, "texMatte");
-    m_texShader.alpha             = glGetUniformLocation(prog, "alpha");
-    m_texShader.texAttrib         = glGetAttribLocation(prog, "texcoord");
-    m_texShader.matteTexAttrib    = glGetAttribLocation(prog, "texcoordMatte");
-    m_texShader.posAttrib         = glGetAttribLocation(prog, "pos");
-    m_texShader.discardOpaque     = glGetUniformLocation(prog, "discardOpaque");
-    m_texShader.discardAlpha      = glGetUniformLocation(prog, "discardAlpha");
-    m_texShader.discardAlphaValue = glGetUniformLocation(prog, "discardAlphaValue");
-    m_texShader.topLeft           = glGetUniformLocation(prog, "topLeft");
-    m_texShader.fullSize          = glGetUniformLocation(prog, "fullSize");
-    m_texShader.radius            = glGetUniformLocation(prog, "radius");
-    m_texShader.applyTint         = glGetUniformLocation(prog, "applyTint");
-    m_texShader.tint              = glGetUniformLocation(prog, "tint");
-    m_texShader.useAlphaMatte     = glGetUniformLocation(prog, "useAlphaMatte");
-    m_texShader.roundingPower     = glGetUniformLocation(prog, "roundingPower");
-
-    prog                                 = createProgram(VERTSRC, FRAGBORDER1);
-    m_borderShader.program               = prog;
-    m_borderShader.proj                  = glGetUniformLocation(prog, "proj");
-    m_borderShader.thick                 = glGetUniformLocation(prog, "thick");
-    m_borderShader.posAttrib             = glGetAttribLocation(prog, "pos");
-    m_borderShader.texAttrib             = glGetAttribLocation(prog, "texcoord");
-    m_borderShader.topLeft               = glGetUniformLocation(prog, "topLeft");
-    m_borderShader.bottomRight           = glGetUniformLocation(prog, "bottomRight");
-    m_borderShader.fullSize              = glGetUniformLocation(prog, "fullSize");
-    m_borderShader.fullSizeUntransformed = glGetUniformLocation(prog, "fullSizeUntransformed");
-    m_borderShader.radius                = glGetUniformLocation(prog, "radius");
-    m_borderShader.radiusOuter           = glGetUniformLocation(prog, "radiusOuter");
-    m_borderShader.gradient              = glGetUniformLocation(prog, "gradient");
-    m_borderShader.gradientLength        = glGetUniformLocation(prog, "gradientLength");
-    m_borderShader.angle                 = glGetUniformLocation(prog, "angle");
-    m_borderShader.gradient2             = glGetUniformLocation(prog, "gradient2");
-    m_borderShader.gradient2Length       = glGetUniformLocation(prog, "gradient2Length");
-    m_borderShader.angle2                = glGetUniformLocation(prog, "angle2");
-    m_borderShader.gradientLerp          = glGetUniformLocation(prog, "gradientLerp");
-    m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
-    m_borderShader.roundingPower         = glGetUniformLocation(prog, "roundingPower");
-
-    m_polyRenderFb = makeShared<CFramebuffer>();
+    initGLResources();
 
     RASSERT(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT), "Couldn't unset current EGL!");
 }
 
 COpenGLRenderer::~COpenGLRenderer() {
+    makeEGLCurrent();
+    if (m_borrowedContext)
+        saveGLState();
+    runQueuedGL();
+
+    m_currentRBO.reset();
+    m_rbos.clear();
+    for (const auto& texture : m_textures) {
+        if (texture)
+            texture->releaseFromRenderer();
+    }
+    m_textures.clear();
+    m_polyRenderFb.reset();
+    m_rectShader.destroy();
+    m_texShader.destroy();
+    m_borderShader.destroy();
+
+    if (m_vao)
+        glDeleteVertexArrays(1, &m_vao);
+    if (m_vbo)
+        glDeleteBuffers(1, &m_vbo);
+
+    if (m_borrowedContext) {
+        restoreGLState();
+        return;
+    }
+
     if (m_eglDisplay && m_eglContext != EGL_NO_CONTEXT)
         eglDestroyContext(m_eglDisplay, m_eglContext);
 
@@ -538,7 +587,7 @@ COpenGLRenderer::~COpenGLRenderer() {
 }
 
 bool COpenGLRenderer::explicitSyncSupported() {
-    return !Env::envEnabled("HT_NO_EXPLICIT_SYNC") && m_syncobjSupported && m_exts.EGL_ANDROID_native_fence_sync_ext;
+    return !m_borrowedContext && !Env::envEnabled("HT_NO_EXPLICIT_SYNC") && m_syncobjSupported && m_exts.EGL_ANDROID_native_fence_sync_ext;
 }
 
 int COpenGLRenderer::getMaxTextureSize() {
@@ -567,7 +616,7 @@ SP<CRenderbuffer> COpenGLRenderer::getRBO(SP<Aquamarine::IBuffer> buf) {
             return r;
     }
 
-    auto rbo = m_rbos.emplace_back(makeShared<CRenderbuffer>(buf, buf->dmabuf().format));
+    auto rbo = m_rbos.emplace_back(makeShared<CRenderbuffer>(*this, buf, buf->dmabuf().format));
 
     RASSERT(rbo->good(), "GL: Couldn't make a rbo for a render");
 
@@ -595,12 +644,196 @@ void COpenGLRenderer::beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::I
     m_currentRBO = getRBO(buf);
 
     m_currentRBO->bind();
+    m_targetFB = m_currentRBO->getFB()->getFBID();
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    prepareRenderState();
 
     m_projection      = Mat3x3::outputProjection(window->pixelSize(), HYPRUTILS_TRANSFORM_FLIPPED_180);
     m_currentViewport = window->pixelSize();
     m_scale           = window->scale();
     m_window          = window;
     m_damage          = window->m_damageRing.getBufferDamage(DAMAGE_RING_PREVIOUS_LEN);
+}
+
+void COpenGLRenderer::saveGLState() {
+    glGetIntegerv(GL_CURRENT_PROGRAM, &m_savedState.program);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_savedState.drawFramebuffer);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_savedState.readFramebuffer);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &m_savedState.vertexArray);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &m_savedState.arrayBuffer);
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &m_savedState.pixelUnpackBuffer);
+    glGetIntegerv(GL_VIEWPORT, m_savedState.viewport);
+    glGetIntegerv(GL_SCISSOR_BOX, m_savedState.scissorBox);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, m_savedState.clearColor);
+    glGetIntegerv(GL_BLEND_SRC_RGB, &m_savedState.blendSrcRGB);
+    glGetIntegerv(GL_BLEND_DST_RGB, &m_savedState.blendDstRGB);
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_savedState.blendSrcAlpha);
+    glGetIntegerv(GL_BLEND_DST_ALPHA, &m_savedState.blendDstAlpha);
+    glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_savedState.blendEquationRGB);
+    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_savedState.blendEquationAlpha);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &m_savedState.activeTexture);
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &m_savedState.unpackAlignment);
+    glGetIntegerv(GL_UNPACK_ROW_LENGTH, &m_savedState.unpackRowLength);
+    glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &m_savedState.unpackSkipPixels);
+    glGetIntegerv(GL_UNPACK_SKIP_ROWS, &m_savedState.unpackSkipRows);
+    glGetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &m_savedState.unpackImageHeight);
+    glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &m_savedState.unpackSkipImages);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &m_savedState.texture2D);
+    m_savedState.blend               = glIsEnabled(GL_BLEND);
+    m_savedState.scissor             = glIsEnabled(GL_SCISSOR_TEST);
+    m_savedState.depth               = glIsEnabled(GL_DEPTH_TEST);
+    m_savedState.stencil             = glIsEnabled(GL_STENCIL_TEST);
+    m_savedState.cull                = glIsEnabled(GL_CULL_FACE);
+    m_savedState.rasterizerDiscard   = glIsEnabled(GL_RASTERIZER_DISCARD);
+    m_savedState.sampleCoverage      = glIsEnabled(GL_SAMPLE_COVERAGE);
+    m_savedState.sampleAlphaCoverage = glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glGetBooleanv(GL_COLOR_WRITEMASK, m_savedState.colorMask);
+
+    if (m_savedState.activeTexture != GL_TEXTURE0) {
+        glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &m_savedState.texture2DUnit0);
+        glActiveTexture(m_savedState.activeTexture);
+    } else
+        m_savedState.texture2DUnit0 = m_savedState.texture2D;
+
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_SAMPLER_BINDING, &m_savedState.samplerUnit0);
+    glActiveTexture(m_savedState.activeTexture);
+}
+
+bool COpenGLRenderer::contextCurrent() {
+    return eglGetCurrentContext() == m_eglContext;
+}
+
+void COpenGLRenderer::enqueueGL(std::function<void()>&& callback) {
+    std::lock_guard<std::mutex> lock(m_queuedGLMutex);
+    m_queuedGL.emplace_back(std::move(callback));
+}
+
+void COpenGLRenderer::runQueuedGL() {
+    std::vector<std::function<void()>> callbacks;
+    {
+        std::lock_guard<std::mutex> lock(m_queuedGLMutex);
+        callbacks.swap(m_queuedGL);
+    }
+
+    for (const auto& callback : callbacks)
+        callback();
+}
+
+void COpenGLRenderer::prepareRenderState() {
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_RASTERIZER_DISCARD);
+    glDisable(GL_SAMPLE_COVERAGE);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+    glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0);
+    glPixelStorei(GL_UNPACK_SKIP_IMAGES, 0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    glBindSampler(0, 0);
+}
+
+void COpenGLRenderer::uploadVertices(const float* data, size_t size) {
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+}
+
+void COpenGLRenderer::registerTexture(const SP<CGLTexture>& texture) {
+    m_textures.emplace_back(texture);
+}
+
+void COpenGLRenderer::restoreGLState() {
+    glUseProgram(m_savedState.program);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_savedState.drawFramebuffer);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_savedState.readFramebuffer);
+    glBindVertexArray(m_savedState.vertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_savedState.arrayBuffer);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_savedState.pixelUnpackBuffer);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, m_savedState.unpackAlignment);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, m_savedState.unpackRowLength);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, m_savedState.unpackSkipPixels);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, m_savedState.unpackSkipRows);
+    glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, m_savedState.unpackImageHeight);
+    glPixelStorei(GL_UNPACK_SKIP_IMAGES, m_savedState.unpackSkipImages);
+    glViewport(m_savedState.viewport[0], m_savedState.viewport[1], m_savedState.viewport[2], m_savedState.viewport[3]);
+    glScissor(m_savedState.scissorBox[0], m_savedState.scissorBox[1], m_savedState.scissorBox[2], m_savedState.scissorBox[3]);
+    glClearColor(m_savedState.clearColor[0], m_savedState.clearColor[1], m_savedState.clearColor[2], m_savedState.clearColor[3]);
+    glBlendFuncSeparate(m_savedState.blendSrcRGB, m_savedState.blendDstRGB, m_savedState.blendSrcAlpha, m_savedState.blendDstAlpha);
+    glBlendEquationSeparate(m_savedState.blendEquationRGB, m_savedState.blendEquationAlpha);
+    glColorMask(m_savedState.colorMask[0], m_savedState.colorMask[1], m_savedState.colorMask[2], m_savedState.colorMask[3]);
+
+    if (m_savedState.blend)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+
+    if (m_savedState.scissor)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
+
+    if (m_savedState.depth)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+
+    if (m_savedState.stencil)
+        glEnable(GL_STENCIL_TEST);
+    else
+        glDisable(GL_STENCIL_TEST);
+
+    if (m_savedState.cull)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
+
+    if (m_savedState.rasterizerDiscard)
+        glEnable(GL_RASTERIZER_DISCARD);
+    else
+        glDisable(GL_RASTERIZER_DISCARD);
+
+    if (m_savedState.sampleCoverage)
+        glEnable(GL_SAMPLE_COVERAGE);
+    else
+        glDisable(GL_SAMPLE_COVERAGE);
+
+    if (m_savedState.sampleAlphaCoverage)
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    else
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_savedState.texture2DUnit0);
+    glBindSampler(0, m_savedState.samplerUnit0);
+    glActiveTexture(m_savedState.activeTexture);
+    glBindTexture(GL_TEXTURE_2D, m_savedState.texture2D);
+}
+
+void COpenGLRenderer::beginRenderingExternal(SP<IToolkitWindow> window, uint32_t bufferAge) {
+    RASSERT(m_borrowedContext, "External framebuffer rendering requires a borrowed GL renderer");
+    makeEGLCurrent();
+    saveGLState();
+
+    m_targetFB = m_savedState.drawFramebuffer;
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    runQueuedGL();
+    prepareRenderState();
+
+    m_projection      = Mat3x3::outputProjection(window->pixelSize(), HYPRUTILS_TRANSFORM_FLIPPED_180);
+    m_currentViewport = window->pixelSize();
+    m_scale           = window->scale();
+    m_window          = window;
+    m_damage          = window->m_damageRing.getBufferDamage(bufferAge);
+    m_lastScissorBox  = {};
 }
 
 void COpenGLRenderer::render(bool ignoreSync) {
@@ -686,15 +919,21 @@ void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
 }
 
 void COpenGLRenderer::endRendering() {
-    m_currentRBO->unbind();
-    m_currentRBO.reset();
+    if (m_currentRBO) {
+        m_currentRBO->unbind();
+        m_currentRBO.reset();
 
-    // FIXME: explicit sync for nvidia!!!!
-    glFlush();
+        // FIXME: explicit sync for nvidia!!!!
+        glFlush();
+        glBindVertexArray(0);
+    }
 
     m_window->m_damageRing.rotate();
     m_window.reset();
     m_damage.clear();
+
+    if (m_borrowedContext)
+        restoreGLState();
 }
 
 void COpenGLRenderer::scissor(const pixman_box32_t* box) {
@@ -712,9 +951,6 @@ void COpenGLRenderer::scissor(const pixman_box32_t* box) {
 }
 
 void COpenGLRenderer::scissor(const CBox& box) {
-    // only call glScissor if the box has changed
-    static CBox m_lastScissorBox = {};
-
     if (box.empty()) {
         glDisable(GL_SCISSOR_TEST);
         return;
@@ -768,7 +1004,8 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     glUniform1f(m_rectShader.radius, data.rounding * m_scale);
     glUniform1f(m_rectShader.roundingPower, 2);
 
-    glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    uploadVertices(fullVerts, sizeof(fullVerts));
+    glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray(m_rectShader.posAttrib);
 
@@ -782,6 +1019,7 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
 
 SP<IRendererTexture> COpenGLRenderer::uploadTexture(const STextureData& data) {
     const auto TEX = makeShared<CGLTexture>();
+    registerTexture(TEX);
     TEX->m_fitMode = data.fitMode;
     TEX->attachAsync(TEX, data.resource);
     return TEX;
@@ -923,21 +1161,23 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     } else
         glUniform1i(shader->applyTint, 0);
 
-    std::array<float, 8> texVerts;
-    if (data.texture->fitMode() == IMAGE_FIT_MODE_STRETCH || data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN) {
-        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-    } else if (data.texture->fitMode() == IMAGE_FIT_MODE_COVER) {
+    std::array<float, 8> texVerts = {
+        fullVerts[0], fullVerts[1], fullVerts[2], fullVerts[3], fullVerts[4], fullVerts[5], fullVerts[6], fullVerts[7],
+    };
+    if (data.texture->fitMode() == IMAGE_FIT_MODE_COVER)
         texVerts = coverImage(data.box, tex->m_size);
-        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, texVerts.data());
-    } else if (data.texture->fitMode() == IMAGE_FIT_MODE_TILE) {
+    else if (data.texture->fitMode() == IMAGE_FIT_MODE_TILE) {
         texVerts = tileImage(data.box, tex->m_size);
-        glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-        glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, texVerts.data());
         glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
+
+    std::array<float, 16> vertices;
+    std::ranges::copy(fullVerts, vertices.begin());
+    std::ranges::copy(texVerts, vertices.begin() + 8);
+    uploadVertices(vertices.data(), sizeof(vertices));
+    glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, rc<const void*>(sizeof(fullVerts)));
 
     glEnableVertexAttribArray(shader->posAttrib);
     glEnableVertexAttribArray(shader->texAttrib);
@@ -997,8 +1237,9 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     glUniform1f(m_borderShader.roundingPower, 2);
     glUniform1f(m_borderShader.thick, data.thick * m_scale);
 
-    glVertexAttribPointer(m_borderShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
-    glVertexAttribPointer(m_borderShader.texAttrib, 2, GL_FLOAT, GL_FALSE, 0, fullVerts);
+    uploadVertices(fullVerts, sizeof(fullVerts));
+    glVertexAttribPointer(m_borderShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(m_borderShader.texAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray(m_borderShader.posAttrib);
     glEnableVertexAttribArray(m_borderShader.texAttrib);
@@ -1058,7 +1299,8 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
         verts[1 + (i * 2)] = data.poly.m_points[i].y;
     }
 
-    glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, verts.data());
+    uploadVertices(verts.data(), verts.size() * sizeof(float));
+    glVertexAttribPointer(m_rectShader.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glEnableVertexAttribArray(m_rectShader.posAttrib);
 
@@ -1068,7 +1310,7 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
 
     // bind back to our fbo and render
     auto tex = m_polyRenderFb->getTexture();
-    m_currentRBO->bind();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_targetFB);
 
     glViewport(0, 0, m_currentViewport.x, m_currentViewport.y);
 
@@ -1151,7 +1393,7 @@ void COpenGLRenderer::signalRenderPoint(SP<CSyncTimeline> timeline) {
     auto sync = CEGLSync::create();
 
     if (sync && sync->isValid()) {
-        g_backend->doOnReadable(sync->takeFd(), [ap = timeline->m_acquirePoint, tl = WP<CSyncTimeline>{timeline}]() {
+        g_backendServices->doOnReadable(sync->takeFd(), [ap = timeline->m_acquirePoint, tl = WP<CSyncTimeline>{timeline}]() {
             if (!tl)
                 return;
 
