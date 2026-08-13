@@ -51,7 +51,7 @@ stdenv.mkDerivation {
     wayland-scanner
     wayland-protocols
   ]
-  ++ (optional stdenv.isBSD epoll-shim);
+  ++ (optional stdenv.hostPlatform.isBSD epoll-shim);
 
   env.XDG_RUNTIME_DIR = "/tmp/runtime";
 
