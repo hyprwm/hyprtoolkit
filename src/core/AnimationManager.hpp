@@ -2,6 +2,9 @@
 
 #include <hyprutils/animation/AnimationManager.hpp>
 #include <hyprutils/animation/AnimatedVariable.hpp>
+#include <hyprtoolkit/core/Animation.hpp>
+
+#include <vector>
 
 #include "AnimatedVariable.hpp"
 
@@ -16,6 +19,8 @@ namespace Hyprtoolkit {
 
         using SAnimationPropertyConfig = Hyprutils::Animation::SAnimationPropertyConfig;
 
+        SP<SAnimationPropertyConfig> configFor(const SAnimation& animation);
+
         template <Animable VarType>
         void createAnimation(const VarType& v, PHLANIMVAR<VarType>& pav, SP<SAnimationPropertyConfig> pConfig) {
             constexpr const eAnimatedVarType EAVTYPE = typeToeAnimatedVarType<VarType>;
@@ -26,6 +31,10 @@ namespace Hyprtoolkit {
         }
 
         Hyprutils::Animation::CAnimationConfigTree m_animationTree;
+
+      private:
+        std::vector<std::pair<SAnimation, SP<SAnimationPropertyConfig>>> m_dynamicConfigs;
+        size_t                                                           m_nextCurveID = 0;
     };
 
     inline SP<CHTAnimationManager> g_animationManager;

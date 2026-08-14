@@ -85,16 +85,14 @@ void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
 }
 
 void IWaylandWindow::onPreRender() {
-
-    const bool ANY_REPOSITION = !m_needsReposition.empty();
-
     IToolkitWindow::onPreRender();
 
     if (!m_waylandState.wlBuffers[0] || !m_waylandState.wlBuffers[1])
         return;
 
-    if (!ANY_REPOSITION)
+    if (!m_opaqueRegionDirty)
         return;
+    m_opaqueRegionDirty = false;
 
     // collect opaque rects across the full element tree, not just direct children
     CRegion                                  rg;

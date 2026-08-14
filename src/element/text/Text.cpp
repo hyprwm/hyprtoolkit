@@ -10,6 +10,7 @@
 #include "../../renderer/Renderer.hpp"
 #include "../../core/InternalBackend.hpp"
 #include "../../core/Logger.hpp"
+#include "../../core/AnimationManager.hpp"
 #include "../../helpers/Memory.hpp"
 
 #include "../Element.hpp"
@@ -21,9 +22,21 @@ using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
 SP<CTextElement> CTextElement::create(const STextData& data) {
-    auto p          = SP<CTextElement>(new CTextElement(data));
-    p->impl->self   = p;
-    p->m_impl->self = p;
+    auto p                          = SP<CTextElement>(new CTextElement(data));
+    p->impl->self                   = p;
+    p->m_impl->self                 = p;
+    p->m_impl->colorAnimationConfig = g_animationManager->m_animationTree.getConfig("fast");
+    g_animationManager->createAnimation(data.color(), p->m_impl->color, p->m_impl->colorAnimationConfig);
+    p->m_impl->color->setCallbackOnBegin(
+        [self = WP<CTextElement>{p}](auto) {
+            if (self)
+                self->impl->damageEntire();
+        },
+        false);
+    p->m_impl->color->setUpdateCallback([self = WP<CTextElement>{p}](auto) {
+        if (self)
+            self->impl->damageEntire();
+    });
     return p;
 }
 
@@ -62,9 +75,20 @@ void CTextElement::setText(std::string text) {
 }
 
 void CTextElement::replaceData(const STextData& data) {
-    const bool TEXT_DIFFERENT = data.text != m_impl->data.text;
+    const bool TEXT_DIFFERENT  = data.text != m_impl->data.text;
+    const auto COLOR           = data.color();
+    const bool COLOR_DIFFERENT = COLOR != m_impl->color->goal();
 
     m_impl->data = data;
+    if (m_impl->colorAnimationEnabled) {
+        if (m_impl->color->isBeingAnimated() && (m_impl->color->getConfig() != m_impl->colorAnimationConfig || (m_impl->color->isSpringCurve() && m_impl->color->goal() != COLOR)))
+            m_impl->color->setValueAndWarp(m_impl->color->value());
+        m_impl->color->setConfig(m_impl->colorAnimationConfig);
+        *m_impl->color = COLOR;
+    } else {
+        m_impl->color->setValueAndWarp(COLOR);
+        m_impl->needsTexRefresh = m_impl->needsTexRefresh || COLOR_DIFFERENT;
+    }
 
     if (m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize() || TEXT_DIFFERENT) {
         m_impl->parseText();
@@ -83,6 +107,15 @@ SP<CTextBuilder> CTextElement::rebuild() {
     p->m_data    = makeUnique<STextData>(m_impl->data);
     p->m_element = m_impl->self;
     return p;
+}
+
+void CTextElement::animateColor(const SAnimation& animation) {
+    m_impl->colorAnimationEnabled = !std::holds_alternative<SNoAnimation>(animation);
+    m_impl->colorAnimationConfig  = g_animationManager->configFor(animation);
+    m_impl->needsTexRefresh       = true;
+    if (!m_impl->colorAnimationEnabled)
+        m_impl->color->setValueAndWarp(m_impl->color->goal());
+    impl->damageEntire();
 }
 
 void CTextElement::paint() {
@@ -122,11 +155,14 @@ void CTextElement::paint() {
     renderBox.w = texSizeLogical.x;
     renderBox.h = texSizeLogical.y;
 
+    const auto COLOR = m_impl->color->value();
     g_renderer->renderTexture({
-        .box      = renderBox,
-        .texture  = textureToUse,
-        .a        = m_impl->data.a,
-        .rounding = 0,
+        .box               = renderBox,
+        .texture           = textureToUse,
+        .a                 = sc<float>(m_impl->data.a * (m_impl->renderColorAtPaint ? COLOR.a : 1.F)),
+        .rounding          = 0,
+        .tint              = m_impl->renderColorAtPaint ? std::optional<CHyprColor>{COLOR.stripA()} : std::nullopt,
+        .tintGrayscaleOnly = m_impl->renderColorAtPaint,
     });
 }
 
@@ -165,7 +201,16 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
 }
 
 void CTextElement::recheckColor() {
-    m_impl->needsTexRefresh = true;
+    const auto COLOR = m_impl->data.color();
+    if (m_impl->colorAnimationEnabled) {
+        if (m_impl->color->isBeingAnimated() && (m_impl->color->getConfig() != m_impl->colorAnimationConfig || (m_impl->color->isSpringCurve() && m_impl->color->goal() != COLOR)))
+            m_impl->color->setValueAndWarp(m_impl->color->value());
+        m_impl->color->setConfig(m_impl->colorAnimationConfig);
+        *m_impl->color = COLOR;
+    } else {
+        m_impl->color->setValueAndWarp(COLOR);
+        m_impl->needsTexRefresh = true;
+    }
 }
 
 Hyprutils::Math::Vector2D CTextElement::size() {
@@ -365,16 +410,15 @@ void STextImpl::renderTex() {
     if (maxSize.has_value())
         (*maxSize) *= lastScale;
 
-    auto col = data.color();
-
-    resource = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
+    const auto COLOR = colorAnimationEnabled ? CHyprColor{1.F, 1.F, 1.F, 1.F} : data.color();
+    resource         = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
         .text      = parsedText,
         .font      = data.fontFamily,
         .fontSize  = sc<size_t>(std::round(lastFontSizeUnscaled * lastScale)),
-        .color     = CColor{CColor::SSRGB{.r = col.r, .g = col.g, .b = col.b}},
+        .color     = CColor{CColor::SSRGB{.r = COLOR.r, .g = COLOR.g, .b = COLOR.b}},
         .align     = data.align == HT_FONT_ALIGN_LEFT ?
-                Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
-                (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
+            Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
+            (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
         .maxSize   = maxSize,
         .ellipsize = !data.noEllipsize && maxSize.has_value() && maxSize->y >= 0,
         .wrap      = maxSize.has_value() && maxSize->x >= 0,
@@ -422,8 +466,9 @@ void STextImpl::postTexLoad() {
         return;
 
     ASP<IAsyncResource> resourceGeneric(resource);
-    size = resource->m_asset.pixelSize;
-    tex  = g_renderer->uploadTexture({.resource = resourceGeneric});
+    size               = resource->m_asset.pixelSize;
+    tex                = g_renderer->uploadTexture({.resource = resourceGeneric});
+    renderColorAtPaint = colorAnimationEnabled;
     oldTex.reset();
     if (self->impl->window)
         self->impl->window->scheduleReposition(self->impl->self);

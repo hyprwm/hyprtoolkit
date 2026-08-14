@@ -13,8 +13,10 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
     initElementIfNeeded(element);
 
     // damage old box
-    if (element->impl->window)
+    if (element->impl->window) {
+        element->impl->window->m_opaqueRegionDirty = true;
         element->impl->window->damage(element->impl->positionerData->baseBox);
+    }
 
     element->impl->positionerData->baseBox = box;
     element->reposition(box, maxSize);

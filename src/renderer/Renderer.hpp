@@ -37,10 +37,12 @@ namespace Hyprtoolkit {
         };
 
         struct STextureRenderData {
-            CBox                 box;
-            SP<IRendererTexture> texture;
-            float                a        = 1.F;
-            int                  rounding = 0;
+            CBox                      box;
+            SP<IRendererTexture>      texture;
+            float                     a        = 1.F;
+            int                       rounding = 0;
+            std::optional<CHyprColor> tint;
+            bool                      tintGrayscaleOnly = false;
         };
 
         struct SBorderRenderData {

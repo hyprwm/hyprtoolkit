@@ -9,6 +9,7 @@
 
 #include "../../helpers/Memory.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/AnimatedVariable.hpp"
 
 namespace Hyprtoolkit {
     struct STextData {
@@ -16,7 +17,7 @@ namespace Hyprtoolkit {
         std::string                              fontFamily = g_palette ? g_palette->m_vars.fontFamily : "Sans Serif";
         CFontSize                                fontSize{CFontSize::HT_FONT_TEXT};
         eFontAlignment                           align       = HT_FONT_ALIGN_LEFT;
-        colorFn                                  color       = [] { return g_backend->getPalette()->m_colors.text; };
+        colorFn                                  color       = [] { return g_palette->m_colors.text; };
         float                                    a           = 1.F;
         bool                                     noEllipsize = false;
         std::optional<Hyprutils::Math::Vector2D> clampSize;
@@ -49,12 +50,16 @@ namespace Hyprtoolkit {
 
         SP<IRendererTexture>                                                                           tex;
         SP<IRendererTexture>                                                                           oldTex; // while loading a new one
+        PHLANIMVAR<CHyprColor>                                                                         color;
+        SP<Hyprutils::Animation::SAnimationPropertyConfig>                                             colorAnimationConfig;
         ASP<Hyprgraphics::CTextResource>                                                               resource;
         Hyprutils::Math::Vector2D                                                                      size, preferred;
 
         Hyprutils::Math::Vector2D                                                                      lastCursorPos;
 
-        bool                                                                                           waitingForTex = false;
+        bool                                                                                           waitingForTex         = false;
+        bool                                                                                           colorAnimationEnabled = false;
+        bool                                                                                           renderColorAtPaint    = false;
 
         Hyprutils::Math::Vector2D                                                                      getTextSizePreferred();
         Hyprutils::Math::CBox                                                                          getCharBox(size_t offset);

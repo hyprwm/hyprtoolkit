@@ -53,7 +53,8 @@ CConfigManager::CConfigManager() : m_inotifyFd(inotify_init()) {
     m_configPath       = CFGPATH;
 
     if (CFGPATH.empty())
-        g_logger->log(HT_LOG_DEBUG, "CConfigManager: no hyprtoolkit.conf found, using defaults (expected at $XDG_CONFIG_HOME/hypr/hyprtoolkit.conf or ~/.config/hypr/hyprtoolkit.conf)");
+        g_logger->log(HT_LOG_DEBUG,
+                      "CConfigManager: no hyprtoolkit.conf found, using defaults (expected at $XDG_CONFIG_HOME/hypr/hyprtoolkit.conf or ~/.config/hypr/hyprtoolkit.conf)");
 
     m_config = makeUnique<Hyprlang::CConfig>(CFGPATH.c_str(), Hyprlang::SConfigOptions{.allowMissingConfig = true});
 

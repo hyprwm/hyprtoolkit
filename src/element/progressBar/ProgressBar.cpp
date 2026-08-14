@@ -81,9 +81,7 @@ void SProgressBarImpl::stopIndeterminate() {
     phase.reset();
 
     foreground->setPositionMode(IElement::HT_POSITION_AUTO);
-    foreground->rebuild()
-        ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {std::clamp(data.value, 0.F, 1.F), 1.F}})
-        ->commence();
+    foreground->rebuild()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {std::clamp(data.value, 0.F, 1.F), 1.F}})->commence();
 }
 
 void SProgressBarImpl::onPulseTick() {

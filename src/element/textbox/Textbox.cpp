@@ -417,10 +417,10 @@ void CTextboxElement::init() {
     m_impl->bg->impl->clipChildren = true;
 
     if (m_impl->data.eyeIcon) {
-        m_impl->eyeBg = CRectangleBuilder::begin()
-                            ->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })
-                            ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {STextboxImpl::EYE_W, 1.F}})
-                            ->commence();
+        m_impl->eyeBg   = CRectangleBuilder::begin()
+                              ->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })
+                              ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {STextboxImpl::EYE_W, 1.F}})
+                              ->commence();
         m_impl->eyeText = CTextBuilder::begin()
                               ->text(std::string{""})
                               ->color([] { return g_palette->m_colors.text.darken(0.4F); })
@@ -453,7 +453,7 @@ void CTextboxElement::setText(std::string text) {
     if (text == m_impl->data.text)
         return;
 
-    m_impl->data.text   = std::move(text);
+    m_impl->data.text         = std::move(text);
     m_impl->inputState.cursor = std::min(m_impl->inputState.cursor, m_impl->data.text.length());
     m_impl->clearSelect();
     m_impl->updateLabel();
@@ -503,8 +503,8 @@ void STextboxImpl::updateLabel() {
     } else {
         std::string pwdText(UTF8::length(data.text), '*');
 
-        auto fullLabel = inputState.imText.empty() ? //
-            pwdText :                                //
+        auto        fullLabel = inputState.imText.empty() ? //
+            pwdText :                                       //
             pwdText.insert(srcToDisplay(inputState.cursor), "<u>" + inputState.imText + "</u>");
 
         text->rebuild()->text(std::move(fullLabel))->commence();
@@ -598,13 +598,13 @@ void STextboxImpl::updateSelect() {
         float width = endBox.x - beginBox.x;
 
         auto  selectBg = CRectangleBuilder::begin()
-                            ->color([] {
+                             ->color([] {
                                 auto x = g_palette->m_colors.accent.darken(0.4F);
                                 x.a    = 0.5F;
                                 return x;
-                            })
-                            ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {width, beginBox.h}})
-                            ->commence();
+                             })
+                             ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {width, beginBox.h}})
+                             ->commence();
 
         selectBg->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
         if (!data.multiline) {

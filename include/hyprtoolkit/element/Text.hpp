@@ -55,6 +55,7 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D               size();
         void                                            setText(std::string text);
+        void                                            animateColor(const SAnimation& animation);
 
         HT_HIDDEN : CTextElement(const STextData& data);
         static Hyprutils::Memory::CSharedPointer<CTextElement> create(const STextData& data);

@@ -14,11 +14,13 @@ namespace Hyprtoolkit {
         CDynamicSize size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
     };
     struct SRectangleImpl {
-        SRectangleData                 data;
+        SRectangleData                                     data;
 
-        PHLANIMVAR<CHyprColor>         color;
-        PHLANIMVAR<CGradientValueData> borderColor;
+        PHLANIMVAR<CHyprColor>                             color;
+        PHLANIMVAR<CGradientValueData>                     borderColor;
+        SP<Hyprutils::Animation::SAnimationPropertyConfig> colorAnimationConfig;
+        SP<Hyprutils::Animation::SAnimationPropertyConfig> borderAnimationConfig;
 
-        WP<CRectangleElement>          self;
+        WP<CRectangleElement>                              self;
     };
 }

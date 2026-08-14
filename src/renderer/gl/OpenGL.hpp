@@ -47,6 +47,8 @@ namespace Hyprtoolkit {
 
       private:
         CBox                           logicalToGL(const CBox& box, bool transform = true);
+        CBox                           presentationBox(const CBox& box) const;
+        float                          presentationOpacity() const;
         CRegion                        damageWithClip();
         void                           scissor(const CBox& box);
         void                           scissor(const pixman_box32_t* box);
@@ -109,6 +111,7 @@ namespace Hyprtoolkit {
 
         std::vector<CBox>              m_clipBoxes;
         std::vector<SP<IElement>>      m_alreadyRendered;
+        SP<IElement>                   m_currentElement;
 
         CShader                        m_rectShader;
         CShader                        m_texShader;

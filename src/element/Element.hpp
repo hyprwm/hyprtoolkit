@@ -7,6 +7,7 @@
 
 #include "../helpers/Memory.hpp"
 #include "../core/Input.hpp"
+#include "../core/AnimatedVariable.hpp"
 
 #include <hyprutils/math/Box.hpp>
 
@@ -34,6 +35,16 @@ namespace Hyprtoolkit {
         float                                                    margin                  = 0;
         bool                                                     userRequestedMouseInput = false;
         bool                                                     grouped                 = false;
+        bool                                                     hasBeenPresented        = false;
+
+        float                                                    opacity          = 1.F;
+        bool                                                     opacityAnimated  = false;
+        bool                                                     geometryAnimated = false;
+        PHLANIMVAR<float>                                        animatedOpacity;
+        PHLANIMVAR<Hyprutils::Math::CBox>                        animatedGeometry;
+        SP<Hyprutils::Animation::SAnimationPropertyConfig>       opacityAnimationConfig;
+        SP<Hyprutils::Animation::SAnimationPropertyConfig>       geometryAnimationConfig;
+        Hyprutils::Math::CBox                                    lastPresentationBounds;
 
         // tooltip
         std::string tooltip    = "";
@@ -71,7 +82,12 @@ namespace Hyprtoolkit {
         void                      breadthfirst(const std::function<void(SP<IElement>)>& fn);
         void                      setWindow(SP<IToolkitWindow> w);
         void                      damageEntire();
+        void                      damagePresentation();
         void                      setPosition(const Hyprutils::Math::CBox& box);
+        Hyprutils::Math::CBox     presentationBox(const Hyprutils::Math::CBox& box) const;
+        Hyprutils::Math::CBox     presentationSubtreeBox() const;
+        float                     effectiveOpacity() const;
+        bool                      hasActiveGeometry() const;
         void                      setFailedPositioning(bool set);
         Hyprutils::Math::Vector2D maxChildSize(const Hyprutils::Math::Vector2D& parent);
         Hyprutils::Math::Vector2D getPreferredSizeGeneric(const CDynamicSize& size, const Hyprutils::Math::Vector2D& parent);

@@ -313,28 +313,28 @@ void             CBackend::rebuildPollfds(bool wakeup) {
     m_pollfds.resize(INTERNAL_FDS + m_sLoopState.userFds.size());
 
     m_pollfds[0] = {
-                    .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
-                    .events = POLLIN,
+        .fd     = wl_display_get_fd(g_waylandPlatform->m_waylandState.display),
+        .events = POLLIN,
     };
     m_pollfds[1] = {
-                    .fd     = m_sLoopState.exitfd[0],
-                    .events = POLLIN,
+        .fd     = m_sLoopState.exitfd[0],
+        .events = POLLIN,
     };
     m_pollfds[2] = {
-                    .fd     = g_config->m_inotifyFd.get(),
-                    .events = POLLIN,
+        .fd     = g_config->m_inotifyFd.get(),
+        .events = POLLIN,
     };
     m_pollfds[3] = {
-                    .fd     = m_sLoopState.wakeupfd[0],
-                    .events = POLLIN,
+        .fd     = m_sLoopState.wakeupfd[0],
+        .events = POLLIN,
     };
 
     int i = INTERNAL_FDS;
 
     for (const auto& uf : m_sLoopState.userFds) {
         m_pollfds[i++] = {
-                        .fd     = uf.fd,
-                        .events = POLLIN,
+            .fd     = uf.fd,
+            .events = POLLIN,
         };
     }
 

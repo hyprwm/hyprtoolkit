@@ -43,6 +43,8 @@ namespace Hyprtoolkit {
 
         Hyprutils::Memory::CSharedPointer<CRectangleBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                    size();
+        void                                                 animateColor(const SAnimation& animation);
+        void                                                 animateBorderColor(const SAnimation& animation);
 
       private:
         static Hyprutils::Memory::CSharedPointer<CRectangleElement> create(const SRectangleData& data);

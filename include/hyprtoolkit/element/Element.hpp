@@ -13,6 +13,7 @@
 #include "../types/PointerShape.hpp"
 #include "../palette/Color.hpp"
 #include "../core/Input.hpp"
+#include "../core/Animation.hpp"
 #include "../core/CoreMacros.hpp"
 
 namespace Hyprtoolkit {
@@ -71,6 +72,12 @@ namespace Hyprtoolkit {
 
         virtual void setGrow(bool grow);
         virtual void setGrow(bool growH, bool growV);
+
+        // Installs a persistent policy. Future property/layout changes are animated.
+        // Geometry is presentation-only; layout and input immediately use final coordinates.
+        void animateOpacity(const SAnimation& animation);
+        void animateGeometry(const SAnimation& animation);
+        void setOpacity(float opacity);
 
         // forces a reposition right now, useful for pre-calculating expected sizes
         virtual void forceReposition();

@@ -12,7 +12,7 @@
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
-constexpr double BUTTON_PAD = 5;
+constexpr double   BUTTON_PAD = 5;
 
 SP<CButtonElement> CButtonElement::create(const SButtonData& data) {
     auto p          = SP<CButtonElement>(new CButtonElement(data));
@@ -54,8 +54,8 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                                 c.a *= 0.5F;
                             return c;
                         })
-                        ->size(m_impl->data.ellipsize ? CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}}
-                                                      : CDynamicSize{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
+                        ->size(m_impl->data.ellipsize ? CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}} :
+                                                        CDynamicSize{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
                         ->align(m_impl->data.alignText)
                         ->callback([this] {
                             m_impl->labelChanged = true;

@@ -25,11 +25,11 @@ CSystemIconDescription::CSystemIconDescription(const std::string& name) {
         std::filesystem::path fullDirPath = lookupDir + "/";
 
         auto                  iconPath = fullDirPath / (name + ".svg");
-        m_scalable = true;
-        std::error_code       ec;
+        m_scalable                     = true;
+        std::error_code ec;
 
         if (!std::filesystem::exists(iconPath, ec) || ec) {
-            iconPath = fullDirPath / (name + ".png");
+            iconPath   = fullDirPath / (name + ".png");
             m_scalable = false;
         }
 

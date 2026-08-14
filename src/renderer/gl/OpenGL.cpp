@@ -553,6 +553,14 @@ CBox COpenGLRenderer::logicalToGL(const CBox& box, bool transform) {
     return b;
 }
 
+CBox COpenGLRenderer::presentationBox(const CBox& box) const {
+    return m_currentElement ? m_currentElement->impl->presentationBox(box) : box;
+}
+
+float COpenGLRenderer::presentationOpacity() const {
+    return m_currentElement ? m_currentElement->impl->effectiveOpacity() : 1.F;
+}
+
 SP<CRenderbuffer> COpenGLRenderer::getRBO(SP<Aquamarine::IBuffer> buf) {
     for (const auto& r : m_rbos) {
         if (r->m_hlBuffer == buf)
@@ -614,10 +622,12 @@ void COpenGLRenderer::render(bool ignoreSync) {
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     m_alreadyRendered.clear();
+    m_currentElement.reset();
 
     renderBreadthfirst(m_window->m_rootElement);
 
     m_alreadyRendered.clear();
+    m_currentElement.reset();
 
     glDisable(GL_BLEND);
 }
@@ -633,7 +643,9 @@ void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
         if (std::ranges::find(m_alreadyRendered, el) != m_alreadyRendered.end())
             return;
 
+        m_currentElement = el;
         el->paint();
+        el->impl->hasBeenPresented = true;
 
         m_alreadyRendered.emplace_back(el);
 
@@ -659,7 +671,7 @@ void COpenGLRenderer::renderBreadthfirst(SP<IElement> e) {
 
         if (el->impl->clipChildren) {
             // clip children: push a clip box and render all children now, then pop box
-            m_clipBoxes.emplace_back(logicalToGL(el->impl->position, false));
+            m_clipBoxes.emplace_back(logicalToGL(el->impl->presentationBox(el->impl->position), false));
 
             renderBreadthfirst(el);
 
@@ -727,9 +739,10 @@ CRegion COpenGLRenderer::damageWithClip() {
 }
 
 void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
-    const auto ROUNDEDBOX    = logicalToGL(data.box);
-    const auto UNTRANSFORMED = logicalToGL(data.box, false);
-    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    const auto PRESENTED     = presentationBox(data.box);
+    const auto ROUNDEDBOX    = logicalToGL(PRESENTED);
+    const auto UNTRANSFORMED = logicalToGL(PRESENTED, false);
+    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, PRESENTED.rot);
     Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
     const auto DAMAGE = damageWithClip();
@@ -742,7 +755,8 @@ void COpenGLRenderer::renderRectangle(const SRectangleRenderData& data) {
     glUniformMatrix3fv(m_rectShader.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
 
     // premultiply the color as well as we don't work with straight alpha
-    const auto COL = data.color;
+    auto COL = data.color;
+    COL.a *= presentationOpacity();
     glUniform4f(m_rectShader.color, COL.r * COL.a, COL.g * COL.a, COL.b * COL.a, COL.a);
 
     const auto TOPLEFT  = Vector2D(UNTRANSFORMED.x, UNTRANSFORMED.y);
@@ -870,10 +884,11 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
 
     SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(data.texture);
 
-    const auto     SOURCE_BOX    = data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN ? containImage(data.box, tex->m_size) : data.box;
+    const auto     SOURCE_LAYOUT = data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN ? containImage(data.box, tex->m_size) : data.box;
+    const auto     SOURCE_BOX    = presentationBox(SOURCE_LAYOUT);
     const auto     ROUNDEDBOX    = logicalToGL(SOURCE_BOX);
     const auto     UNTRANSFORMED = logicalToGL(SOURCE_BOX, false);
-    Mat3x3         matrix        = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    Mat3x3         matrix        = m_projMatrix.projectBox(ROUNDEDBOX, Hyprutils::Math::HYPRUTILS_TRANSFORM_FLIPPED_180, SOURCE_BOX.rot);
     Mat3x3         glMatrix      = m_projection.copy().multiply(matrix);
 
     const auto     DAMAGE = damageWithClip();
@@ -890,7 +905,7 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
 
     glUniformMatrix3fv(shader->proj, 1, GL_TRUE, glMatrix.getMatrix().data());
     glUniform1i(shader->tex, 0);
-    glUniform1f(shader->alpha, data.a);
+    glUniform1f(shader->alpha, data.a * presentationOpacity());
     const auto TOPLEFT  = Vector2D(UNTRANSFORMED.x, UNTRANSFORMED.y);
     const auto FULLSIZE = Vector2D(UNTRANSFORMED.width, UNTRANSFORMED.height);
 
@@ -902,7 +917,11 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
 
     glUniform1i(shader->discardOpaque, 0);
     glUniform1i(shader->discardAlpha, 0);
-    glUniform1i(shader->applyTint, 0);
+    if (data.tint) {
+        glUniform1i(shader->applyTint, data.tintGrayscaleOnly ? 2 : 1);
+        glUniform3f(shader->tint, data.tint->r, data.tint->g, data.tint->b);
+    } else
+        glUniform1i(shader->applyTint, 0);
 
     std::array<float, 8> texVerts;
     if (data.texture->fitMode() == IMAGE_FIT_MODE_STRETCH || data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN) {
@@ -935,9 +954,10 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
 }
 
 void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
-    const auto ROUNDEDBOX    = logicalToGL(data.box);
-    const auto UNTRANSFORMED = logicalToGL(data.box, false);
-    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    const auto PRESENTED     = presentationBox(data.box);
+    const auto ROUNDEDBOX    = logicalToGL(PRESENTED);
+    const auto UNTRANSFORMED = logicalToGL(PRESENTED, false);
+    Mat3x3     matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, PRESENTED.rot);
     Mat3x3     glMatrix      = m_projection.copy().multiply(matrix);
 
     const auto DAMAGE = damageWithClip();
@@ -963,7 +983,7 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     }
     glUniform1i(m_borderShader.gradientLength, numStops);
     glUniform1f(m_borderShader.angle, data.gradient.m_fAngle);
-    glUniform1f(m_borderShader.alpha, 1.F);
+    glUniform1f(m_borderShader.alpha, presentationOpacity());
     glUniform1i(m_borderShader.gradient2Length, 0);
 
     const auto TOPLEFT  = Vector2D(UNTRANSFORMED.x, UNTRANSFORMED.y);
@@ -993,8 +1013,9 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
 }
 
 void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
-    const auto ROUNDEDBOX    = logicalToGL(data.box);
-    const auto UNTRANSFORMED = logicalToGL(data.box, false);
+    const auto PRESENTED     = presentationBox(data.box);
+    const auto ROUNDEDBOX    = logicalToGL(PRESENTED);
+    const auto UNTRANSFORMED = logicalToGL(PRESENTED, false);
 
     const auto DAMAGE = damageWithClip();
 
@@ -1058,8 +1079,9 @@ void COpenGLRenderer::renderPolygon(const SPolygonRenderData& data) {
 }
 
 void COpenGLRenderer::renderLine(const SLineRenderData& data) {
-    const auto ROUNDEDBOX    = logicalToGL(data.box);
-    const auto UNTRANSFORMED = logicalToGL(data.box, false);
+    const auto PRESENTED     = presentationBox(data.box);
+    const auto ROUNDEDBOX    = logicalToGL(PRESENTED);
+    const auto UNTRANSFORMED = logicalToGL(PRESENTED, false);
 
     const auto DAMAGE = damageWithClip();
 

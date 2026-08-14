@@ -52,8 +52,8 @@ namespace Hyprtoolkit {
         SP<CRectangleElement> background;
         SP<IElement>          foreground;
 
-        bool                        labelChanged = true;
+        bool                  labelChanged = true;
 
-        bool                        primedForUp = false;
+        bool                  primedForUp = false;
     };
 }

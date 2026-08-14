@@ -27,11 +27,11 @@ namespace Hyprtoolkit {
         SP<CRectangleElement>   foreground;
 
         // 0..1 cycling phase used for the indeterminate pulse
-        PHLANIMVAR<float>       phase;
+        PHLANIMVAR<float> phase;
 
-        void                    applyValue();
-        void                    startIndeterminate();
-        void                    stopIndeterminate();
-        void                    onPulseTick();
+        void              applyValue();
+        void              startIndeterminate();
+        void              stopIndeterminate();
+        void              onPulseTick();
     };
 }

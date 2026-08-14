@@ -26,7 +26,9 @@ void main() {
     if (discardAlpha == 1 && pixColor[3] <= discardAlphaValue)
         discard;
 
-    if (applyTint == 1) {
+	float chroma = max(pixColor[0], max(pixColor[1], pixColor[2])) - min(pixColor[0], min(pixColor[1], pixColor[2]));
+
+    if (applyTint == 1 || (applyTint == 2 && chroma < 0.001)) {
 	    pixColor[0] = pixColor[0] * tint[0];
 	    pixColor[1] = pixColor[1] * tint[1];
 	    pixColor[2] = pixColor[2] * tint[2];

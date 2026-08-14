@@ -18,11 +18,23 @@ SP<CRectangleElement> CRectangleElement::create(const SRectangleData& data) {
 CRectangleElement::CRectangleElement(const SRectangleData& data) : IElement(), m_impl(makeUnique<SRectangleImpl>()) {
     m_impl->data = data;
 
-    g_animationManager->createAnimation(data.color(), m_impl->color, g_animationManager->m_animationTree.getConfig("fast"));
-    m_impl->color->setUpdateCallback([this](auto) { impl->damageEntire(); });
-    m_impl->color->setCallbackOnBegin([this](auto) { impl->damageEntire(); }, false);
+    m_impl->colorAnimationConfig = g_animationManager->m_animationTree.getConfig("fast");
+    g_animationManager->createAnimation(data.color(), m_impl->color, m_impl->colorAnimationConfig);
+    m_impl->color->setUpdateCallback([this](auto) {
+        if (impl->window)
+            impl->window->m_opaqueRegionDirty = true;
+        impl->damageEntire();
+    });
+    m_impl->color->setCallbackOnBegin(
+        [this](auto) {
+            if (impl->window)
+                impl->window->m_opaqueRegionDirty = true;
+            impl->damageEntire();
+        },
+        false);
 
-    g_animationManager->createAnimation(data.borderColor(), m_impl->borderColor, g_animationManager->m_animationTree.getConfig("fast"));
+    m_impl->borderAnimationConfig = g_animationManager->m_animationTree.getConfig("fast");
+    g_animationManager->createAnimation(data.borderColor(), m_impl->borderColor, m_impl->borderAnimationConfig);
     m_impl->borderColor->setUpdateCallback([this](auto) {
         if (m_impl->data.borderThickness)
             impl->damageEntire();
@@ -66,17 +78,59 @@ SP<CRectangleBuilder> CRectangleElement::rebuild() {
     return p;
 }
 
+void CRectangleElement::animateColor(const SAnimation& animation) {
+    if (std::holds_alternative<SNoAnimation>(animation))
+        m_impl->color->setValueAndWarp(m_impl->color->goal());
+    m_impl->colorAnimationConfig = g_animationManager->configFor(animation);
+}
+
+void CRectangleElement::animateBorderColor(const SAnimation& animation) {
+    if (std::holds_alternative<SNoAnimation>(animation))
+        m_impl->borderColor->setValueAndWarp(m_impl->borderColor->goal());
+    m_impl->borderAnimationConfig = g_animationManager->configFor(animation);
+}
+
 void CRectangleElement::replaceData(const SRectangleData& data) {
-    m_impl->data         = data;
-    *m_impl->color       = data.color();
-    *m_impl->borderColor = data.borderColor();
+    const auto COLOR        = data.color();
+    const auto BORDER_COLOR = data.borderColor();
+    m_impl->data            = data;
+    if (m_impl->color->isBeingAnimated() && (m_impl->color->getConfig() != m_impl->colorAnimationConfig || (m_impl->color->isSpringCurve() && m_impl->color->goal() != COLOR)))
+        m_impl->color->setValueAndWarp(m_impl->color->value());
+    if (m_impl->borderColor->isBeingAnimated() &&
+        (m_impl->borderColor->getConfig() != m_impl->borderAnimationConfig || (m_impl->borderColor->isSpringCurve() && m_impl->borderColor->goal() != BORDER_COLOR)))
+        m_impl->borderColor->setValueAndWarp(m_impl->borderColor->value());
+    m_impl->color->setConfig(m_impl->colorAnimationConfig);
+    m_impl->borderColor->setConfig(m_impl->borderAnimationConfig);
+    if (m_impl->color->enabled())
+        *m_impl->color = COLOR;
+    else
+        m_impl->color->setValueAndWarp(COLOR);
+    if (m_impl->borderColor->enabled())
+        *m_impl->borderColor = BORDER_COLOR;
+    else
+        m_impl->borderColor->setValueAndWarp(BORDER_COLOR);
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
 }
 
 void CRectangleElement::recheckColor() {
-    *m_impl->color       = m_impl->data.color();
-    *m_impl->borderColor = m_impl->data.borderColor();
+    const auto COLOR        = m_impl->data.color();
+    const auto BORDER_COLOR = m_impl->data.borderColor();
+    if (m_impl->color->isBeingAnimated() && (m_impl->color->getConfig() != m_impl->colorAnimationConfig || (m_impl->color->isSpringCurve() && m_impl->color->goal() != COLOR)))
+        m_impl->color->setValueAndWarp(m_impl->color->value());
+    if (m_impl->borderColor->isBeingAnimated() &&
+        (m_impl->borderColor->getConfig() != m_impl->borderAnimationConfig || (m_impl->borderColor->isSpringCurve() && m_impl->borderColor->goal() != BORDER_COLOR)))
+        m_impl->borderColor->setValueAndWarp(m_impl->borderColor->value());
+    m_impl->color->setConfig(m_impl->colorAnimationConfig);
+    m_impl->borderColor->setConfig(m_impl->borderAnimationConfig);
+    if (m_impl->color->enabled())
+        *m_impl->color = COLOR;
+    else
+        m_impl->color->setValueAndWarp(COLOR);
+    if (m_impl->borderColor->enabled())
+        *m_impl->borderColor = BORDER_COLOR;
+    else
+        m_impl->borderColor->setValueAndWarp(BORDER_COLOR);
 }
 
 Hyprutils::Math::Vector2D CRectangleElement::size() {
@@ -106,7 +160,7 @@ bool CRectangleElement::positioningDependsOnChild() {
 }
 
 CBox CRectangleElement::opaqueBox() {
-    if (m_impl->color->value().a != 1.F)
+    if (m_impl->color->value().a != 1.F || impl->effectiveOpacity() != 1.F || impl->hasActiveGeometry())
         return {};
 
     CBox opaque = impl->position;

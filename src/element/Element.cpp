@@ -6,8 +6,10 @@
 #include "../helpers/Memory.hpp"
 #include "../window/ToolkitWindow.hpp"
 #include "../layout/Positioner.hpp"
+#include "../core/AnimationManager.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
@@ -103,6 +105,91 @@ void IElement::setGrow(bool growH, bool growV) {
     impl->growV = growV;
 }
 
+static void installOpacityAnimation(IElement* element, const SAnimation& animation) {
+    auto& data                   = element->impl;
+    data->opacityAnimated        = true;
+    data->opacityAnimationConfig = g_animationManager->configFor(animation);
+    if (!data->animatedOpacity) {
+        g_animationManager->createAnimation(data->opacity, data->animatedOpacity, data->opacityAnimationConfig);
+        data->animatedOpacity->setCallbackOnBegin([element](auto) { element->impl->damagePresentation(); }, false);
+        data->animatedOpacity->setUpdateCallback([element](auto) { element->impl->damagePresentation(); });
+    }
+}
+
+static CBox geometryBoxFor(const SElementInternalData& data) {
+    auto geometry = data.position;
+    if (!data.parent || data.parent->impl->position.empty())
+        return geometry;
+
+    const auto& PARENT = data.parent->impl->position;
+    geometry.x         = (geometry.x - PARENT.x) / PARENT.w;
+    geometry.y         = (geometry.y - PARENT.y) / PARENT.h;
+    geometry.w /= PARENT.w;
+    geometry.h /= PARENT.h;
+    return geometry;
+}
+
+void IElement::animateOpacity(const SAnimation& animation) {
+    if (std::holds_alternative<SNoAnimation>(animation)) {
+        if (impl->animatedOpacity) {
+            impl->opacity = std::clamp(impl->animatedOpacity->goal(), 0.F, 1.F);
+            impl->animatedOpacity->resetAllCallbacks();
+            impl->animatedOpacity.reset();
+        }
+        impl->opacityAnimated = false;
+        impl->opacityAnimationConfig.reset();
+        impl->damagePresentation();
+        return;
+    }
+
+    installOpacityAnimation(this, animation);
+}
+
+static void installGeometryAnimation(IElement* element, const SAnimation& animation) {
+    auto& data                    = element->impl;
+    data->geometryAnimated        = true;
+    data->geometryAnimationConfig = g_animationManager->configFor(animation);
+    if (!data->animatedGeometry) {
+        const auto geometry = geometryBoxFor(*data);
+        g_animationManager->createAnimation(geometry, data->animatedGeometry, data->geometryAnimationConfig);
+        data->lastPresentationBounds = data->presentationSubtreeBox();
+        data->animatedGeometry->setCallbackOnBegin([element](auto) { element->impl->damagePresentation(); }, false);
+        data->animatedGeometry->setUpdateCallback([element](auto) { element->impl->damagePresentation(); });
+    }
+}
+
+void IElement::animateGeometry(const SAnimation& animation) {
+    if (std::holds_alternative<SNoAnimation>(animation)) {
+        if (impl->animatedGeometry) {
+            impl->animatedGeometry->resetAllCallbacks();
+            impl->animatedGeometry.reset();
+        }
+        impl->geometryAnimated = false;
+        impl->geometryAnimationConfig.reset();
+        impl->damagePresentation();
+        return;
+    }
+
+    installGeometryAnimation(this, animation);
+}
+
+void IElement::setOpacity(float opacity) {
+    opacity = std::clamp(opacity, 0.F, 1.F);
+    if (impl->opacityAnimated && impl->animatedOpacity) {
+        if (impl->animatedOpacity->getConfig() != impl->opacityAnimationConfig && impl->animatedOpacity->isBeingAnimated())
+            impl->animatedOpacity->setValueAndWarp(impl->animatedOpacity->value());
+        impl->animatedOpacity->setConfig(impl->opacityAnimationConfig);
+        *impl->animatedOpacity = opacity;
+        return;
+    }
+
+    if (impl->opacity == opacity)
+        return;
+
+    impl->opacity = opacity;
+    impl->damagePresentation();
+}
+
 void IElement::addChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
     if (std::ranges::find(impl->children, child) != impl->children.end())
         return;
@@ -133,7 +220,7 @@ void IElement::removeChild(Hyprutils::Memory::CSharedPointer<IElement> child) {
 void IElement::clearChildren() {
     for (auto& c : impl->children) {
         c->impl->parent.reset();
-        c->impl->window.reset();
+        c->impl->breadthfirst([](SP<IElement> element) { element->impl->setWindow(nullptr); });
     }
     impl->children.clear();
 }
@@ -232,9 +319,37 @@ void IElement::forceReposition() {
 }
 
 void SElementInternalData::setPosition(const CBox& box) {
-    position = box;
+    const auto PREVIOUS = position;
+    position            = box;
     if (margin > 0)
         position.expand(-margin);
+
+    if (!geometryAnimated || !animatedGeometry)
+        return;
+
+    const auto geometry = geometryBoxFor(*this);
+
+    if (!hasBeenPresented) {
+        animatedGeometry->setConfig(geometryAnimationConfig);
+        animatedGeometry->setValueAndWarp(geometry);
+        lastPresentationBounds = presentationSubtreeBox();
+        return;
+    }
+
+    if (PREVIOUS.empty() || animatedGeometry->value().empty()) {
+        animatedGeometry->setValueAndWarp(geometry);
+        lastPresentationBounds = presentationSubtreeBox();
+        return;
+    }
+
+    if (animatedGeometry->goal() == geometry)
+        return;
+
+    const bool CONFIG_CHANGED = animatedGeometry->getConfig() != geometryAnimationConfig;
+    if (animatedGeometry->isBeingAnimated() && (CONFIG_CHANGED || animatedGeometry->isSpringCurve()))
+        animatedGeometry->setValueAndWarp(animatedGeometry->value());
+    animatedGeometry->setConfig(geometryAnimationConfig);
+    *animatedGeometry = geometry;
 }
 
 void SElementInternalData::bfHelper(std::vector<SP<IElement>> elements, const std::function<void(SP<IElement>)>& fn) {
@@ -262,7 +377,8 @@ void SElementInternalData::breadthfirst(const std::function<void(SP<IElement>)>&
 }
 
 void SElementInternalData::setWindow(SP<IToolkitWindow> w) {
-    window = w;
+    window           = w;
+    hasBeenPresented = false;
     if (w)
         w->scheduleReposition(self);
 }
@@ -271,6 +387,109 @@ void SElementInternalData::damageEntire() {
     if (!window)
         return;
     window->damage(position.copy().expand(2));
+}
+
+static CBox applyBoxTransform(CBox box, const CBox& from, const CBox& to) {
+    if (from.empty() || to.empty())
+        return box;
+
+    const Vector2D SCALE = {
+        std::max(0.001, to.w / from.w),
+        std::max(0.001, to.h / from.h),
+    };
+
+    box.x = to.x + ((box.x - from.x) * SCALE.x);
+    box.y = to.y + ((box.y - from.y) * SCALE.y);
+    box.w *= SCALE.x;
+    box.h *= SCALE.y;
+    return box;
+}
+
+CBox SElementInternalData::presentationBox(const CBox& box) const {
+    auto transformed = box;
+    auto current     = self;
+
+    while (current) {
+        const auto& DATA = current->impl;
+        if (DATA->geometryAnimated && DATA->animatedGeometry) {
+            auto geometry = DATA->animatedGeometry->value();
+            if (DATA->parent && !DATA->parent->impl->position.empty()) {
+                const auto& PARENT = DATA->parent->impl->position;
+                geometry.x         = PARENT.x + (geometry.x * PARENT.w);
+                geometry.y         = PARENT.y + (geometry.y * PARENT.h);
+                geometry.w *= PARENT.w;
+                geometry.h *= PARENT.h;
+            }
+            transformed = applyBoxTransform(transformed, DATA->position, geometry);
+        }
+        current = DATA->parent;
+    }
+
+    return transformed;
+}
+
+CBox SElementInternalData::presentationSubtreeBox() const {
+    CBox bounds;
+    bool initialized = false;
+
+    const_cast<SElementInternalData*>(this)->breadthfirst([&](SP<IElement> element) {
+        if (!element)
+            return;
+
+        const auto BOX = element->impl->presentationBox(element->impl->position);
+        if (BOX.empty())
+            return;
+
+        if (!initialized) {
+            bounds      = BOX;
+            initialized = true;
+            return;
+        }
+
+        const auto RIGHT  = std::max(bounds.x + bounds.w, BOX.x + BOX.w);
+        const auto BOTTOM = std::max(bounds.y + bounds.h, BOX.y + BOX.h);
+        bounds.x          = std::min(bounds.x, BOX.x);
+        bounds.y          = std::min(bounds.y, BOX.y);
+        bounds.w          = RIGHT - bounds.x;
+        bounds.h          = BOTTOM - bounds.y;
+    });
+
+    return bounds;
+}
+
+float SElementInternalData::effectiveOpacity() const {
+    float opacityValue = animatedOpacity ? animatedOpacity->value() : opacity;
+    auto  current      = parent;
+
+    while (current) {
+        opacityValue *= current->impl->animatedOpacity ? current->impl->animatedOpacity->value() : current->impl->opacity;
+        current = current->impl->parent;
+    }
+
+    return std::clamp(opacityValue, 0.F, 1.F);
+}
+
+bool SElementInternalData::hasActiveGeometry() const {
+    auto current = self;
+    while (current) {
+        if (current->impl->animatedGeometry && current->impl->animatedGeometry->isBeingAnimated())
+            return true;
+        current = current->impl->parent;
+    }
+    return false;
+}
+
+void SElementInternalData::damagePresentation() {
+    if (!window)
+        return;
+
+    window->m_opaqueRegionDirty = true;
+    const auto CURRENT          = presentationSubtreeBox();
+    if (!lastPresentationBounds.empty())
+        window->damage(lastPresentationBounds.copy().expand(2));
+    if (!CURRENT.empty())
+        window->damage(CURRENT.copy().expand(2));
+    lastPresentationBounds = CURRENT;
 }
 
 void SElementInternalData::setFailedPositioning(bool set) {

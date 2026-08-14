@@ -54,6 +54,7 @@ void IToolkitWindow::damage(Hyprutils::Math::CRegion&& rg) {
 }
 
 void IToolkitWindow::damageEntire() {
+    m_opaqueRegionDirty = true;
     m_damageRing.damageEntire();
 
     scheduleFrame();
@@ -334,12 +335,12 @@ void IToolkitWindow::openTooltip(const std::string& s, const Hyprutils::Math::Ve
 
     m_tooltip.text = CTextBuilder::begin()->color([] { return g_palette->m_colors.text; })->clampSize({MAX_TOOLTIP_WIDTH, -1.F})->text(std::string{s})->commence();
     m_tooltip.bg   = CRectangleBuilder::begin()
-                       ->color([] { return g_palette->m_colors.base; })
-                       ->borderThickness(1)
-                       ->borderColor([] { return g_palette->m_colors.base.brighten(0.2F); })
-                       ->rounding(g_palette->m_vars.smallRounding)
-                       ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
-                       ->commence();
+                         ->color([] { return g_palette->m_colors.base; })
+                         ->borderThickness(1)
+                         ->borderColor([] { return g_palette->m_colors.base.brighten(0.2F); })
+                         ->rounding(g_palette->m_vars.smallRounding)
+                         ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
+                         ->commence();
     m_tooltip.bg->setReceivesMouse(true);
     m_tooltip.bg->setMouseLeave([self = m_self, this]() {
         if (!self)
