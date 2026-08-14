@@ -1,11 +1,14 @@
 #include <hyprtoolkit/core/Animation.hpp>
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/element/Button.hpp>
+#include <hyprtoolkit/element/Combobox.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/element/Text.hpp>
 #include <hyprtoolkit/window/Window.hpp>
 
 #include <hyprutils/memory/SharedPtr.hpp>
+
+#include <array>
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
@@ -33,10 +36,8 @@ static const SBezierAnimation OPACITY_CURVE{
     .control2 = {0.2, 1.0},
 };
 
-static const SSpringAnimation GEOMETRY_SPRING{
-    .stiffness = 220.F,
-    .damping   = 18.F,
-    .mass      = 1.F,
+static constexpr std::array GEOMETRY_SPRINGS{
+    AnimationPresets::Slow, AnimationPresets::Medium, AnimationPresets::Fast, AnimationPresets::Snappy, AnimationPresets::Bouncy,
 };
 
 static void toggleAnimations() {
@@ -50,6 +51,14 @@ static void toggleAnimations() {
     fadingCard->setOpacity(alternate ? 0.15F : 1.F);
 
     animatedText->rebuild()->color([alternate = alternate] { return alternate ? CHyprColor{0.98F, 0.75F, 0.20F, 1.F} : CHyprColor{0.50F, 0.90F, 0.68F, 1.F}; })->commence();
+}
+
+static void selectGeometrySpring(size_t index) {
+    if (index >= GEOMETRY_SPRINGS.size())
+        return;
+
+    movingCard->animateGeometry(GEOMETRY_SPRINGS[index]);
+    toggleAnimations();
 }
 
 static void scheduleToggle() {
@@ -85,7 +94,7 @@ int main() {
                      ->commence();
     movingCard->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
     movingCard->setAbsolutePosition({55, 115});
-    movingCard->animateGeometry(GEOMETRY_SPRING);
+    movingCard->animateGeometry(AnimationPresets::Bouncy);
     auto movingLabel = label("Spring geometry\n(final input coords)");
     movingLabel->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
     movingLabel->setPositionFlag(IElement::HT_POSITION_FLAG_CENTER, true);
@@ -135,6 +144,21 @@ int main() {
     toggle->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
     toggle->setAbsolutePosition({525, 438});
     background->addChild(toggle);
+
+    auto springSelectorLabel = label("Geometry spring");
+    springSelectorLabel->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    springSelectorLabel->setAbsolutePosition({305, 410});
+    background->addChild(springSelectorLabel);
+
+    auto springSelector = CComboboxBuilder::begin()
+                              ->items({"Slow", "Medium", "Fast", "Snappy", "Bouncy"})
+                              ->currentItem(4)
+                              ->onChanged([](SP<CComboboxElement>, size_t index) { selectGeometrySpring(index); })
+                              ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {190, 38}})
+                              ->commence();
+    springSelector->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    springSelector->setAbsolutePosition({305, 438});
+    background->addChild(springSelector);
 
     window->open();
     scheduleToggle();
