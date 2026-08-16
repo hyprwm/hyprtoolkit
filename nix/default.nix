@@ -5,7 +5,6 @@
   pkg-config,
   abseil-cpp,
   aquamarine,
-  epoll-shim,
   gtest,
   hyprgraphics,
   hyprlang,
@@ -21,7 +20,6 @@
   doCheck ? false,
 }:
 let
-  inherit (lib.lists) optional;
   inherit (lib.strings) optionalString;
 in
 stdenv.mkDerivation {
@@ -50,8 +48,7 @@ stdenv.mkDerivation {
     wayland
     wayland-scanner
     wayland-protocols
-  ]
-  ++ (optional stdenv.isBSD epoll-shim);
+  ];
 
   env.XDG_RUNTIME_DIR = "/tmp/runtime";
 

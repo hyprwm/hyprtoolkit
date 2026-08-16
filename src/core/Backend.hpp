@@ -2,9 +2,14 @@
 
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/core/BackendServices.hpp>
+#include <hyprutils/eventLoop/EventLoop.hpp>
 #include <hyprutils/os/FileDescriptor.hpp>
 #include <hyprutils/cli/Logger.hpp>
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
+
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 #include "../helpers/Env.hpp"
 #include "../helpers/Memory.hpp"
@@ -37,7 +42,8 @@ namespace Hyprtoolkit {
 
         void terminate();
         void reloadTheme();
-        void rebuildPollfds(bool wakeup = true);
+        void updateTimer(CTimer* timer, const std::chrono::steady_clock::time_point& expires);
+        void cancelTimer(CTimer* timer);
 
         // schedule function to when fd is readable (WL_EVENT_READABLE / POLLIN),
         // takes ownership of fd
@@ -47,49 +53,40 @@ namespace Hyprtoolkit {
 
         //
 
-        std::vector<pollfd>                                     m_pollfds;
-
         Hyprutils::Memory::CSharedPointer<Aquamarine::CBackend> m_aqBackend;
 
-        bool                                                    m_terminate         = false;
-        bool                                                    m_needsConfigReload = false;
+        std::atomic<bool>                                       m_terminate = false;
+        std::atomic<bool>                                       m_cleaned   = false;
+        std::mutex                                              m_loopStateMutex;
+        bool                                                    m_loopRunning = false;
+        std::thread::id                                         m_loopThread;
 
         struct SFDListener {
-            Hyprutils::OS::CFileDescriptor fdOwned;
-            int                            fd = 0;
-            std::function<void()>          callback;
-            bool                           needsDispatch = false;
-            bool                           removeOnFire  = false;
+            int                                                                fd = -1;
+            Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::IFDSource> source;
         };
 
-        struct {
-            std::mutex               timersMutex;
-            std::mutex               idlesMutex;
-            std::mutex               eventRequestMutex;
-            std::mutex               eventLoopMutex;
-            std::condition_variable  loopCV;
-            bool                     event = false;
+        struct STimer {
+            Hyprutils::Memory::CAtomicSharedPointer<CTimer>                 timer;
+            Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::ITimer> loopTimer;
+        };
 
-            std::condition_variable  wlDispatchCV;
-            bool                     wlDispatched = false;
+        bool initializeEventLoop();
+        void dispatchWayland(Hyprutils::EventLoop::IFDSource& source, Hyprutils::EventLoop::FdEventMask events);
+        void flushWayland(Hyprutils::EventLoop::IFDSource& source);
+        void cleanup();
+        void registerTimer(const Hyprutils::Memory::CAtomicSharedPointer<CTimer>& timer, const std::chrono::steady_clock::time_point& expires);
+        void removeTimer(CTimer* timer);
 
-            std::condition_variable  timerCV;
-            std::mutex               timerRequestMutex;
-            bool                     timerEvent = false;
+        Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::IEventLoop>          m_eventLoop;
+        Hyprutils::Memory::CAtomicSharedPointer<Hyprutils::EventLoop::ILoopExecutor> m_eventLoopExecutor;
+        Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::IFDSource>           m_waylandSource;
+        Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::IFDSource>           m_configSource;
+        Hyprutils::Memory::CSharedPointer<Hyprutils::EventLoop::IPostDispatchHook>   m_waylandPostDispatch;
+        bool                                                                         m_waylandWantsWrite = false;
+        std::atomic<uint64_t>                                                        m_pendingGeneration = 0;
 
-            std::condition_variable  idleCV;
-            std::mutex               idleRequestMutex;
-            bool                     idleEvent = false;
-
-            int                      exitfd[2];
-            int                      wakeupfd[2];
-
-            std::vector<SFDListener> userFds;
-
-            int64_t                  eventLoopThreadID = -1;
-        } m_sLoopState;
-
-        std::vector<Hyprutils::Memory::CAtomicSharedPointer<CTimer>>                m_timers;
-        std::vector<Hyprutils::Memory::CAtomicSharedPointer<std::function<void()>>> m_idles;
+        std::vector<SFDListener>                                                     m_userFds;
+        std::vector<STimer>                                                          m_timers;
     };
 }

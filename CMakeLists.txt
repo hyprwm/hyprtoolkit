@@ -87,13 +87,6 @@ set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
 target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL
                                          PkgConfig::deps)
 
-check_include_file("sys/timerfd.h" HAS_TIMERFD)
-pkg_check_modules(epoll IMPORTED_TARGET epoll-shim)
-if(NOT HAS_TIMERFD AND epoll_FOUND)
-  target_link_libraries(hyprtoolkit PUBLIC PkgConfig::epoll)
-  list(APPEND HYPRTOOLKIT_PRIVATE_REQUIRES "epoll-shim")
-endif()
-
 check_include_file("sys/inotify.h" HAS_INOTIFY)
 pkg_check_modules(inotify IMPORTED_TARGET libinotify)
 if(NOT HAS_INOTIFY AND inotify_FOUND)

@@ -8,7 +8,6 @@
 #include <functional>
 #include <expected>
 #include <string>
-#include <sys/poll.h>
 
 #include "LogTypes.hpp"
 #include "BackendServices.hpp"

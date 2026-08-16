@@ -1,5 +1,6 @@
 #include <hyprtoolkit/core/Timer.hpp>
 #include "Memory.hpp"
+#include "../core/InternalBackend.hpp"
 
 using namespace Hyprtoolkit;
 
@@ -14,6 +15,9 @@ bool CTimer::passed() {
 
 void CTimer::cancel() {
     m_wasCancelled = true;
+
+    if (const auto backend = g_waylandBackend.lock())
+        backend->cancelTimer(this);
 }
 
 bool CTimer::cancelled() {
@@ -26,6 +30,9 @@ void CTimer::call(ASP<CTimer> self) {
 
 void CTimer::updateTimeout(std::chrono::steady_clock::duration timeout) {
     m_expires = std::chrono::steady_clock::now() + timeout;
+
+    if (const auto backend = g_waylandBackend.lock())
+        backend->updateTimer(this, m_expires);
 }
 
 float CTimer::leftMs() {
