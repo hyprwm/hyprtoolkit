@@ -20,15 +20,17 @@ SP<CSpinboxSpinner> CSpinboxSpinner::create(SP<CSpinboxElement> data) {
     return p;
 }
 
-constexpr float ANGLE_SIZE = 12.F;
-constexpr float INNER_MARG = 2.F;
+constexpr float ANGLE_SIZE        = 12.F;
+constexpr float INNER_MARG        = 2.F;
+constexpr float INNER_GAP         = 6.F;
+constexpr float INNER_FIXED_WIDTH = 2.F * ANGLE_SIZE + 4.F * INNER_GAP + 2.F * INNER_MARG;
 
 CSpinboxSpinner::CSpinboxSpinner(SP<CSpinboxElement> data) : IElement(), m_parent(data) {
     ;
 }
 
 void CSpinboxSpinner::init() {
-    m_layout = CRowLayoutBuilder::begin()->gap(6)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    m_layout = CRowLayoutBuilder::begin()->gap(INNER_GAP)->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
 
     m_layout->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
     m_layout->setPositionMode(HT_POSITION_ABSOLUTE);
@@ -39,6 +41,7 @@ void CSpinboxSpinner::init() {
                   ->color([] { return g_palette->m_colors.text; })
                   ->callback([this] { impl->window->scheduleReposition(impl->self); })
                   ->commence();
+    m_label->setGrow(true, false);
 
     m_background = CRectangleBuilder::begin()
                        ->color([] { return g_palette->m_colors.base; })
@@ -66,8 +69,8 @@ void CSpinboxSpinner::init() {
         .spinner     = m_self,
     });
 
-    m_leftPad  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {0.F, 1.F}})->commence();
-    m_rightPad = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {0.F, 1.F}})->commence();
+    m_leftPad  = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {0.F, 0.F}})->commence();
+    m_rightPad = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {0.F, 0.F}})->commence();
 
     m_layout->addChild(m_leftPad);
     m_layout->addChild(m_left);
@@ -115,7 +118,8 @@ void CSpinboxSpinner::paint() {
 void CSpinboxSpinner::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
     IElement::reposition(box);
 
-    g_positioner->positionChildren(impl->self.lock());
+    g_positioner->position(m_background, impl->position);
+    g_positioner->position(m_layout, impl->position, impl->position.size());
 }
 
 Hyprutils::Math::Vector2D CSpinboxSpinner::size() {
@@ -127,11 +131,11 @@ std::optional<Vector2D> CSpinboxSpinner::preferredSize(const Hyprutils::Math::Ve
 }
 
 std::optional<Vector2D> CSpinboxSpinner::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_layout->preferredSize(parent);
+    return Vector2D{INNER_FIXED_WIDTH, ANGLE_SIZE + 2.F * INNER_MARG};
 }
 
 std::optional<Vector2D> CSpinboxSpinner::maximumSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_layout->preferredSize(parent);
+    return preferredSize(parent);
 }
 
 bool CSpinboxSpinner::acceptsMouseInput() {

@@ -99,11 +99,11 @@ static void selectTextbox() {
 }
 
 static SP<IElement> stretchLayout(std::string&& label, SP<IElement> control) {
-    auto bg = CRectangleBuilder::begin()
-                  ->color([] { return backend->getPalette()->m_colors.alternateBase; })
-                  ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
-                  ->rounding(4)
-                  ->commence();
+    auto bg      = CRectangleBuilder::begin()
+                       ->color([] { return backend->getPalette()->m_colors.alternateBase; })
+                       ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->rounding(4)
+                       ->commence();
     auto layoutE = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
     auto labelE  = CTextBuilder::begin()->text(std::move(label))->color([] { return backend->getPalette()->m_colors.text; })->commence();
     auto nullE   = CNullBuilder::begin()->commence();
@@ -220,8 +220,8 @@ int main(int argc, char** argv, char** envp) {
     auto slider2 = stretchLayout(
         "Big Slider", CSliderBuilder::begin()->max(10000)->val(2500)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, SLIDER_HEIGHT}})->commence());
 
-    auto progress = stretchLayout(
-        "Progress", CProgressBarBuilder::begin()->value(0.42F)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 14.F}})->commence());
+    auto progress =
+        stretchLayout("Progress", CProgressBarBuilder::begin()->value(0.42F)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {0.5F, 14.F}})->commence());
 
     auto combo = stretchLayout(
         "Combo",
@@ -248,11 +248,11 @@ int main(int argc, char** argv, char** envp) {
 
     hiddenSlider = CSliderBuilder::begin()->max(100)->val(69)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, SLIDER_HEIGHT}})->commence();
     hiddenText   = CTextBuilder::begin()
-                     ->text("hi hi overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow")
-                     ->commence();
+                       ->text("hi hi overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow overflow")
+                       ->commence();
 
     auto rowl = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
-    rowl->addChild(CTextBuilder::begin()->text("hello this will be ellipsized woooo oooo ooo oo oo oo oo o oo")->commence());
+    rowl->addChild(CTextBuilder::begin()->text("hello this will be ellipsized woooo oooo ooo oo oo oo oo o oo oo oo o o o oo o o o o o o oo")->commence());
 
     mainLayout->addChild(title);
     mainLayout->addChild(hr);

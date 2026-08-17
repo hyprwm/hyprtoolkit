@@ -31,6 +31,8 @@ namespace Hyprtoolkit::LinearLayout {
 
         std::vector<size_t> sizes;
         sizes.resize(C.size());
+        std::vector<double> preferredSizes;
+        preferredSizes.resize(C.size());
 
         size_t i = 0;
         for (i = 0; i < C.size(); ++i) {
@@ -39,6 +41,7 @@ namespace Hyprtoolkit::LinearLayout {
             Vector2D    cSize = childSize(child);
             if (cSize == Vector2D{-1, -1})
                 cSize = Horizontal ? Vector2D{1.F, box.h} : Vector2D{box.w, 1.F};
+            preferredSizes.at(i) = axisPrimary(cSize);
 
             if (used + axisPrimary(cSize) > MAX + 1) {
                 // we exceeded our available space.
@@ -56,7 +59,7 @@ namespace Hyprtoolkit::LinearLayout {
                     // (needs > 0 below), the current child is dropped and we
                     // expand the previous one to cover the gap; minor visual
                     // artefact in degenerate cases but the layout stays sane.
-                    float needs = (used + axisPrimary(cSize)) - (MAX + 1);
+                    float needs = (used + axisPrimary(cSize)) - MAX;
                     for (int j = (int)i - 1; j >= 0; --j) {
                         const auto& prevChild = C.at(j);
                         const auto  MIN       = prevChild->minimumSize(box.size());
@@ -91,11 +94,12 @@ namespace Hyprtoolkit::LinearLayout {
                         child->impl->setFailedPositioning(true);
                         if (i != 0) {
                             const auto& lastChild = C.at(i - 1);
+                            const auto  AVAILABLE = std::max(0.0, MAX - used);
 
-                            if (lastChild->maximumSize(box.size()) && sizes.at(i - 1) + MAX - used > axisPrimary(*lastChild->maximumSize(box.size())))
+                            if (lastChild->maximumSize(box.size()) && sizes.at(i - 1) + AVAILABLE > axisPrimary(*lastChild->maximumSize(box.size())))
                                 continue; // too bad, we'll have a gap
 
-                            sizes.at(i - 1) += MAX - used;
+                            sizes.at(i - 1) += AVAILABLE;
                         }
                         continue;
                     } else {
@@ -104,15 +108,19 @@ namespace Hyprtoolkit::LinearLayout {
 
                         // recalc used, we changed prior sizes
                         used = 0;
-                        for (const auto& s : sizes)
-                            used += s + gap;
+                        for (size_t j = 0; j <= i; ++j) {
+                            if (!C.at(j)->impl->failedPositioning)
+                                used += sizes.at(j) + gap;
+                        }
 
                         continue;
                     }
                 }
 
                 // squeeze the last element in
-                sizes.at(i) = MAX - used;
+                child->impl->setFailedPositioning(false);
+                sizes.at(i) = std::max(0.0, MAX - used);
+                used        = MAX + gap; // the common final-gap removal below still runs
                 continue;
             }
 
@@ -142,17 +150,19 @@ namespace Hyprtoolkit::LinearLayout {
             if (child->impl->failedPositioning)
                 continue;
 
-            Vector2D cSize = childSize(child);
+            Vector2D     cSize    = childSize(child);
+            const double ROOM     = grows(child) ? 0 : std::max(0.0, MAX - used);
+            const bool   SQUEEZED = sizes.at(i) + ROOM + 1 < preferredSizes.at(i);
 
-            CBox     childBox;
+            CBox         childBox;
             if constexpr (Horizontal) {
                 cSize.y  = std::clamp(cSize.y, 0.0, box.h);
                 childBox = CBox{box.x + (double)cursor, box.y + ((box.h - cSize.y) / 2), (double)sizes.at(i), cSize.y};
-                g_positioner->position(child, childBox, Vector2D{childBox.w + (MAX - used), box.h});
+                g_positioner->position(child, childBox, Vector2D{SQUEEZED ? childBox.w + ROOM : -1, box.h});
             } else {
                 cSize.x  = std::clamp(cSize.x, 0.0, box.w);
                 childBox = CBox{box.x + ((box.w - cSize.x) / 2), box.y + (double)cursor, cSize.x, (double)sizes.at(i)};
-                g_positioner->position(child, childBox, Vector2D{box.w, childBox.h + (MAX - used)});
+                g_positioner->position(child, childBox, Vector2D{box.w, SQUEEZED ? childBox.h + ROOM : -1});
             }
 
             cursor += (size_t)((Horizontal ? childBox.w : childBox.h) + gap);

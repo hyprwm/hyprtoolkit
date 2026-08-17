@@ -8,8 +8,18 @@
 
 #include "../Element.hpp"
 #include "../LinearLayout.hpp"
+#include "../text/Text.hpp"
 
 using namespace Hyprtoolkit;
+
+static Vector2D childSizeForConstraint(const SP<IElement>& child, const Vector2D& constraint, const Vector2D& textConstraint) {
+    const auto CHILD_CONSTRAINT = dynamicPointerCast<CTextElement>(child) ? textConstraint : constraint;
+    if (const auto PREFERRED = child->preferredSize(CHILD_CONSTRAINT))
+        return *PREFERRED;
+    if (const auto MINIMUM = child->minimumSize(CHILD_CONSTRAINT))
+        return *MINIMUM;
+    return {-1, -1};
+}
 
 SP<CColumnLayoutElement> CColumnLayoutElement::create(const SColumnLayoutData& data) {
     auto p          = SP<CColumnLayoutElement>(new CColumnLayoutElement(data));
@@ -51,11 +61,8 @@ Hyprutils::Math::Vector2D CColumnLayoutElement::size() {
 }
 
 Hyprutils::Math::Vector2D CColumnLayoutElement::childSize(Hyprutils::Memory::CSharedPointer<IElement> child) {
-    if (child->preferredSize(impl->position.size()))
-        return *child->preferredSize(impl->position.size());
-    else if (child->minimumSize(impl->position.size()))
-        return *child->minimumSize(impl->position.size());
-    return {-1, -1};
+    const auto CONSTRAINT = impl->position.size();
+    return childSizeForConstraint(child, CONSTRAINT, {CONSTRAINT.x, -1.F});
 }
 
 std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
@@ -64,10 +71,12 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
     if (calc.x != -1 && calc.y != -1)
         return calc;
 
-    Vector2D max;
+    const Vector2D TEXT_CONSTRAINT{calc.x > 0 ? std::max(1.0, calc.x - impl->margin * 2.F) : -1.F, -1.F};
+    Vector2D       max;
     for (const auto& child : impl->children) {
-        max.x = std::max(childSize(child).x, max.x);
-        max.y += childSize(child).y + m_impl->data.gap;
+        const auto CHILD_SIZE = childSizeForConstraint(child, parent, TEXT_CONSTRAINT);
+        max.x                 = std::max(CHILD_SIZE.x, max.x);
+        max.y += CHILD_SIZE.y + m_impl->data.gap;
     }
 
     if (!impl->children.empty())
@@ -88,9 +97,12 @@ std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(con
 }
 
 std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
-    Vector2D min;
+    const auto     CALC            = m_impl->data.size.calculate(parent);
+    const Vector2D TEXT_CONSTRAINT = {CALC.x > 0 ? std::max(1.0, CALC.x - impl->margin * 2.F) : -1.F, -1.F};
+    Vector2D       min;
     for (const auto& child : impl->children) {
-        min.x = std::max(min.x, childSize(child).x);
+        const auto CHILD_SIZE = childSizeForConstraint(child, parent, TEXT_CONSTRAINT);
+        min.x                 = std::max(min.x, CHILD_SIZE.x);
     }
 
     return min;
