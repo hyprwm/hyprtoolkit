@@ -10,19 +10,19 @@
 using namespace Hyprtoolkit;
 
 CRenderbuffer::~CRenderbuffer() {
-    g_openGL->makeEGLCurrent();
+    m_renderer.makeEGLCurrent();
 
     unbind();
     m_framebuffer.release();
     glDeleteRenderbuffers(1, &m_rbo);
 
-    g_openGL->m_proc.eglDestroyImageKHR(g_openGL->m_eglDisplay, m_image);
+    m_renderer.m_proc.eglDestroyImageKHR(m_renderer.m_eglDisplay, m_image);
 }
 
-CRenderbuffer::CRenderbuffer(SP<Aquamarine::IBuffer> buffer, uint32_t format) : m_hlBuffer(buffer), m_drmFormat(format) {
+CRenderbuffer::CRenderbuffer(COpenGLRenderer& renderer, SP<Aquamarine::IBuffer> buffer, uint32_t format) : m_hlBuffer(buffer), m_renderer(renderer), m_drmFormat(format) {
     auto dma = buffer->dmabuf();
 
-    m_image = g_openGL->createEGLImage(dma);
+    m_image = m_renderer.createEGLImage(dma);
     if (m_image == EGL_NO_IMAGE_KHR) {
         g_logger->log(HT_LOG_ERROR, "gl: createEGLImage failed for rbo");
         return;
@@ -30,7 +30,7 @@ CRenderbuffer::CRenderbuffer(SP<Aquamarine::IBuffer> buffer, uint32_t format) : 
 
     glGenRenderbuffers(1, &m_rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
-    g_openGL->m_proc.glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, m_image);
+    m_renderer.m_proc.glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, m_image);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     glGenFramebuffers(1, &m_framebuffer.m_fb);
@@ -46,7 +46,7 @@ CRenderbuffer::CRenderbuffer(SP<Aquamarine::IBuffer> buffer, uint32_t format) : 
 
     m_framebuffer.unbind();
 
-    m_listeners.destroyBuffer = buffer->events.destroy.listen([this] { g_openGL->onRenderbufferDestroy(this); });
+    m_listeners.destroyBuffer = buffer->events.destroy.listen([this] { m_renderer.onRenderbufferDestroy(this); });
 
     m_good = true;
 }

@@ -3,6 +3,7 @@
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
 #include "../../core/InternalBackend.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../../window/ToolkitWindow.hpp"
 #include "../../system/Icons.hpp"
 #include "../../resource/assetCache/AssetCache.hpp"
@@ -108,12 +109,12 @@ void CImageElement::renderTex() {
 
     if (!m_impl->data.sync) {
         // attach listener before enqueueing to avoid missing the finished event
-        m_impl->resource->m_events.finished.listenStatic([this, self = impl->self] {
-            if (!self)
+        m_impl->resource->m_events.finished.listenStatic([this, self = impl->self, lifetime = WP<SBackendLifetime>{g_backendServices->lifetime}] {
+            if (!self || !lifetime)
                 return;
 
-            g_backend->addIdle([this, self = self]() {
-                if (!self)
+            g_backend->addIdle([this, self = self, lifetime] {
+                if (!self || !lifetime)
                     return;
 
                 m_impl->postImageLoad();

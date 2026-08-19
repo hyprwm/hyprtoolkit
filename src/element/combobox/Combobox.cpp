@@ -7,6 +7,7 @@
 #include <hyprtoolkit/element/Button.hpp>
 
 #include "../../core/InternalBackend.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../../layout/Positioner.hpp"
 #include "../../renderer/Renderer.hpp"
 #include "../../window/ToolkitWindow.hpp"
@@ -134,6 +135,9 @@ void CComboboxElement::openDropdown() {
         .pos           = impl->position.pos() - Vector2D{50.F, 0.F} + Vector2D{0.F, impl->position.size().y},
     });
 
+    if (!m_impl->dropdown.popup)
+        return;
+
     m_impl->listeners.popupClosed = m_impl->dropdown.popup->m_events.popupClosed.listen([this, self = m_impl->self] {
         if (!self)
             return;
@@ -170,16 +174,16 @@ void CComboboxElement::openDropdown() {
                                                   ->noBg(true)
                                                   ->alignText(HT_FONT_ALIGN_LEFT)
                                                   ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1.F, DROPDOWN_BUTTON_HEIGHT}})
-                                                  ->onMainClick([i, this, self = m_impl->self](SP<CButtonElement> e) {
-                                                      if (!self)
+                                                  ->onMainClick([i, this, self = m_impl->self, lifetime = WP<SBackendLifetime>{g_backendServices->lifetime}](SP<CButtonElement> e) {
+                                                      if (!self || !lifetime)
                                                           return;
 
                                                       setSelection(i);
                                                       if (m_impl->data.onChanged)
                                                           m_impl->data.onChanged(m_impl->self.lock(), i);
 
-                                                      g_backend->addIdle([this, self = m_impl->self] {
-                                                          if (!self)
+                                                      g_backend->addIdle([this, self = m_impl->self, lifetime] {
+                                                          if (!self || !lifetime)
                                                               return;
 
                                                           closeDropdown();

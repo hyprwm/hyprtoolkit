@@ -10,7 +10,7 @@
 #include "../../renderer/Renderer.hpp"
 #include "../../window/ToolkitWindow.hpp"
 #include "../../core/InternalBackend.hpp"
-#include "../../core/platforms/WaylandPlatform.hpp"
+#include "../../core/BackendContext.hpp"
 #include "../Element.hpp"
 #include "../text/Text.hpp"
 #include "../../helpers/UTF8.hpp"
@@ -354,19 +354,19 @@ void CTextboxElement::init() {
         }
 
         if ((ev.xkbKeysym == XKB_KEY_C || ev.xkbKeysym == XKB_KEY_c) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
-            if (m_impl->hasSelect() && g_waylandPlatform) {
+            if (m_impl->hasSelect() && g_backendServices && g_backendServices->clipboard) {
                 const auto begin = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
                 const auto end   = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
-                g_waylandPlatform->setClipboard(m_impl->data.text.substr(begin, end - begin));
+                g_backendServices->clipboard->setText(m_impl->data.text.substr(begin, end - begin));
             }
             return;
         }
 
         if ((ev.xkbKeysym == XKB_KEY_X || ev.xkbKeysym == XKB_KEY_x) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
-            if (m_impl->hasSelect() && g_waylandPlatform) {
+            if (m_impl->hasSelect() && g_backendServices && g_backendServices->clipboard) {
                 const auto begin = std::min(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
                 const auto end   = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
-                g_waylandPlatform->setClipboard(m_impl->data.text.substr(begin, end - begin));
+                g_backendServices->clipboard->setText(m_impl->data.text.substr(begin, end - begin));
                 m_impl->removeSelectedText();
                 m_impl->updateLabel();
             }
@@ -374,9 +374,9 @@ void CTextboxElement::init() {
         }
 
         if ((ev.xkbKeysym == XKB_KEY_V || ev.xkbKeysym == XKB_KEY_v) && (ev.modMask & Input::HT_MODIFIER_CTRL)) {
-            if (!g_waylandPlatform)
+            if (!g_backendServices || !g_backendServices->clipboard)
                 return;
-            const auto pasted = g_waylandPlatform->readClipboard();
+            const auto pasted = g_backendServices->clipboard->getText();
             if (pasted.empty())
                 return;
 

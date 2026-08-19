@@ -634,9 +634,9 @@ bool CWaylandPlatform::initDmabuf() {
         g_logger->log(HT_LOG_DEBUG, "zwp_linux_dmabuf_v1: opened node {} with fd {}", m_drmState.nodeName, m_drmState.fd);
     }
 
-    m_allocator = Aquamarine::CGBMAllocator::create(m_drmState.fd, g_backend->m_aqBackend);
+    m_allocator = Aquamarine::CGBMAllocator::create(m_drmState.fd, g_waylandBackend->m_aqBackend);
 
-    auto nullBackend = reinterpretPointerCast<Aquamarine::CNullBackend>(g_backend->m_aqBackend->getImplementations().at(0));
+    auto nullBackend = reinterpretPointerCast<Aquamarine::CNullBackend>(g_waylandBackend->m_aqBackend->getImplementations().at(0));
 
     nullBackend->setFormats(m_dmabufFormats);
 

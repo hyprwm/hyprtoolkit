@@ -65,6 +65,11 @@ namespace Hyprtoolkit {
         virtual void setMouseMove(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn);
         virtual void setMouseButton(std::function<void(Input::eMouseButton, bool)>&& fn);
         virtual void setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn);
+        virtual void setReceivesTouch(bool x);
+        virtual void setTouchDown(std::function<void(const Input::STouchEvent&)>&& fn);
+        virtual void setTouchMotion(std::function<void(const Input::STouchEvent&)>&& fn);
+        virtual void setTouchUp(std::function<void(const Input::STouchEvent&)>&& fn);
+        virtual void setTouchCancel(std::function<void(const Input::STouchEvent&)>&& fn);
 
         virtual void setTooltip(std::string&&);
 
@@ -92,6 +97,7 @@ namespace Hyprtoolkit {
 
         virtual bool                                     acceptsMouseInput();
         virtual bool                                     acceptsKeyboardInput();
+        virtual bool                                     acceptsTouchInput();
         virtual ePointerShape                            pointerShape();
         virtual std::function<ePointerShape()>           pointerShapeFn();
         virtual bool                                     alwaysGetMouseInput();

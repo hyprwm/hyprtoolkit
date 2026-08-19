@@ -4,6 +4,7 @@
 #include <hyprtoolkit/palette/Palette.hpp>
 
 #include "InternalBackend.hpp"
+#include "BackendContext.hpp"
 #include "AnimationManager.hpp"
 
 #include "./platforms/WaylandPlatform.hpp"
@@ -37,6 +38,69 @@ using namespace Hyprutils::Memory;
 
 #define SP CSharedPointer
 #define WP CWeakPointer
+
+class CWaylandClipboard final : public IClipboard {
+  public:
+    void setText(const std::string& text) override {
+        g_waylandPlatform->setClipboard(text);
+    }
+
+    std::string getText() override {
+        return g_waylandPlatform->readClipboard();
+    }
+};
+
+class CWaylandTextInput final : public ITextInput {
+  public:
+    void activate(EmbeddedSurfaceID surface, const Hyprutils::Math::CBox& cursorBox, const std::string& surroundingText, size_t cursor) override {
+        if (!g_waylandPlatform->m_waylandState.textInput)
+            return;
+
+        if (!g_waylandPlatform->m_waylandState.imState.enabled) {
+            g_waylandPlatform->m_waylandState.textInput->sendEnable();
+            g_waylandPlatform->m_waylandState.imState.enabled = true;
+        }
+
+        g_waylandPlatform->m_waylandState.textInput->sendSetCursorRectangle(cursorBox.x, cursorBox.y, cursorBox.w, cursorBox.h);
+        g_waylandPlatform->m_waylandState.textInput->sendCommit();
+    }
+
+    void deactivate(EmbeddedSurfaceID surface) override {
+        if (!g_waylandPlatform->m_waylandState.textInput || !g_waylandPlatform->m_waylandState.imState.enabled)
+            return;
+
+        g_waylandPlatform->m_waylandState.textInput->sendDisable();
+        g_waylandPlatform->m_waylandState.imState.enabled = false;
+    }
+};
+
+class CWaylandCursor final : public ICursor {
+  public:
+    void setShape(EmbeddedSurfaceID surface, ePointerShape shape) override {
+        g_waylandPlatform->setCursor(shape);
+    }
+};
+
+class CWaylandOutputProvider final : public IOutputProvider {
+  public:
+    std::vector<SP<IOutput>> outputs() override {
+        return std::vector<SP<IOutput>>(g_waylandPlatform->m_outputs.begin(), g_waylandPlatform->m_outputs.end());
+    }
+};
+
+class CWaylandSessionLockProvider final : public ISessionLockProvider {
+  public:
+    std::expected<SP<ISessionLockState>, eSessionLockError> acquire() override {
+        if (!g_waylandPlatform->m_waylandState.sessionLock)
+            return std::unexpected(LOCK_ERROR_PLATFORM_UNINITIALIZED);
+
+        const auto lockState = g_waylandPlatform->aquireSessionLock();
+        if (!lockState || lockState->m_denied)
+            return std::unexpected(LOCK_ERROR_DENIED);
+
+        return lockState;
+    }
+};
 
 CBackend::CBackend() {
     pipe(m_sLoopState.exitfd);
@@ -89,25 +153,48 @@ SP<IBackend> IBackend::create() {
     if (!g_logger)
         g_logger = makeShared<CLogger>();
 
-    g_backend = SP<CBackend>(new CBackend());
-    auto bk   = g_backend;
-    g_config  = makeShared<CConfigManager>();
+    auto backend     = SP<CBackend>(new CBackend());
+    g_backend        = backend;
+    g_waylandBackend = backend;
+    auto bk          = g_backend;
+
+    g_backendServices             = makeUnique<SBackendServices>(makeDefaultBackendServices());
+    g_backendServices->eventLoop  = dynamicPointerCast<IEventLoop>(backend);
+    g_backendServices->openWindow = [weak = WP<CBackend>{backend}](const SWindowCreationData& data) -> SP<IWindow> {
+        if (const auto locked = weak.lock())
+            return locked->openWindow(data);
+        return nullptr;
+    };
+    g_backendServices->doOnReadable = [weak = WP<CBackend>{backend}](Hyprutils::OS::CFileDescriptor fd, std::function<void()>&& callback) {
+        if (const auto locked = weak.lock())
+            locked->doOnReadable(std::move(fd), std::move(callback));
+    };
+    g_config = makeShared<CConfigManager>();
     g_config->parse();
     g_palette     = CPalette::palette();
     g_iconFactory = SP<CSystemIconFactory>(new CSystemIconFactory());
-    if (!g_backend->m_aqBackend || !g_backend->m_aqBackend->start()) {
+    if (!backend->m_aqBackend || !backend->m_aqBackend->start()) {
         g_logger->log(HT_LOG_ERROR, "couldn't start aq backend");
+        g_backendServices.reset();
+        g_waylandBackend.reset();
         g_backend.reset();
         return nullptr;
     }
     g_waylandPlatform = makeUnique<CWaylandPlatform>();
     if (!g_waylandPlatform->attempt()) {
         g_waylandPlatform = nullptr;
+        g_backendServices.reset();
+        g_waylandBackend.reset();
         g_backend.reset();
         return nullptr;
     }
-    g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
-    g_renderer = g_openGL;
+    g_backendServices->clipboard   = makeShared<CWaylandClipboard>();
+    g_backendServices->textInput   = makeShared<CWaylandTextInput>();
+    g_backendServices->cursor      = makeShared<CWaylandCursor>();
+    g_backendServices->outputs     = makeShared<CWaylandOutputProvider>();
+    g_backendServices->sessionLock = makeShared<CWaylandSessionLockProvider>();
+    g_openGL                       = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
+    g_renderer                     = g_openGL;
 
     // run cleanup while every inline static SP is still alive. by the time
     // ~CBackend reaches static destruction, sibling globals like g_renderer
@@ -135,21 +222,15 @@ SP<CPalette> CBackend::getPalette() {
 }
 
 std::vector<SP<IOutput>> CBackend::getOutputs() {
-    if (!g_waylandPlatform)
+    if (!g_backendServices)
         return {};
-
-    return std::vector<SP<IOutput>>(g_waylandPlatform->m_outputs.begin(), g_waylandPlatform->m_outputs.end());
+    return g_backendServices->outputs->outputs();
 }
 
 std::expected<SP<ISessionLockState>, eSessionLockError> CBackend::aquireSessionLock() {
-    if (!g_waylandPlatform)
+    if (!g_backendServices)
         return std::unexpected(LOCK_ERROR_PLATFORM_UNINITIALIZED);
-
-    auto lockState = g_waylandPlatform->aquireSessionLock();
-    if (!lockState || lockState->m_denied)
-        return std::unexpected(LOCK_ERROR_DENIED);
-
-    return lockState;
+    return g_backendServices->sessionLock->acquire();
 }
 
 SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
@@ -188,7 +269,7 @@ SP<IWindow> CBackend::openWindow(const SWindowCreationData& data) {
     return w;
 }
 
-ASP<CTimer> CBackend::addTimer(const std::chrono::system_clock::duration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force) {
+ASP<CTimer> CBackend::addTimer(const TimerDuration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb_, void* data, bool force) {
     std::lock_guard<std::mutex> lg(m_sLoopState.timersMutex);
     const auto                  T = m_timers.emplace_back(makeAtomicShared<CTimer>(timeout, cb_, data, force));
     m_sLoopState.timerEvent       = true;
@@ -201,6 +282,19 @@ void CBackend::addIdle(const std::function<void()>& fn) {
     m_idles.emplace_back(makeAtomicShared<std::function<void()>>(fn));
     m_sLoopState.idleEvent = true;
     m_sLoopState.idleCV.notify_all();
+}
+
+void CBackend::cancelPending() {
+    {
+        std::lock_guard<std::mutex> lock(m_sLoopState.timersMutex);
+        m_timers.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(m_sLoopState.idlesMutex);
+        m_idles.clear();
+    }
+    m_sLoopState.userFds.clear();
+    rebuildPollfds();
 }
 
 void CBackend::terminate() {
@@ -220,6 +314,8 @@ void CBackend::terminate() {
         g_renderer.reset();
         g_openGL.reset();
 
+        g_backendServices.reset();
+        g_waylandBackend.reset();
         g_waylandPlatform.reset();
 
         g_asyncResourceGatherer.reset();
@@ -538,6 +634,8 @@ void CBackend::enterLoop() {
     g_renderer.reset();
     g_openGL.reset();
 
+    g_backendServices.reset();
+    g_waylandBackend.reset();
     g_waylandPlatform.reset();
 
     g_asyncResourceGatherer.reset();

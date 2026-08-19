@@ -11,6 +11,7 @@
 #include "../../helpers/Memory.hpp"
 
 namespace Hyprtoolkit {
+    struct SBackendLifetime;
     enum eGLTextureType : uint8_t {
         TEXTURE_INVALID,  // Invalid
         TEXTURE_RGBA,     // 4 channels
@@ -22,7 +23,7 @@ namespace Hyprtoolkit {
 
     class CGLTexture : public IRendererTexture {
       public:
-        CGLTexture() = default;
+        CGLTexture();
         virtual ~CGLTexture();
 
         virtual size_t                    id();
@@ -45,8 +46,11 @@ namespace Hyprtoolkit {
         Hyprutils::Math::Vector2D         m_size      = {};
 
         ASP<Hyprgraphics::IAsyncResource> m_resource;
+        WP<SBackendLifetime>              m_lifetime;
 
         void                              upload();
+        void                              uploadOnContext(WP<CGLTexture> self);
+        void                              releaseFromRenderer();
         void                              allocate();
         void                              bind();
     };

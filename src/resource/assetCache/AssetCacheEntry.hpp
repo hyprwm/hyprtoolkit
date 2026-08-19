@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 #include <hyprutils/signal/Signal.hpp>
@@ -29,6 +30,7 @@ namespace Hyprtoolkit::Asset {
         std::string_view       source() const;
         SP<IRendererTexture>   tex() const;
         eAssetCacheEntryStatus status() const;
+        uint64_t               generation() const;
 
         // if created without a tex, this will mark asset as done
         void texDone(SP<IRendererTexture> tex);
@@ -44,6 +46,7 @@ namespace Hyprtoolkit::Asset {
       private:
         const std::string      m_source;
         SP<IRendererTexture>   m_tex;
-        eAssetCacheEntryStatus m_status = CACHE_ENTRY_PENDING;
+        eAssetCacheEntryStatus m_status     = CACHE_ENTRY_PENDING;
+        uint64_t               m_generation = 0;
     };
 };

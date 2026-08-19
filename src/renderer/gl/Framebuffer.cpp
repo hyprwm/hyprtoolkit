@@ -29,6 +29,8 @@ bool CFramebuffer::alloc(int w, int h, uint32_t drmFormat) {
 
     if (!m_tex) {
         m_tex = makeShared<CGLTexture>();
+        if (g_openGL)
+            g_openGL->registerTexture(m_tex);
         m_tex->allocate();
         m_tex->bind();
         glTexParameteri(m_tex->m_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

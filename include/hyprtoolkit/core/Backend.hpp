@@ -11,6 +11,7 @@
 #include <sys/poll.h>
 
 #include "LogTypes.hpp"
+#include "BackendServices.hpp"
 #include "SessionLock.hpp"
 #include "../palette/Palette.hpp"
 
@@ -67,9 +68,8 @@ namespace Hyprtoolkit {
             Add a timer func. This will return a pointer, but the pointer doesn't need
             to be kept.
         */
-        virtual Hyprutils::Memory::CAtomicSharedPointer<CTimer> addTimer(const std::chrono::system_clock::duration&                                            timeout,
-                                                                         std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data,
-                                                                         bool force = false) = 0;
+        virtual Hyprutils::Memory::CAtomicSharedPointer<CTimer>
+        addTimer(const TimerDuration& timeout, std::function<void(Hyprutils::Memory::CAtomicSharedPointer<CTimer> self, void* data)> cb_, void* data, bool force = false) = 0;
 
         /*
             Add an idle func. This fn will be executed as soon as possible, but

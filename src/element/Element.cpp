@@ -51,6 +51,22 @@ IElement::IElement() {
         if (impl->userFns.mouseAxis)
             impl->userFns.mouseAxis(axis, down);
     });
+    impl->m_externalEvents.touchDown.listenStatic([this](Input::STouchEvent event) {
+        if (impl->userFns.touchDown)
+            impl->userFns.touchDown(event);
+    });
+    impl->m_externalEvents.touchMotion.listenStatic([this](Input::STouchEvent event) {
+        if (impl->userFns.touchMotion)
+            impl->userFns.touchMotion(event);
+    });
+    impl->m_externalEvents.touchUp.listenStatic([this](Input::STouchEvent event) {
+        if (impl->userFns.touchUp)
+            impl->userFns.touchUp(event);
+    });
+    impl->m_externalEvents.touchCancel.listenStatic([this](Input::STouchEvent event) {
+        if (impl->userFns.touchCancel)
+            impl->userFns.touchCancel(event);
+    });
 }
 
 IElement::~IElement() {
@@ -260,6 +276,10 @@ bool IElement::acceptsKeyboardInput() {
     return false;
 }
 
+bool IElement::acceptsTouchInput() {
+    return impl->userRequestedTouchInput;
+}
+
 void IElement::imCommitNewText(const std::string& text) {
     ;
 }
@@ -290,6 +310,26 @@ void IElement::setMouseButton(std::function<void(Input::eMouseButton, bool)>&& f
 
 void IElement::setMouseAxis(std::function<void(Input::eAxisAxis, float)>&& fn) {
     impl->userFns.mouseAxis = std::move(fn);
+}
+
+void IElement::setReceivesTouch(bool x) {
+    impl->userRequestedTouchInput = x;
+}
+
+void IElement::setTouchDown(std::function<void(const Input::STouchEvent&)>&& fn) {
+    impl->userFns.touchDown = std::move(fn);
+}
+
+void IElement::setTouchMotion(std::function<void(const Input::STouchEvent&)>&& fn) {
+    impl->userFns.touchMotion = std::move(fn);
+}
+
+void IElement::setTouchUp(std::function<void(const Input::STouchEvent&)>&& fn) {
+    impl->userFns.touchUp = std::move(fn);
+}
+
+void IElement::setTouchCancel(std::function<void(const Input::STouchEvent&)>&& fn) {
+    impl->userFns.touchCancel = std::move(fn);
 }
 
 void IElement::setRepositioned(std::function<void()>&& fn) {
