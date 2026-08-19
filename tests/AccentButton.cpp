@@ -14,7 +14,7 @@ using namespace Hyprtoolkit;
 
 static SP<IBackend> backend;
 
-int main() {
+int                 main() {
     backend = IBackend::create();
 
     auto window = CWindowBuilder::begin() //

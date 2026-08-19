@@ -45,7 +45,7 @@ CTextElement::CTextElement(const STextData& data) : IElement(), m_impl(makeUniqu
     m_impl->data = data;
     m_impl->parseText();
     m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
-    m_impl->preferred            = m_impl->getTextSizePreferred();
+    m_impl->updatePreferred();
 
     impl->m_externalEvents.mouseMove.listenStatic([this](const Vector2D& pos) {
         m_impl->lastCursorPos = pos;
@@ -68,7 +68,7 @@ void CTextElement::setText(std::string text) {
 
     m_impl->data.text = std::move(text);
     m_impl->parseText();
-    m_impl->preferred = m_impl->getTextSizePreferred();
+    m_impl->updatePreferred();
     m_impl->scheduleTexRefresh();
 
     if (impl->window)
@@ -79,6 +79,9 @@ void CTextElement::replaceData(const STextData& data) {
     const bool TEXT_DIFFERENT  = data.text != m_impl->data.text;
     const auto COLOR           = data.color();
     const bool COLOR_DIFFERENT = COLOR != m_impl->color->goal();
+    const bool ALIGN_DIFFERENT = data.align != m_impl->data.align;
+    const bool MEASUREMENT_DIFFERENT =
+        TEXT_DIFFERENT || data.fontFamily != m_impl->data.fontFamily || data.noEllipsize != m_impl->data.noEllipsize || data.clampSize != m_impl->data.clampSize;
 
     m_impl->data = data;
     if (m_impl->colorAnimationEnabled) {
@@ -91,12 +94,14 @@ void CTextElement::replaceData(const STextData& data) {
         m_impl->needsTexRefresh = m_impl->needsTexRefresh || COLOR_DIFFERENT;
     }
 
-    if (m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize() || TEXT_DIFFERENT) {
-        m_impl->parseText();
+    if (MEASUREMENT_DIFFERENT || m_impl->lastFontSizeUnscaled != m_impl->data.fontSize.ptSize()) {
+        if (TEXT_DIFFERENT)
+            m_impl->parseText();
         m_impl->lastFontSizeUnscaled = m_impl->data.fontSize.ptSize();
-        m_impl->preferred            = m_impl->getTextSizePreferred();
+        m_impl->updatePreferred();
         m_impl->scheduleTexRefresh();
-    }
+    } else if (ALIGN_DIFFERENT)
+        m_impl->scheduleTexRefresh();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
@@ -131,9 +136,12 @@ void CTextElement::paint() {
         return;
     }
 
-    if ((impl->window && impl->window->scale() != m_impl->lastScale) || m_impl->needsTexRefresh) {
-        m_impl->lastScale = impl->window ? impl->window->scale() : 1.F;
-        m_impl->preferred = m_impl->getTextSizePreferred();
+    const bool SCALE_CHANGED = impl->window && impl->window->scale() != m_impl->lastScale;
+    if (SCALE_CHANGED || m_impl->needsTexRefresh) {
+        if (SCALE_CHANGED) {
+            m_impl->lastScale = impl->window->scale();
+            m_impl->updatePreferred();
+        }
         if (!m_impl->resource)
             m_impl->renderTex();
         textureToUse = m_impl->oldTex;
@@ -171,7 +179,12 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
     IElement::reposition(box);
 
     const auto DESIRED = m_impl->preferred;
-    if (DESIRED.x > 0 && DESIRED.y > 0 && !m_impl->data.noEllipsize) {
+    if (m_impl->data.noEllipsize) {
+        if (m_impl->lastMaxSize != Vector2D{-1, -1}) {
+            m_impl->lastMaxSize     = {-1, -1};
+            m_impl->needsTexRefresh = true;
+        }
+    } else if (DESIRED.x > 0 && DESIRED.y > 0) {
         const auto PREV     = m_impl->lastMaxSize;
         m_impl->lastMaxSize = {-1, -1};
         const auto SIZE     = box.size();
@@ -179,23 +192,15 @@ void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils:
             m_impl->lastMaxSize.x = maxSize.x;
         if (maxSize.y > 0)
             m_impl->lastMaxSize.y = maxSize.y;
-        // clamp to the layout's available-room hint (maxSize), already applied above. only fall
-        // back to the actual box when no hint was given: an auto-sized label's box equals its own
-        // (clamped) preferred and feeds back, flip-flopping at the boundary, whereas the room hint
-        // is stable and reflects the real container, so the text settles and recovers.
+        // The room hint is the authoritative constraint. Only use the allocated box when its
+        // layout cannot provide one; neither constraint changes the independent measured result.
         if (maxSize.x <= 0 && SIZE.x + 1 < DESIRED.x)
             m_impl->lastMaxSize.x = SIZE.x;
         if (maxSize.y <= 0 && SIZE.y + 1 < DESIRED.y)
             m_impl->lastMaxSize.y = SIZE.y;
 
-        if (PREV != m_impl->lastMaxSize) {
+        if (PREV != m_impl->lastMaxSize)
             m_impl->needsTexRefresh = true;
-            const auto LAST_PREF    = m_impl->preferred;
-            m_impl->lastScale       = impl->window ? impl->window->scale() : 1.F;
-            m_impl->preferred       = m_impl->getTextSizePreferred();
-            if (impl->window && (std::abs(LAST_PREF.x - m_impl->preferred.x) > 2 || std::abs(LAST_PREF.y - m_impl->preferred.y) > 2))
-                impl->window->scheduleReposition(impl->self.lock());
-        }
     }
 
     g_positioner->positionChildren(impl->self.lock());
@@ -223,7 +228,10 @@ std::optional<Vector2D> CTextElement::maximumSize(const Hyprutils::Math::Vector2
 }
 
 std::optional<Vector2D> CTextElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    return m_impl->preferred;
+    Vector2D constraint = parent;
+    if (constraint == Vector2D{0, 0})
+        constraint = {-1, -1};
+    return m_impl->measure(constraint);
 }
 
 std::optional<Vector2D> CTextElement::minimumSize(const Hyprutils::Math::Vector2D& parent) {
@@ -242,7 +250,7 @@ bool CTextElement::positioningDependsOnChild() {
     return m_impl->data.size.hasAuto();
 }
 
-std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> STextImpl::prepPangoLayout() {
+std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> STextImpl::prepPangoLayout(const Vector2D& constraint) {
     auto                  CAIROSURFACE = makeUnique<CCairoSurface>(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1 /* dummy value */));
     auto                  CAIRO        = cairo_create(CAIROSURFACE->cairo());
 
@@ -286,7 +294,7 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
     PangoRectangle ink, logical;
     pango_layout_get_pixel_extents(layout, &ink, &logical);
 
-    std::optional<Vector2D> maxSize = data.clampSize.value_or(lastMaxSize).round();
+    std::optional<Vector2D> maxSize = constraint.round();
     if (maxSize == Vector2D{0, 0})
         maxSize = std::nullopt;
 
@@ -295,7 +303,7 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
 
     if (maxSize.has_value()) {
         const auto CLAMP_SIZE = maxSize.value();
-        if (!data.noEllipsize && maxSize.has_value() && maxSize->y >= 0)
+        if (!data.noEllipsize && maxSize->y >= 0)
             pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
         if (CLAMP_SIZE.x >= 0)
             pango_layout_set_width(layout, std::min(logical.width * PANGO_SCALE, sc<int>(CLAMP_SIZE.x * PANGO_SCALE)));
@@ -313,7 +321,11 @@ std::tuple<UP<Hyprgraphics::CCairoSurface>, cairo_t*, PangoLayout*, Vector2D> ST
 }
 
 Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
-    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+    return getTextSizePreferred(data.clampSize.value_or(lastMaxSize));
+}
+
+Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred(const Vector2D& maxSize) {
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout(maxSize);
 
     g_object_unref(LAYOUT);
     cairo_destroy(CAIRO);
@@ -321,8 +333,23 @@ Hyprutils::Math::Vector2D STextImpl::getTextSizePreferred() {
     return LAYOUTSIZE / lastScale;
 }
 
+Hyprutils::Math::Vector2D STextImpl::measure(const Vector2D& maxSize) {
+    const auto CONSTRAINT = data.clampSize.value_or(data.noEllipsize ? Vector2D{-1, -1} : maxSize).round();
+    if (lastMeasureConstraint == CONSTRAINT)
+        return lastMeasuredSize;
+
+    lastMeasureConstraint = CONSTRAINT;
+    lastMeasuredSize      = getTextSizePreferred(CONSTRAINT);
+    return lastMeasuredSize;
+}
+
+void STextImpl::updatePreferred() {
+    lastMeasureConstraint.reset();
+    preferred = getTextSizePreferred(data.clampSize.value_or(Vector2D{-1, -1}));
+}
+
 CBox STextImpl::getCharBox(size_t offset) {
-    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout(data.clampSize.value_or(lastMaxSize));
 
     PangoRectangle rect;
 
@@ -344,7 +371,7 @@ CBox STextImpl::getCharBox(size_t offset) {
 }
 
 std::optional<size_t> STextImpl::vecToOffset(const Vector2D& vec) {
-    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout();
+    auto [CAIROSURFACE, CAIRO, LAYOUT, LAYOUTSIZE] = prepPangoLayout(data.clampSize.value_or(lastMaxSize));
 
     auto pangoX = sc<int>(vec.x * PANGO_SCALE), //
         pangoY  = sc<int>(vec.y * PANGO_SCALE);
@@ -384,10 +411,7 @@ Vector2D STextImpl::unscale(const Vector2D& x) {
 }
 
 void STextImpl::scheduleTexRefresh() {
-    if (data.async) {
-        needsTexRefresh = true;
-        return;
-    }
+    needsTexRefresh = true;
 }
 
 void STextImpl::renderTex() {
@@ -400,7 +424,11 @@ void STextImpl::renderTex() {
 
     waitingForTex = true;
 
-    lastScale = self->impl->window ? self->impl->window->scale() : 1.F;
+    const auto SCALE = self->impl->window ? self->impl->window->scale() : 1.F;
+    if (SCALE != lastScale) {
+        lastScale = SCALE;
+        updatePreferred();
+    }
 
     self->impl->damageEntire();
 

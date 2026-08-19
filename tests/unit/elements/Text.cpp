@@ -25,12 +25,8 @@ TEST(Element, text) {
     text.reset();
 }
 
-// an auto label gets no room hint and its box tracks its own clamped preferred, so the box feeds
-// back into the next layout. a transient narrow box on first layout (e.g. before an async icon
-// sibling reflows the row) must not lock the text ellipsized: once the box equals the clamped
-// preferred the clamp has to release and the text recover. #94 compared the box against a cached
-// natural size, so the box-feedback condition stayed true and the ellipsis locked forever. this is
-// the hyprlauncher regression.
+// A transient box constraint affects rendering, but not a later unconstrained measurement. Keeping
+// those independent prevents the rendered result from becoming the next layout's input.
 TEST(Element, textEllipsizeRecoversFromTransientClamp) {
     Tests::Tricks::createBackendSupport();
 
@@ -43,15 +39,12 @@ TEST(Element, textEllipsizeRecoversFromTransientClamp) {
 
     // a transient narrow box on first layout clamps it
     g_positioner->position(text, {{}, {NATURAL * 0.3F, 20.F}}, {-1.F, -1.F});
-    EXPECT_LT(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
-
-    // from here the layout hands the auto label a box equal to its own preferred. feed that back a
-    // few frames: it must converge back to NATURAL, not stay locked at the clamped width.
-    for (int i = 0; i < 4; ++i) {
-        const auto PREF = text->preferredSize({}).value_or(Vector2D{});
-        g_positioner->position(text, {{}, PREF}, {-1.F, -1.F});
-    }
+    EXPECT_LT(text->m_impl->getTextSizePreferred().x, NATURAL);
     EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+
+    const auto PREF = text->preferredSize({}).value_or(Vector2D{});
+    g_positioner->position(text, {{}, PREF}, {-1.F, -1.F});
+    EXPECT_FLOAT_EQ(text->m_impl->getTextSizePreferred().x, NATURAL);
 
     text.reset();
 }
@@ -69,16 +62,65 @@ TEST(Element, textEllipsizeStableUnderRoomHint) {
     const Vector2D tight   = {NATURAL * 0.4F, 20.F};
 
     g_positioner->position(text, widebox, tight);
-    const float CLAMPED = text->preferredSize({}).value_or(Vector2D{}).x;
+    const float CLAMPED = text->m_impl->getTextSizePreferred().x;
     EXPECT_LT(CLAMPED, NATURAL);
 
     // same room again does not flip the size
     g_positioner->position(text, widebox, tight);
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, CLAMPED);
+    EXPECT_FLOAT_EQ(text->m_impl->getTextSizePreferred().x, CLAMPED);
 
     // room grows back: recover to full
     g_positioner->position(text, widebox, {NATURAL + 80.F, 20.F});
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    EXPECT_FLOAT_EQ(text->m_impl->getTextSizePreferred().x, NATURAL);
 
     text.reset();
+}
+
+TEST(Element, textMeasurementUsesSuppliedConstraint) {
+    Tests::Tricks::createBackendSupport();
+
+    auto           text    = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
+    const Vector2D natural = text->preferredSize({}).value_or(Vector2D{});
+    const Vector2D widthOnlyConstraint{natural.x * 0.4F, -1.F};
+    const Vector2D boundedConstraint{widthOnlyConstraint.x, natural.y};
+    const Vector2D wrapped = text->preferredSize(widthOnlyConstraint).value_or(Vector2D{});
+    const Vector2D bounded = text->preferredSize(boundedConstraint).value_or(Vector2D{});
+
+    EXPECT_LE(wrapped.x, widthOnlyConstraint.x);
+    EXPECT_GT(wrapped.y, natural.y);
+    EXPECT_LE(bounded.x, boundedConstraint.x);
+    EXPECT_LE(bounded.y, boundedConstraint.y);
+
+    auto unwrapped = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->noEllipsize(true)->commence();
+    EXPECT_EQ(unwrapped->preferredSize(widthOnlyConstraint), unwrapped->preferredSize({}));
+
+    text.reset();
+    unwrapped.reset();
+}
+
+TEST(Element, textNoEllipsizeClearsDynamicConstraint) {
+    Tests::Tricks::createBackendSupport();
+
+    auto       text    = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
+    const auto NATURAL = text->preferredSize({}).value_or(Vector2D{});
+    g_positioner->position(text, {{}, {NATURAL.x * 0.4F, NATURAL.y}}, {NATURAL.x * 0.4F, NATURAL.y});
+    ASSERT_GT(text->m_impl->lastMaxSize.x, 0.F);
+
+    text->rebuild()->noEllipsize(true)->commence();
+    g_positioner->position(text, {{}, {NATURAL.x * 0.4F, NATURAL.y}}, {NATURAL.x * 0.4F, NATURAL.y});
+    EXPECT_EQ(text->m_impl->lastMaxSize, Vector2D(-1, -1));
+    EXPECT_EQ(text->m_impl->getTextSizePreferred(), NATURAL);
+}
+
+TEST(Element, synchronousTextChangesInvalidateTexture) {
+    Tests::Tricks::createBackendSupport();
+
+    auto text                     = CTextBuilder::begin()->text("Before")->async(false)->commence();
+    text->m_impl->needsTexRefresh = false;
+    text->setText("After");
+    EXPECT_TRUE(text->m_impl->needsTexRefresh);
+
+    text->m_impl->needsTexRefresh = false;
+    text->rebuild()->align(HT_FONT_ALIGN_RIGHT)->commence();
+    EXPECT_TRUE(text->m_impl->needsTexRefresh);
 }

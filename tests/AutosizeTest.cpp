@@ -15,14 +15,11 @@ static SP<IBackend>          backend;
 static SP<CRectangleElement> anchor;
 static int                   step = 0;
 
-static void schedule();
-static void tick(Hyprutils::Memory::CAtomicSharedPointer<CTimer>, void*) {
+static void                  schedule();
+static void                  tick(Hyprutils::Memory::CAtomicSharedPointer<CTimer>, void*) {
     const float sizes[][2] = {{240, 80}, {300, 200}, {500, 350}, {180, 120}, {900, 700}};
     const auto& s          = sizes[step++ % 5];
-    anchor->rebuild()
-        ->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })
-        ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {s[0], s[1]}})
-        ->commence();
+    anchor->rebuild()->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {s[0], s[1]}})->commence();
     schedule();
 }
 static void schedule() {
@@ -58,7 +55,10 @@ int main() {
 
     schedule();
 
-    window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] { w->close(); backend->destroy(); });
+    window->m_events.closeRequest.listenStatic([w = WP<IWindow>{window}] {
+        w->close();
+        backend->destroy();
+    });
     window->open();
 
     backend->enterLoop();
