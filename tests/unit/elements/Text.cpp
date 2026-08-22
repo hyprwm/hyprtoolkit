@@ -8,6 +8,13 @@
 #include <layout/Positioner.hpp>
 
 #include "../tricks/Tricks.hpp"
+#include "element/Element.hpp"
+#include "hyprtoolkit/element/Element.hpp"
+#include "hyprtoolkit/element/Null.hpp"
+#include "hyprtoolkit/element/Rectangle.hpp"
+#include "hyprtoolkit/element/RowLayout.hpp"
+#include "hyprtoolkit/types/FontTypes.hpp"
+#include "hyprtoolkit/types/SizeType.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
@@ -25,60 +32,184 @@ TEST(Element, text) {
     text.reset();
 }
 
-// an auto label gets no room hint and its box tracks its own clamped preferred, so the box feeds
-// back into the next layout. a transient narrow box on first layout (e.g. before an async icon
-// sibling reflows the row) must not lock the text ellipsized: once the box equals the clamped
-// preferred the clamp has to release and the text recover. #94 compared the box against a cached
-// natural size, so the box-feedback condition stayed true and the ellipsis locked forever. this is
-// the hyprlauncher regression.
-TEST(Element, textEllipsizeRecoversFromTransientClamp) {
+TEST(Element, textPreferredSize) {
     Tests::Tricks::createBackendSupport();
 
-    auto text = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
+    auto       text = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->noEllipsize(true)->commence();
 
-    // natural width: a generous box, no room hint
-    g_positioner->position(text, {{}, {1000.F, 20.F}}, {-1.F, -1.F});
-    const float NATURAL = text->preferredSize({}).value_or(Vector2D{}).x;
-    EXPECT_GT(NATURAL, 40.F);
+    const auto NATURAL_SIZE = text->preferredSize({0, 0});
+    EXPECT_TRUE(NATURAL_SIZE.has_value());
 
-    // a transient narrow box on first layout clamps it
-    g_positioner->position(text, {{}, {NATURAL * 0.3F, 20.F}}, {-1.F, -1.F});
-    EXPECT_LT(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    const auto CLAMPED_WIDTH = std::floor(NATURAL_SIZE->x * 3 / 4);
 
-    // from here the layout hands the auto label a box equal to its own preferred. feed that back a
-    // few frames: it must converge back to NATURAL, not stay locked at the clamped width.
-    for (int i = 0; i < 4; ++i) {
-        const auto PREF = text->preferredSize({}).value_or(Vector2D{});
-        g_positioner->position(text, {{}, PREF}, {-1.F, -1.F});
-    }
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    const auto WRAPPED_SIZE = text->preferredSize({CLAMPED_WIDTH, NATURAL_SIZE->y * 3});
+    EXPECT_TRUE(WRAPPED_SIZE.has_value());
+    EXPECT_LE(WRAPPED_SIZE->x, CLAMPED_WIDTH);
+    EXPECT_GT(WRAPPED_SIZE->y, NATURAL_SIZE->y);
+
+    text->rebuild()->noEllipsize(false)->commence();
+    const auto ELLIPSIZED_SIZE = text->preferredSize({CLAMPED_WIDTH, NATURAL_SIZE->y * 3});
+    EXPECT_TRUE(ELLIPSIZED_SIZE.has_value());
+    EXPECT_LE(ELLIPSIZED_SIZE->x, CLAMPED_WIDTH);
+    EXPECT_EQ(ELLIPSIZED_SIZE->y, NATURAL_SIZE->y);
+
+    const auto FINAL_NATURAL_SIZE = text->preferredSize({0, 0});
+    EXPECT_TRUE(FINAL_NATURAL_SIZE.has_value());
+    EXPECT_EQ(FINAL_NATURAL_SIZE->x, NATURAL_SIZE->x);
+    EXPECT_EQ(FINAL_NATURAL_SIZE->y, NATURAL_SIZE->y);
 
     text.reset();
 }
 
-// a stable room hint (e.g. the combobox row layout) clamps to the room and stays put, no per-frame
-// flicker at the fit/elide boundary.
-TEST(Element, textEllipsizeStableUnderRoomHint) {
+TEST(Element, textGrowsAgainstNeighbor) {
     Tests::Tricks::createBackendSupport();
 
-    auto        text    = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
-    const float NATURAL = text->preferredSize({}).value_or(Vector2D{}).x;
-    EXPECT_GT(NATURAL, 20.F);
+    const CBox POSITION = {0, 0, 1000, 100};
 
-    const CBox     widebox = {{}, {NATURAL, 20.F}};
-    const Vector2D tight   = {NATURAL * 0.4F, 20.F};
+    auto       layout = CRowLayoutBuilder::begin()->commence();
+    auto       text   = CTextBuilder::begin()->text("Hello World Foo Bar Baz")->commence();
+    auto       rect   = CRectangleBuilder::begin()->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_ABSOLUTE, {1, 10}})->commence();
+    rect->setGrow(true);
 
-    g_positioner->position(text, widebox, tight);
-    const float CLAMPED = text->preferredSize({}).value_or(Vector2D{}).x;
-    EXPECT_LT(CLAMPED, NATURAL);
+    layout->addChild(text);
+    layout->addChild(rect);
 
-    // same room again does not flip the size
-    g_positioner->position(text, widebox, tight);
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, CLAMPED);
+    g_positioner->position(layout, POSITION);
 
-    // room grows back: recover to full
-    g_positioner->position(text, widebox, {NATURAL + 80.F, 20.F});
-    EXPECT_FLOAT_EQ(text->preferredSize({}).value_or(Vector2D{}).x, NATURAL);
+    EXPECT_EQ(rect->impl->position.width + text->impl->position.width, POSITION.width);
+    const auto PREVIOUS_TEXT_WIDTH = text->impl->position.width;
+
+    text->rebuild()->text("Hello World Foo Bar Baz but longer")->commence();
+    g_positioner->position(layout, POSITION);
+
+    EXPECT_EQ(rect->impl->position.width + text->impl->position.width, POSITION.width);
+    EXPECT_GT(text->impl->position.width, PREVIOUS_TEXT_WIDTH);
+
+    text.reset();
+    rect.reset();
+    layout.reset();
+}
+
+TEST(Element, textSideBySide) {
+    Tests::Tricks::createBackendSupport();
+
+    const CBox POSITION = {0, 0, 300, 100};
+
+    auto       text1 = CTextBuilder::begin()
+                     ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
+                     ->text("First longish paragraph goes here. I love Hyprland it is the best.")
+                     ->noEllipsize(true)
+                     ->commence();
+    auto text2 = CTextBuilder::begin()
+                     ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
+                     ->text("Second longish paragraph goes here. Who needs GTK and Qt when you have Hyprtoolkit?")
+                     ->noEllipsize(true)
+                     ->commence();
+    auto       layout = CRowLayoutBuilder::begin()->commence();
+
+    const auto NATURAL_HEIGHT = text1->preferredSize({0, 0})->y;
+
+    layout->addChild(text1);
+    layout->addChild(text2);
+
+    g_positioner->position(layout, POSITION);
+
+    ASSERT_EQ(layout->impl->position.width, POSITION.width);
+    ASSERT_EQ(text1->impl->position.width, POSITION.width / 2);
+    ASSERT_EQ(text2->impl->position.width, POSITION.width / 2);
+    ASSERT_EQ(text1->impl->position.width, text2->impl->position.x);
+    ASSERT_GT(text1->impl->position.height, NATURAL_HEIGHT);
+    ASSERT_GT(text2->impl->position.height, NATURAL_HEIGHT);
+
+    text1.reset();
+    text2.reset();
+    layout.reset();
+}
+
+TEST(Element, textShrinkingThenGrowing) {
+    Tests::Tricks::createBackendSupport();
+
+    // This container is necessary because we need the text to auto size itself
+    // if we position it directly, the text sizing code is never run
+    auto container = CNullBuilder::begin()->commence();
+    auto text      = CTextBuilder::begin()->text("First longish paragraph goes here. I love Hyprland it is the best.")->commence();
+
+    container->addChild(text);
+
+    const auto NATURAL_WIDTH = text->preferredSize({0, 0})->x;
+    const auto CLAMPED_WIDTH = std::floor(NATURAL_WIDTH * 3 / 4);
+
+    g_positioner->position(container, {0, 0, CLAMPED_WIDTH, 100});
+    ASSERT_LE(text->impl->position.width, CLAMPED_WIDTH);
+
+    g_positioner->position(container, {0, 0, NATURAL_WIDTH * 2, 100});
+    ASSERT_EQ(text->impl->position.width, NATURAL_WIDTH);
+
+    container.reset();
+    text.reset();
+}
+
+TEST(Element, textChangingSize) {
+    Tests::Tricks::createBackendSupport();
+
+    auto       text = CTextBuilder::begin()->text("First longish paragraph goes here. I love Hyprland it is the best.")->commence();
+
+    const auto FIRST_SIZE = text->preferredSize({0, 0});
+
+    text->rebuild()->fontSize(CFontSize::HT_FONT_H1)->commence();
+
+    const auto SECOND_SIZE = text->preferredSize({0, 0});
+
+    ASSERT_GT(SECOND_SIZE->x, FIRST_SIZE->x);
+    ASSERT_GT(SECOND_SIZE->y, FIRST_SIZE->y);
+
+    text.reset();
+}
+
+TEST(Element, textChangingContent) {
+    Tests::Tricks::createBackendSupport();
+
+    auto       text = CTextBuilder::begin()->text("First longish paragraph goes here.")->commence();
+
+    const auto FIRST_SIZE = text->preferredSize({0, 0});
+
+    text->rebuild()->text("First longish paragraph goes here but event longer")->commence();
+
+    const auto SECOND_SIZE = text->preferredSize({0, 0});
+
+    ASSERT_GT(SECOND_SIZE->x, FIRST_SIZE->x);
+
+    text.reset();
+}
+
+TEST(Element, textClampSize) {
+    Tests::Tricks::createBackendSupport();
+
+    auto       text = CTextBuilder::begin()->text("First longish paragraph goes here.")->commence();
+
+    const auto NATURAL_SIZE  = text->preferredSize({0, 0});
+    const auto CLAMPED_WIDTH = std::floor(NATURAL_SIZE->x * 3 / 4);
+
+    text->rebuild()->clampSize({CLAMPED_WIDTH, -1.0})->commence();
+
+    ASSERT_LE(text->preferredSize({0, 0})->x, CLAMPED_WIDTH);
+
+    text.reset();
+}
+
+TEST(Element, textCharPosition) {
+    Tests::Tricks::createBackendSupport();
+
+    auto text = CTextBuilder::begin()->text("First longish paragraph goes here.")->commence();
+
+    ASSERT_EQ(text->m_impl->getCursorPos(0), 0);
+    ASSERT_GT(text->m_impl->getCursorPos(1), 0);
+    ASSERT_GT(text->m_impl->getCursorPos(1000), 0);
+
+    text->rebuild()->text("")->commence();
+
+    ASSERT_EQ(text->m_impl->getCursorPos(0), 0);
+    ASSERT_EQ(text->m_impl->getCursorPos(1), 0);
 
     text.reset();
 }
