@@ -18,7 +18,7 @@ namespace Hyprtoolkit {
         // in the case of ABSOLUTE, multiplier is the raw value.
         CFontSize(eSizingBase base, float multiplier = 1.F);
 
-        float ptSize();
+        float ptSize() const;
 
       private:
         eSizingBase m_base  = HT_FONT_TEXT;

@@ -354,7 +354,7 @@ void IToolkitWindow::openTooltip(const std::string& s, const Hyprutils::Math::Ve
 
     m_tooltip.bg->addChild(m_tooltip.text);
 
-    const auto EXPECTED_TEXT_SIZE = m_tooltip.text->m_impl->getTextSizePreferred();
+    const auto EXPECTED_TEXT_SIZE = m_tooltip.text->preferredSize({0, 0}).value();
 
     m_tooltip.tooltipPopup = reinterpretPointerCast<IToolkitWindow>(CWindowBuilder::begin()
                                                                         ->type(eWindowType::HT_WINDOW_POPUP)

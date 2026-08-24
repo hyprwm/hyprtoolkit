@@ -9,7 +9,7 @@ CFontSize::CFontSize(eSizingBase base, float mult) : m_base(base), m_value(mult)
     ;
 }
 
-float CFontSize::ptSize() {
+float CFontSize::ptSize() const {
     switch (m_base) {
         case HT_FONT_H1: return g_palette->m_vars.h1Size * m_value;
         case HT_FONT_H2: return g_palette->m_vars.h2Size * m_value;
