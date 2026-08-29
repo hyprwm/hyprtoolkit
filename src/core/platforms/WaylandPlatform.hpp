@@ -62,6 +62,9 @@ namespace Hyprtoolkit {
         WP<CWaylandOutput>           outputForHandle(uint32_t handle);
 
         void                         onKey(uint32_t keycode, bool state);
+        void                         onKeyboardEnter(wl_proxy* surf, wl_array* keys);
+        void                         onKeyboardLeave();
+        void                         resetKeyboardState();
         void                         startRepeatTimer();
         void                         stopRepeatTimer();
 

@@ -365,15 +365,14 @@ void CWaylandPlatform::initSeat() {
             // keyboard focus follows what the compositor focuses, not where the pointer is. without
             // this a freshly opened dialog (e.g. a polkit prompt) gets no keys until the pointer
             // enters it, so a programmatically focused field could not be typed into.
-            m_waylandState.keyboard->setEnter([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf, wl_array* keys) {
-                if (auto w = windowForSurf(surf); w)
-                    m_keyboardWindow = w;
-            });
+            m_waylandState.keyboard->setEnter([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf, wl_array* keys) { onKeyboardEnter(surf, keys); });
 
-            m_waylandState.keyboard->setLeave([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf) { m_keyboardWindow.reset(); });
+            m_waylandState.keyboard->setLeave([this](CCWlKeyboard* r, uint32_t serial, wl_proxy* surf) { onKeyboardLeave(); });
 
-        } else if (!HAS_KEYBOARD && m_waylandState.keyboard)
+        } else if (!HAS_KEYBOARD && m_waylandState.keyboard) {
+            onKeyboardLeave();
             m_waylandState.keyboard.reset();
+        }
 
         if (HAS_POINTER && !m_waylandState.pointer) {
             m_waylandState.pointer = makeShared<CCWlPointer>(m_waylandState.seat->sendGetPointer());
@@ -389,12 +388,8 @@ void CWaylandPlatform::initSeat() {
                 w->mouseEnter(local);
                 m_currentWindow   = w;
                 m_lastEnterSerial = serial;
-                m_currentMods     = 0;
 
                 setCursor(HT_POINTER_ARROW);
-
-                m_waylandState.seatState.pressedKeys.clear();
-                stopRepeatTimer();
             });
 
             m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
@@ -405,10 +400,6 @@ void CWaylandPlatform::initSeat() {
 
                 w->mouseLeave();
                 m_currentWindow.reset();
-                m_currentMods = 0;
-
-                m_waylandState.seatState.pressedKeys.clear();
-                stopRepeatTimer();
             });
 
             m_waylandState.pointer->setMotion([this](CCWlPointer* r, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
@@ -728,6 +719,37 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
     m_waylandState.seatState.repeatKeyEvent = e;
     m_keyboardWindow->keyboardKey(e);
     stopRepeatTimer();
+}
+
+void CWaylandPlatform::onKeyboardEnter(wl_proxy* surf, wl_array* keys) {
+    resetKeyboardState();
+    m_keyboardWindow = windowForSurf(surf);
+
+    if (!keys || !keys->data)
+        return;
+
+    const auto KEY_COUNT = keys->size / sizeof(uint32_t);
+    const auto KEYS      = sc<const uint32_t*>(keys->data);
+    m_waylandState.seatState.pressedKeys.assign(KEYS, KEYS + KEY_COUNT);
+}
+
+void CWaylandPlatform::onKeyboardLeave() {
+    m_keyboardWindow.reset();
+    resetKeyboardState();
+}
+
+void CWaylandPlatform::resetKeyboardState() {
+    stopRepeatTimer();
+
+    m_waylandState.seatState.pressedKeys.clear();
+    m_waylandState.seatState.repeatKeyEvent = {.down = false};
+    m_waylandState.seatState.currentLayer   = 0;
+    m_currentMods                           = 0;
+
+    if (m_waylandState.seatState.xkbState)
+        xkb_state_update_mask(m_waylandState.seatState.xkbState, 0, 0, 0, 0, 0, 0);
+    if (m_waylandState.seatState.xkbComposeState)
+        xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
 }
 
 void CWaylandPlatform::onRepeatTimerFire() {
