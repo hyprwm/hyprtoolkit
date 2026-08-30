@@ -563,7 +563,8 @@ Vector2D SElementInternalData::getPreferredSizeGeneric(const CDynamicSize& size,
     if (s.y != -1)
         parentForChild.y = s.y;
 
-    auto max = maxChildSize(parentForChild, grow);
+    // We never want percent children to drive the preferred size of their parent.
+    auto max = maxChildSize(parentForChild, false);
     if (s.x == -1)
         s.x = max.x;
     if (s.y == -1)
