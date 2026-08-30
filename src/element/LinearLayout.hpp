@@ -34,13 +34,14 @@ namespace Hyprtoolkit::LinearLayout {
 
         size_t i = 0;
         for (i = 0; i < C.size(); ++i) {
-            const auto& child = C.at(i);
+            const auto& child       = C.at(i);
+            const float CURRENT_GAP = i == C.size() - 1 ? 0 : gap;
 
             Vector2D    cSize = childSize(child);
             if (cSize == Vector2D{-1, -1})
                 cSize = Horizontal ? Vector2D{1.F, box.h} : Vector2D{box.w, 1.F};
 
-            if (used + axisPrimary(cSize) > MAX + 1) {
+            if (used + axisPrimary(cSize) + CURRENT_GAP > MAX + 1) {
                 // we exceeded our available space.
                 if (!child->minimumSize(box.size())) {
                     // doesn't fit: disable
@@ -50,13 +51,13 @@ namespace Hyprtoolkit::LinearLayout {
 
                 cSize = *child->minimumSize(box.size());
 
-                if (used + axisPrimary(cSize) > MAX + 1) {
+                if (used + axisPrimary(cSize) + CURRENT_GAP > MAX + 1) {
                     // doesn't fit: try to shrink any previous element if it
                     // allows to do so. if we still can't fit after shrinking
                     // (needs > 0 below), the current child is dropped and we
                     // expand the previous one to cover the gap; minor visual
                     // artefact in degenerate cases but the layout stays sane.
-                    float needs = (used + axisPrimary(cSize)) - (MAX + 1);
+                    float needs = (used + axisPrimary(cSize) + CURRENT_GAP) - (MAX + 1);
                     for (int j = (int)i - 1; j >= 0; --j) {
                         const auto& prevChild = C.at(j);
                         const auto  MIN       = prevChild->minimumSize(box.size());
@@ -120,9 +121,7 @@ namespace Hyprtoolkit::LinearLayout {
             // can fit: use preferred
             sizes.at(i) = axisPrimary(cSize);
             child->impl->setFailedPositioning(false);
-            used += axisPrimary(cSize);
-            if (i != C.size() - 1)
-                used += gap;
+            used += axisPrimary(cSize) + CURRENT_GAP;
         }
 
 
