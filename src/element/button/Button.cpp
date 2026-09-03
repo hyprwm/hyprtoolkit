@@ -25,16 +25,16 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleBuilder::begin()
-                             ->color([acc = m_impl->data.accent, nobg = m_impl->data.noBg] {
-                                 if (acc)
+                             ->color([impl = m_impl.get()] {
+                                 if (impl->data.accent)
                                      return g_palette->m_colors.accent;
-                                 if (nobg)
+                                 if (impl->data.noBg)
                                      return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
                                  return g_palette->m_colors.base;
                              })
                              ->rounding(g_palette->m_vars.smallRounding)
-                             ->borderColor([acc = m_impl->data.accent] {
-                                 if (acc)
+                             ->borderColor([impl = m_impl.get()] {
+                                 if (impl->data.accent)
                                      return g_palette->m_colors.accent;
                                  return g_palette->m_colors.alternateBase;
                              })
@@ -46,9 +46,9 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
                         ->text(std::string{data.label})
                         ->fontSize(CFontSize{data.fontSize})
                         ->fontFamily(std::string{data.fontFamily})
-                        ->color([impl = m_impl.get(), acc = m_impl->data.accent] {
+                        ->color([impl = m_impl.get()] {
                             auto c = g_palette->m_colors.text;
-                            if (acc)
+                            if (impl->data.accent)
                                 c = g_palette->m_colors.accent.asOkLab().l > 0.5 ? g_palette->m_colors.background : g_palette->m_colors.brightText;
                             if (!impl->data.enabled)
                                 c.a *= 0.5F;
@@ -179,13 +179,45 @@ SP<CButtonBuilder> CButtonElement::rebuild() {
 void CButtonElement::replaceData(const SButtonData& data) {
     m_impl->data = data;
 
-    m_impl->label->rebuild()->text(std::string{data.label})->commence();
-    m_impl->label->recheckColor();
+    m_impl->background->rebuild()
+        ->color([impl = m_impl.get()] {
+            if (impl->data.accent)
+                return g_palette->m_colors.accent;
+            if (impl->data.noBg)
+                return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
+            return g_palette->m_colors.base;
+        })
+        ->borderColor([impl = m_impl.get()] {
+            if (impl->data.accent)
+                return g_palette->m_colors.accent;
+            return g_palette->m_colors.alternateBase;
+        })
+        ->borderThickness(data.noBorder ? 0 : 1)
+        ->commence();
+
+    m_impl->label->rebuild()
+        ->text(std::string{data.label})
+        ->fontSize(CFontSize{data.fontSize})
+        ->fontFamily(std::string{data.fontFamily})
+        ->color([impl = m_impl.get()] {
+            auto c = g_palette->m_colors.text;
+            if (impl->data.accent)
+                c = g_palette->m_colors.accent.asOkLab().l > 0.5 ? g_palette->m_colors.background : g_palette->m_colors.brightText;
+            if (!impl->data.enabled)
+                c.a *= 0.5F;
+            return c;
+        })
+        ->size(data.ellipsize ? CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}} :
+                                CDynamicSize{CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1.F, 1.F}})
+        ->align(data.alignText)
+        ->noEllipsize(!data.ellipsize)
+        ->commence();
 
     m_impl->label->setPositionFlag(HT_POSITION_FLAG_ALL, false);
     m_impl->label->setPositionFlag(
         m_impl->data.alignText == HT_FONT_ALIGN_CENTER ? HT_POSITION_FLAG_CENTER : (m_impl->data.alignText == HT_FONT_ALIGN_RIGHT ? HT_POSITION_FLAG_RIGHT : HT_POSITION_FLAG_LEFT),
         true);
+    m_impl->label->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
