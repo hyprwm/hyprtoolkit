@@ -50,6 +50,28 @@ TEST(Element, scrollAreaClampsToContentOverflow) {
     root.reset();
 }
 
+TEST(Element, scrollAreaRebuild) {
+    Tests::Tricks::createBackendSupport();
+
+    const CBox area = {{}, {200, 100}};
+
+    auto       root    = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {area.w, area.h}})->commence();
+    auto       scroll  = CScrollAreaBuilder::begin()->scrollY(true)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    auto       content = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 500}})->commence();
+
+    scroll->addChild(content);
+    root->addChild(scroll);
+    g_positioner->position(root, area);
+    g_positioner->positionChildren(root);
+
+    const auto rebuilt = scroll->rebuild()->blockUserScroll(true)->commence();
+    scroll->setScroll({0, 100});
+    scroll->impl->m_externalEvents.mouseAxis.emit(Input::AXIS_AXIS_VERTICAL, 50.F);
+
+    EXPECT_EQ(rebuilt, scroll);
+    EXPECT_FLOAT_EQ(scroll->getCurrentScroll().y, 100.F);
+}
+
 // the scrollbar is a real element in the tree now (so it can take input). its thumb
 // must be sized to the visible fraction and slide from top to bottom as you scroll.
 TEST(Element, scrollAreaThumbTracksScroll) {
