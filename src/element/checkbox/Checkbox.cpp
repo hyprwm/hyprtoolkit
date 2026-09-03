@@ -12,6 +12,31 @@
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
+static SP<IElement> createForeground(SCheckboxImpl* impl) {
+    auto fgColor = [impl] {
+        auto c = g_palette->m_colors.accent;
+        c.a    = impl->data.toggled ? 1.F : 0.F;
+        return c;
+    };
+
+    SP<IElement> foreground;
+    if (impl->data.style == HT_CHECKBOX_STYLE_RADIO)
+        foreground = CRectangleBuilder::begin()
+                         ->color(fgColor)
+                         ->rounding(4)
+                         ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {4.F / 7.F, 4.F / 7.F}})
+                         ->commence();
+    else
+        foreground = CCheckmarkElement::create(SCheckmarkData{
+            .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
+            .color = fgColor,
+        });
+
+    foreground->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    foreground->setPositionFlag(IElement::HT_POSITION_FLAG_CENTER, true);
+    return foreground;
+}
+
 SP<CCheckboxElement> CCheckboxElement::create(const SCheckboxData& data) {
     auto p          = SP<CCheckboxElement>(new CCheckboxElement(data));
     p->impl->self   = p;
@@ -36,28 +61,7 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
     m_impl->background->setPositionMode(HT_POSITION_ABSOLUTE);
     m_impl->background->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
 
-    auto fgColor = [impl = m_impl.get()] {
-        auto c = g_palette->m_colors.accent;
-        c.a    = impl->data.toggled ? 1.F : 0.F;
-        return c;
-    };
-
-    if (RADIO) {
-        m_impl->foreground = CRectangleBuilder::begin()
-                                 ->color(fgColor)
-                                 ->rounding(4)
-                                 ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {4.F / 7.F, 4.F / 7.F}})
-                                 ->commence();
-        m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
-        m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
-    } else {
-        m_impl->foreground = CCheckmarkElement::create(SCheckmarkData{
-            .size  = {CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}},
-            .color = fgColor,
-        });
-        m_impl->foreground->setPositionMode(HT_POSITION_ABSOLUTE);
-        m_impl->foreground->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
-    }
+    m_impl->foreground = createForeground(m_impl.get());
 
     m_impl->background->addChild(m_impl->foreground);
 
@@ -126,9 +130,16 @@ SP<CCheckboxBuilder> CCheckboxElement::rebuild() {
 }
 
 void CCheckboxElement::replaceData(const SCheckboxData& data) {
-    m_impl->data = data;
+    const bool STYLE_CHANGED = m_impl->data.style != data.style;
+    m_impl->data             = data;
 
-    m_impl->foreground->recheckColor();
+    if (STYLE_CHANGED) {
+        m_impl->background->removeChild(m_impl->foreground);
+        m_impl->background->rebuild()->rounding(data.style == HT_CHECKBOX_STYLE_RADIO ? 7 : g_palette->m_vars.smallRounding)->commence();
+        m_impl->foreground = createForeground(m_impl.get());
+        m_impl->background->addChild(m_impl->foreground);
+    } else
+        m_impl->foreground->recheckColor();
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
