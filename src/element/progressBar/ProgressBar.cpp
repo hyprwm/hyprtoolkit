@@ -60,6 +60,7 @@ void SProgressBarImpl::startIndeterminate() {
         return;
 
     foreground->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    foreground->rebuild()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {PROGRESSBAR_PULSE_WIDTH, 1.F}})->commence();
 
     g_animationManager->createAnimation(0.F, phase, g_animationManager->m_animationTree.getConfig("indeterminate"));
 
