@@ -9,8 +9,8 @@ using namespace Hyprutils::Math;
 
 class CEmbeddedTestElement final : public IElement {
   public:
-    static SP<CEmbeddedTestElement> create() {
-        auto element        = makeShared<CEmbeddedTestElement>();
+    static SP<CEmbeddedTestElement> create(bool always = false) {
+        auto element        = makeShared<CEmbeddedTestElement>(always);
         element->impl->self = element;
         return element;
     }
@@ -23,7 +23,14 @@ class CEmbeddedTestElement final : public IElement {
         return impl->position.size();
     }
 
-    CEmbeddedTestElement() = default;
+    bool alwaysGetMouseInput() override {
+        return m_always;
+    }
+
+    explicit CEmbeddedTestElement(bool always = false) : m_always(always) {}
+
+  private:
+    bool m_always = false;
 };
 
 class CEmbeddedSurfaceTest : public testing::Test {
@@ -90,6 +97,26 @@ TEST_F(CEmbeddedSurfaceTest, mouseAxisPreservesDelta) {
     element->impl->m_externalEvents.mouseAxis.emit(Input::AXIS_AXIS_VERTICAL, -2.75F);
 
     EXPECT_FLOAT_EQ(received, -2.75F);
+}
+
+TEST_F(CEmbeddedSurfaceTest, alwaysHoveredElementReceivesPointerEventsOnce) {
+    const auto element = CEmbeddedTestElement::create(true);
+    int        moves = 0, buttons = 0, axes = 0;
+    element->setReceivesMouse(true);
+    element->setMouseMove([&moves](const Vector2D&) { ++moves; });
+    element->setMouseButton([&buttons](Input::eMouseButton, bool) { ++buttons; });
+    element->setMouseAxis([&axes](Input::eAxisAxis, float) { ++axes; });
+    element->reposition({10, 10, 20, 20});
+    m_surface->rootElement()->addChild(element);
+
+    m_surface->pointerEnter({15, 15});
+    m_surface->pointerMotion({16, 16});
+    m_surface->pointerButton(Input::MOUSE_BUTTON_LEFT, true);
+    m_surface->pointerAxis(Input::AXIS_AXIS_VERTICAL, 1.F);
+
+    EXPECT_EQ(moves, 2);
+    EXPECT_EQ(buttons, 1);
+    EXPECT_EQ(axes, 1);
 }
 
 TEST_F(CEmbeddedSurfaceTest, touchIsCapturedByInitialTarget) {
