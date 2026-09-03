@@ -25,7 +25,10 @@ namespace Hyprtoolkit {
         void                      updateValue();
 
         std::string               valueAsText();
-        void                      valueChanged(float perc);
+        void                      setPercentage(float percentage);
+        void                      refreshValue();
+        void                      normalizeValue();
+        float                     percentage() const;
         float                     maxLabelSize();
 
         SP<CRowLayoutElement>     layout;

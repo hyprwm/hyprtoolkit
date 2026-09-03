@@ -22,6 +22,7 @@ SP<CSliderElement> CSliderElement::create(const SSliderData& data) {
 
 CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(makeUnique<SSliderImpl>()) {
     m_impl->data = data;
+    m_impl->normalizeValue();
 
     m_impl->layout = CRowLayoutBuilder::begin()->gap(3)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
 
@@ -57,7 +58,7 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
     m_impl->foreground = CRectangleBuilder::begin()
                              ->color([] { return g_palette->m_colors.accent; })
                              ->rounding(g_palette->m_vars.smallRounding)
-                             ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {(m_impl->data.current / m_impl->data.max), 1.F}})
+                             ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {m_impl->percentage(), 1.F}})
                              ->commence();
 
     m_impl->background->addChild(m_impl->foreground);
@@ -98,28 +99,47 @@ CSliderElement::CSliderElement(const SSliderData& data) : IElement(), m_impl(mak
     impl->grouped = true;
 }
 
-void SSliderImpl::valueChanged(float perc) {
-    data.current = data.max * perc;
-    foreground->rebuild()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {(data.current / data.max), 1.F}})->commence();
+void SSliderImpl::setPercentage(float percentage) {
+    percentage   = std::clamp(percentage, 0.F, 1.F);
+    data.current = data.max <= data.min ? data.min : data.min + (data.max - data.min) * percentage;
+    refreshValue();
+}
+
+void SSliderImpl::refreshValue() {
+    foreground->rebuild()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {percentage(), 1.F}})->commence();
 
     textContainer->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {maxLabelSize(), 1.F}})->commence();
 
     valueText->rebuild()->text(valueAsText())->commence();
 }
 
+void SSliderImpl::normalizeValue() {
+    if (data.max <= data.min) {
+        data.current = data.min;
+        return;
+    }
+
+    data.current = std::clamp(data.current, data.min, data.max);
+}
+
+float SSliderImpl::percentage() const {
+    if (data.max <= data.min)
+        return 0.F;
+
+    return std::clamp((data.current - data.min) / (data.max - data.min), 0.F, 1.F);
+}
+
 void SSliderImpl::updateValue() {
-    CBox box = background->impl->position;
-    // expand grab area for the user.
-    box.h += 10;
-    box.y -= 5;
+    if (background->impl->position.w <= 0.F)
+        return;
 
-    const float CURRENT_VALUE =
-        std::clamp(sc<float>(((lastPosLocal + background->impl->position.pos()).x - background->impl->position.pos().x) / background->impl->position.size().x), 0.F, 1.F);
+    const float POINTER_X  = self->impl->position.x + lastPosLocal.x;
+    const float PERCENTAGE = std::clamp(sc<float>((POINTER_X - background->impl->position.x) / background->impl->position.w), 0.F, 1.F);
 
-    valueChanged(CURRENT_VALUE);
+    setPercentage(PERCENTAGE);
 
     if (data.onChanged)
-        data.onChanged(self.lock(), CURRENT_VALUE);
+        data.onChanged(self.lock(), data.current);
 }
 
 void CSliderElement::paint() {
@@ -145,13 +165,13 @@ SP<CSliderBuilder> CSliderElement::rebuild() {
 }
 
 void CSliderElement::replaceData(const SSliderData& data) {
-    const bool VALUE_CHANGED = data.current != m_impl->data.current;
+    const float PREVIOUS_VALUE = m_impl->data.current;
 
     m_impl->data = data;
+    m_impl->normalizeValue();
+    m_impl->refreshValue();
 
-    if (VALUE_CHANGED) {
-        m_impl->valueChanged(m_impl->data.max != 0 ? m_impl->data.current / m_impl->data.max : 0.F);
-
+    if (m_impl->data.current != PREVIOUS_VALUE) {
         if (data.onChanged)
             data.onChanged(m_impl->self.lock(), m_impl->data.current);
     }
