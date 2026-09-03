@@ -34,3 +34,8 @@ void CAssetCacheEntry::texDone(SP<IRendererTexture> tex) {
     m_status = CACHE_ENTRY_DONE;
     m_events.done.emit();
 }
+
+void CAssetCacheEntry::fail() {
+    m_status = CACHE_ENTRY_FAILED;
+    m_events.done.emit();
+}

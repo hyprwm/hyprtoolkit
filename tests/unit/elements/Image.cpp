@@ -51,3 +51,14 @@ TEST(Element, imageSourcesAreExclusive) {
     EXPECT_TRUE(data.path.empty());
     EXPECT_EQ(data.icon, icon);
 }
+
+TEST(Element, imageCacheEntryReportsFailure) {
+    const auto entry = makeShared<Asset::CAssetCacheEntry>("broken-image");
+    int        done  = 0;
+    entry->m_events.done.listenStatic([&done] { ++done; });
+
+    entry->fail();
+
+    EXPECT_EQ(entry->status(), Asset::CACHE_ENTRY_FAILED);
+    EXPECT_EQ(done, 1);
+}

@@ -14,7 +14,8 @@ namespace Hyprtoolkit {
 namespace Hyprtoolkit::Asset {
     enum eAssetCacheEntryStatus : uint8_t {
         CACHE_ENTRY_PENDING = 0,
-        CACHE_ENTRY_DONE    = 1,
+        CACHE_ENTRY_DONE,
+        CACHE_ENTRY_FAILED,
     };
 
     class CAssetCacheEntry {
@@ -34,6 +35,7 @@ namespace Hyprtoolkit::Asset {
 
         // if created without a tex, this will mark asset as done
         void texDone(SP<IRendererTexture> tex);
+        void fail();
 
         bool operator==(const CAssetCacheEntry& e) const {
             return m_tex == e.m_tex;
