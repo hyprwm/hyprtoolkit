@@ -44,12 +44,12 @@ IElement::IElement() {
         if (impl->userFns.mouseButton)
             impl->userFns.mouseButton(button, down);
     });
-    impl->m_externalEvents.mouseAxis.listenStatic([this](Input::eAxisAxis axis, bool down) {
+    impl->m_externalEvents.mouseAxis.listenStatic([this](Input::eAxisAxis axis, float delta) {
         if (!impl->userRequestedMouseInput)
             return;
 
         if (impl->userFns.mouseAxis)
-            impl->userFns.mouseAxis(axis, down);
+            impl->userFns.mouseAxis(axis, delta);
     });
     impl->m_externalEvents.touchDown.listenStatic([this](Input::STouchEvent event) {
         if (impl->userFns.touchDown)

@@ -78,6 +78,20 @@ TEST_F(CEmbeddedSurfaceTest, mouseInputCanBeDisabled) {
     EXPECT_FALSE(element->acceptsMouseInput());
 }
 
+TEST_F(CEmbeddedSurfaceTest, mouseAxisPreservesDelta) {
+    const auto element  = CEmbeddedTestElement::create();
+    float      received = 0.F;
+    element->setReceivesMouse(true);
+    element->setMouseAxis([&received](Input::eAxisAxis axis, float delta) {
+        EXPECT_EQ(axis, Input::AXIS_AXIS_VERTICAL);
+        received = delta;
+    });
+
+    element->impl->m_externalEvents.mouseAxis.emit(Input::AXIS_AXIS_VERTICAL, -2.75F);
+
+    EXPECT_FLOAT_EQ(received, -2.75F);
+}
+
 TEST_F(CEmbeddedSurfaceTest, touchIsCapturedByInitialTarget) {
     const auto element = CEmbeddedTestElement::create();
     element->setReceivesTouch(true);
