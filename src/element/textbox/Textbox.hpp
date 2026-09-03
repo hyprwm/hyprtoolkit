@@ -72,7 +72,7 @@ namespace Hyprtoolkit {
         size_t                    moveWordForwards() const;
         size_t                    moveCharBackwards() const;
         size_t                    moveCharForwards() const;
-        void                      updateLabel();
+        void                      updateLabel(bool textEdited = false);
         void                      updateCursor();
         size_t                    srcToDisplay(size_t srcByte) const;
         size_t                    displayToSrc(size_t displayByte) const;
