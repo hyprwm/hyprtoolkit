@@ -306,6 +306,9 @@ void IToolkitWindow::unfocusKeyboard() {
 }
 
 void IToolkitWindow::setKeyboardFocus(SP<IElement> e) {
+    if (m_keyboardFocus == e)
+        return;
+
     unfocusKeyboard();
 
     if (!e->acceptsKeyboardInput())
