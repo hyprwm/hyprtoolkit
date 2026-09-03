@@ -26,6 +26,14 @@ void CRowLayoutElement::paint() {
     ; // no-op
 }
 
+SP<CRowLayoutBuilder> CRowLayoutElement::rebuild() {
+    auto p       = SP<CRowLayoutBuilder>(new CRowLayoutBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SRowLayoutData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
+}
+
 void CRowLayoutElement::replaceData(const SRowLayoutData& data) {
     m_impl->data = data;
 
