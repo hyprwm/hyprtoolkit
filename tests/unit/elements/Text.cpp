@@ -32,6 +32,26 @@ TEST(Element, text) {
     text.reset();
 }
 
+TEST(Element, synchronousTextRebuildSchedulesTextureRefresh) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto text = CTextBuilder::begin()->text("Before")->async(false)->commence();
+    EXPECT_FALSE(text->m_impl->needsTexRefresh);
+
+    text->rebuild()->text("After")->commence();
+    EXPECT_TRUE(text->m_impl->needsTexRefresh);
+}
+
+TEST(Element, textClampRebuildSchedulesTextureRefresh) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto text = CTextBuilder::begin()->text("Text")->commence();
+    EXPECT_FALSE(text->m_impl->needsTexRefresh);
+
+    text->rebuild()->clampSize({100, 20})->commence();
+    EXPECT_TRUE(text->m_impl->needsTexRefresh);
+}
+
 TEST(Element, textPreferredSize) {
     Tests::Tricks::createBackendSupport();
 
@@ -95,16 +115,16 @@ TEST(Element, textSideBySide) {
 
     const CBox POSITION = {0, 0, 300, 100};
 
-    auto       text1 = CTextBuilder::begin()
-                     ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
-                     ->text("First longish paragraph goes here. I love Hyprland it is the best.")
-                     ->noEllipsize(true)
-                     ->commence();
-    auto text2 = CTextBuilder::begin()
-                     ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
-                     ->text("Second longish paragraph goes here. Who needs GTK and Qt when you have Hyprtoolkit?")
-                     ->noEllipsize(true)
-                     ->commence();
+    auto       text1  = CTextBuilder::begin()
+                            ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
+                            ->text("First longish paragraph goes here. I love Hyprland it is the best.")
+                            ->noEllipsize(true)
+                            ->commence();
+    auto       text2  = CTextBuilder::begin()
+                            ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {0.5, 1.0}})
+                            ->text("Second longish paragraph goes here. Who needs GTK and Qt when you have Hyprtoolkit?")
+                            ->noEllipsize(true)
+                            ->commence();
     auto       layout = CRowLayoutBuilder::begin()->commence();
 
     const auto NATURAL_HEIGHT = text1->preferredSize({0, 0})->y;

@@ -81,6 +81,7 @@ void CTextElement::replaceData(const STextData& data) {
     const bool ALIGN_DIFFERENT     = data.align != m_impl->data.align;
     const bool ELLIPSIZE_DIFFERENT = data.noEllipsize != m_impl->data.noEllipsize;
     const bool FONT_DIFFERENT      = data.fontFamily != m_impl->data.fontFamily || data.fontSize.ptSize() != m_impl->data.fontSize.ptSize();
+    const bool CLAMP_DIFFERENT     = data.clampSize != m_impl->data.clampSize;
 
     m_impl->data = data;
 
@@ -103,7 +104,7 @@ void CTextElement::replaceData(const STextData& data) {
         m_impl->needsTexRefresh = m_impl->needsTexRefresh || COLOR_DIFFERENT;
     }
 
-    if (ALIGN_DIFFERENT || ELLIPSIZE_DIFFERENT || FONT_DIFFERENT || TEXT_DIFFERENT)
+    if (ALIGN_DIFFERENT || ELLIPSIZE_DIFFERENT || FONT_DIFFERENT || TEXT_DIFFERENT || CLAMP_DIFFERENT)
         m_impl->scheduleTexRefresh();
 
     if (impl->window)
@@ -430,10 +431,7 @@ Vector2D STextImpl::unscale(const Vector2D& x) {
 }
 
 void STextImpl::scheduleTexRefresh() {
-    if (data.async) {
-        needsTexRefresh = true;
-        return;
-    }
+    needsTexRefresh = true;
 }
 
 void STextImpl::renderTex() {
@@ -451,16 +449,16 @@ void STextImpl::renderTex() {
     const Vector2D MAX_SIZE = applyClampSize(self->impl->position.size()) * lastScale;
     const auto     COLOR    = colorAnimationEnabled ? CHyprColor{1.F, 1.F, 1.F, 1.F} : data.color();
     resource                = makeAtomicShared<CTextResource>(CTextResource::STextResourceData{
-                       .text      = parsedText,
-                       .font      = data.fontFamily,
-                       .fontSize  = sc<size_t>(std::round(data.fontSize.ptSize() * lastScale)),
-                       .color     = CColor{CColor::SSRGB{.r = COLOR.r, .g = COLOR.g, .b = COLOR.b}},
-                       .align     = data.align == HT_FONT_ALIGN_LEFT ?
-                               Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
-                               (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
-                       .maxSize   = MAX_SIZE,
-                       .ellipsize = !data.noEllipsize,
-                       .wrap      = data.noEllipsize,
+        .text      = parsedText,
+        .font      = data.fontFamily,
+        .fontSize  = sc<size_t>(std::round(data.fontSize.ptSize() * lastScale)),
+        .color     = CColor{CColor::SSRGB{.r = COLOR.r, .g = COLOR.g, .b = COLOR.b}},
+        .align     = data.align == HT_FONT_ALIGN_LEFT ?
+            Hyprgraphics::CTextResource::TEXT_ALIGN_LEFT :
+            (data.align == HT_FONT_ALIGN_CENTER ? Hyprgraphics::CTextResource::TEXT_ALIGN_CENTER : Hyprgraphics::CTextResource::TEXT_ALIGN_RIGHT),
+        .maxSize   = MAX_SIZE,
+        .ellipsize = !data.noEllipsize,
+        .wrap      = data.noEllipsize,
     });
 
     if (Env::isTrace()) {
