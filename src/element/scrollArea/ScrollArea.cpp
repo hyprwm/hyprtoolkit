@@ -261,6 +261,14 @@ void CScrollAreaElement::paint() {
     ; // no-op, the children draw themselves
 }
 
+SP<CScrollAreaBuilder> CScrollAreaElement::rebuild() {
+    auto p       = SP<CScrollAreaBuilder>(new CScrollAreaBuilder());
+    p->m_self    = p;
+    p->m_data    = makeUnique<SScrollAreaData>(m_impl->data);
+    p->m_element = m_impl->self;
+    return p;
+}
+
 void CScrollAreaElement::replaceData(const SScrollAreaData& data) {
     const bool barChanged = m_impl->data.showScrollbar != data.showScrollbar;
     m_impl->data          = data;
