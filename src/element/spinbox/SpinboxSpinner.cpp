@@ -37,7 +37,10 @@ void CSpinboxSpinner::init() {
     m_label = CTextBuilder::begin()
                   ->text(std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
                   ->color([] { return g_palette->m_colors.text; })
-                  ->callback([this] { impl->window->scheduleReposition(impl->self); })
+                  ->callback([this] {
+                      if (impl->window)
+                          impl->window->scheduleReposition(impl->self);
+                  })
                   ->commence();
 
     m_background = CRectangleBuilder::begin()
@@ -93,19 +96,16 @@ void CSpinboxSpinner::init() {
 }
 
 void CSpinboxSpinner::moveSelection(bool forward) {
-    if (!forward) {
-        // switch left
-        if (m_parent->m_impl->data.currentItem)
-            m_parent->setCurrent(m_parent->m_impl->data.currentItem - 1);
-        else
-            m_parent->setCurrent(m_parent->m_impl->data.items.size() - 1);
-    } else {
-        // switch right
-        if (m_parent->m_impl->data.currentItem)
-            m_parent->setCurrent(m_parent->m_impl->data.currentItem - 1);
-        else
-            m_parent->setCurrent(m_parent->m_impl->data.items.size() - 1);
-    }
+    const auto ITEM_COUNT = m_parent->m_impl->data.items.size();
+    if (ITEM_COUNT == 0)
+        return;
+
+    const auto PREVIOUS = m_parent->m_impl->data.currentItem;
+    const auto CURRENT  = forward ? (PREVIOUS + 1) % ITEM_COUNT : (PREVIOUS + ITEM_COUNT - 1) % ITEM_COUNT;
+    m_parent->setCurrent(CURRENT);
+
+    if (CURRENT != PREVIOUS && m_parent->m_impl->data.onChanged)
+        m_parent->m_impl->data.onChanged(m_parent, CURRENT);
 }
 
 void CSpinboxSpinner::paint() {
