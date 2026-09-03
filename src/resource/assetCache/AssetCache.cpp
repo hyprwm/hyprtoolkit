@@ -14,7 +14,7 @@ SP<CAssetCacheEntry> CAssetCache::get(const std::string_view& source) {
         return nullptr;
 
     for (const auto& e : m_entries) {
-        if (e && e->source() == source && e->generation() == g_backendServices->lifetime->generation)
+        if (e && e->source() == source && e->generation() == g_backendServices->lifetime->generation && e->status() != CACHE_ENTRY_FAILED)
             return e.lock();
     }
 

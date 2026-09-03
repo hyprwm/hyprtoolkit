@@ -19,27 +19,36 @@ namespace Hyprtoolkit {
         void                       setData(std::vector<uint8_t>&& value);
     };
 
-    struct SImageImpl {
-        SImageData                                                            data;
-
-        WP<CImageElement>                                                     self;
-
-        float                                                                 lastScale = 1.F;
-
-        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry>            cacheEntry;
-        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry>            oldCacheEntry; // while loading a new one
+    struct SImageLoadRequest {
+        uint64_t                                                              generation = 0;
         Hyprutils::Memory::CAtomicSharedPointer<Hyprgraphics::CImageResource> resource;
-        Hyprutils::Math::Vector2D                                             size;
+        SP<Asset::CAssetCacheEntry>                                           cacheEntry;
+        eImageFitMode                                                         fitMode = IMAGE_FIT_MODE_STRETCH;
+        std::string                                                           path;
+    };
 
-        bool                                                                  waitingForTex = false, failed = false;
+    struct SImageImpl {
+        SImageData                                                 data;
 
-        std::string                                                           lastPath = "";
-        void*                                                                 lastData = nullptr;
+        WP<CImageElement>                                          self;
 
-        Hyprutils::Math::Vector2D                                             preferredSvgSize();
-        void                                                                  postImageLoad();
-        void                                                                  postImageScheduleRecalc();
-        std::string                                                           getCacheString();
+        float                                                      lastScale = 1.F;
+
+        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry> cacheEntry;
+        Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry> oldCacheEntry; // while loading a new one
+        Hyprutils::Math::Vector2D                                  size;
+
+        bool                                                       waitingForTex = false, failed = false;
+        uint64_t                                                   requestGeneration = 0;
+        std::vector<SP<SImageLoadRequest>>                         requests;
+
+        std::string                                                lastPath = "";
+        void*                                                      lastData = nullptr;
+
+        Hyprutils::Math::Vector2D                                  preferredSvgSize();
+        void                                                       postImageLoad(const SP<SImageLoadRequest>& request);
+        void                                                       postImageScheduleRecalc();
+        std::string                                                getCacheString();
 
         struct {
             Hyprutils::Signal::CHyprSignalListener cacheEntryDone;
