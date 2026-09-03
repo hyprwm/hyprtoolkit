@@ -39,6 +39,11 @@ CComboboxElement::CComboboxElement(const SComboboxData& data) : IElement(), m_im
 }
 
 void CComboboxElement::init() {
+    if (m_impl->data.items.empty())
+        m_impl->data.currentItem = 0;
+    else
+        m_impl->data.currentItem = std::min(m_impl->data.currentItem, m_impl->data.items.size() - 1);
+
     m_impl->layout = CRowLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_ABSOLUTE, {1, 24}})->commence();
 
     m_impl->layout->setPositionFlag(HT_POSITION_FLAG_CENTER, true);
@@ -46,7 +51,7 @@ void CComboboxElement::init() {
     m_impl->layout->setMargin(INNER_MARG);
 
     m_impl->label = CTextBuilder::begin()
-                        ->text(std::string{m_impl->data.items.at(m_impl->data.currentItem)})
+                        ->text(m_impl->data.items.empty() ? "" : std::string{m_impl->data.items.at(m_impl->data.currentItem)})
                         ->color([] { return g_palette->m_colors.text; })
                         ->callback([this] {
                             if (impl->window)
@@ -118,7 +123,7 @@ void CComboboxElement::init() {
 }
 
 void CComboboxElement::openDropdown() {
-    if (m_impl->dropdown.popup)
+    if (m_impl->dropdown.popup || m_impl->data.items.empty() || !impl->window)
         return;
 
     const Vector2D POPUP_SIZE = Vector2D{
@@ -216,15 +221,27 @@ size_t CComboboxElement::current() {
 }
 
 void CComboboxElement::setCurrent(size_t current) {
-    m_impl->data.currentItem = std::min(current, m_impl->data.items.size() - 1);
+    if (m_impl->data.items.empty()) {
+        m_impl->data.currentItem = 0;
+        updateLabel("");
+        return;
+    }
 
-    m_impl->label
-        ->rebuild() //
-        ->text(std::string{m_impl->data.items.at(m_impl->data.currentItem)})
-        ->commence();
+    m_impl->data.currentItem = std::min(current, m_impl->data.items.size() - 1);
+    updateLabel(m_impl->data.items.at(m_impl->data.currentItem));
+}
+
+void CComboboxElement::updateLabel(const std::string& str) {
+    m_impl->label->rebuild()->text(std::string{str})->commence();
 }
 
 void CComboboxElement::replaceData(const SComboboxData& data) {
+    const bool ITEMS_CHANGED = m_impl->data.items != data.items;
+    if (ITEMS_CHANGED && m_impl->dropdown.popup) {
+        closeDropdown();
+        m_impl->dropdown = {};
+    }
+
     m_impl->data = data;
 
     setCurrent(data.currentItem);
