@@ -273,6 +273,11 @@ void CScrollAreaElement::replaceData(const SScrollAreaData& data) {
     const bool barChanged = m_impl->data.showScrollbar != data.showScrollbar;
     m_impl->data          = data;
 
+    if (!m_impl->data.scrollX)
+        m_impl->data.currentScroll.x = 0.F;
+    if (!m_impl->data.scrollY)
+        m_impl->data.currentScroll.y = 0.F;
+
     if (barChanged)
         rebuildScrollbars();
 
@@ -292,6 +297,12 @@ void CScrollAreaElement::reposition(const Hyprutils::Math::CBox& sbox, const Vec
 
     // content is laid out at its natural size now, so this reads the real overflow.
     m_impl->recalcMaxScroll();
+    const auto SCROLL_BEFORE_CLAMP = m_impl->data.currentScroll;
+    m_impl->clampMaxScroll();
+    if (m_impl->data.currentScroll != SCROLL_BEFORE_CLAMP) {
+        m_impl->inner->setAbsolutePosition(-m_impl->data.currentScroll.round());
+        g_positioner->positionChildren(impl->self.lock());
+    }
 
     if (m_impl->data.showScrollbar)
         layoutScrollbars();
@@ -358,9 +369,7 @@ void SScrollAreaImpl::recalcMaxScroll() {
 }
 
 void SScrollAreaImpl::clampMaxScroll() {
-    // recheck limits
-    if (inner->impl->children.empty() || !inner->impl->children.at(0)->impl->positionerData)
-        return;
-
-    data.currentScroll = data.currentScroll.clamp({}, maxScroll());
+    const auto MAX_SCROLL = maxScroll();
+    data.currentScroll.x  = data.scrollX ? std::clamp(data.currentScroll.x, 0.0, MAX_SCROLL.x) : 0.0;
+    data.currentScroll.y  = data.scrollY ? std::clamp(data.currentScroll.y, 0.0, MAX_SCROLL.y) : 0.0;
 }
