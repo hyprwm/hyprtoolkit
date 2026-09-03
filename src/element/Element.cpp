@@ -289,7 +289,7 @@ void IElement::imApplyText() {
 }
 
 void IElement::setReceivesMouse(bool x) {
-    impl->userRequestedMouseInput = true;
+    impl->userRequestedMouseInput = x;
 }
 
 void IElement::setMouseEnter(std::function<void(const Hyprutils::Math::Vector2D&)>&& fn) {
