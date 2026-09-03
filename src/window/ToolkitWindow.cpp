@@ -219,7 +219,7 @@ void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseMove.emit(local - m_mainHoverElement->m_el->impl->position.pos());
 
     for (const auto& e : m_hoveredElements) {
-        if (!e->m_el)
+        if (!e->m_el || (m_mainHoverElement && e->m_el == m_mainHoverElement->m_el))
             continue;
         e->m_el->impl->m_externalEvents.mouseMove.emit(local - e->m_el->impl->position.pos());
     }
@@ -238,7 +238,7 @@ void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseMove.emit(local - m_mainHoverElement->m_el->impl->position.pos());
 
     for (const auto& e : m_hoveredElements) {
-        if (!e->m_el)
+        if (!e->m_el || (m_mainHoverElement && e->m_el == m_mainHoverElement->m_el))
             continue;
         e->m_el->impl->m_externalEvents.mouseMove.emit(local - e->m_el->impl->position.pos());
     }
@@ -265,7 +265,7 @@ void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseButton.emit(button, state);
 
     for (const auto& e : m_hoveredElements) {
-        if (!e->m_el)
+        if (!e->m_el || (m_mainHoverElement && e->m_el == m_mainHoverElement->m_el))
             continue;
         e->m_el->impl->m_externalEvents.mouseButton.emit(button, state);
     }
@@ -277,7 +277,7 @@ void IToolkitWindow::mouseAxis(const Input::eAxisAxis axis, float delta) {
         m_mainHoverElement->m_el->impl->m_externalEvents.mouseAxis.emit(axis, delta);
 
     for (const auto& e : m_hoveredElements) {
-        if (!e->m_el)
+        if (!e->m_el || (m_mainHoverElement && e->m_el == m_mainHoverElement->m_el))
             continue;
         e->m_el->impl->m_externalEvents.mouseAxis.emit(axis, delta);
     }
