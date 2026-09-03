@@ -115,7 +115,6 @@ void CTextboxElement::init() {
         if (impl->window)
             impl->window->setIMTo(impl->position, m_impl->data.text, m_impl->inputState.cursor);
         m_impl->bg->rebuild()->borderColor([] { return g_palette->m_colors.alternateBase.brighten(0.5F); })->commence();
-        m_impl->focusCursorAtClickedChar();
     });
 
     m_impl->listeners.leave = impl->m_externalEvents.keyboardLeave.listen([this] {
@@ -562,7 +561,10 @@ void CTextboxElement::focus(bool focus) {
     if (!impl->window)
         return;
 
-    impl->window->setKeyboardFocus(impl->self.lock());
+    if (focus)
+        impl->window->setKeyboardFocus(impl->self.lock());
+    else if (impl->window->m_keyboardFocus == impl->self)
+        impl->window->unfocusKeyboard();
 }
 
 void CTextboxElement::paint() {

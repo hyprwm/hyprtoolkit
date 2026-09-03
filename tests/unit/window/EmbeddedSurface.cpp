@@ -2,7 +2,10 @@
 
 #include "core/BackendContext.hpp"
 #include "element/Element.hpp"
+#include "hyprtoolkit/element/Textbox.hpp"
 #include "window/EmbeddedSurface.hpp"
+
+#include "../tricks/Tricks.hpp"
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
@@ -117,6 +120,35 @@ TEST_F(CEmbeddedSurfaceTest, alwaysHoveredElementReceivesPointerEventsOnce) {
     EXPECT_EQ(moves, 2);
     EXPECT_EQ(buttons, 1);
     EXPECT_EQ(axes, 1);
+}
+
+TEST_F(CEmbeddedSurfaceTest, textboxFocusCanBeCleared) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto textbox = CTextboxBuilder::begin()->commence();
+    m_surface->rootElement()->addChild(textbox);
+
+    textbox->focus();
+    EXPECT_EQ(m_surface->m_keyboardFocus.lock().get(), textbox.get());
+
+    textbox->focus(false);
+    EXPECT_FALSE(m_surface->m_keyboardFocus);
+}
+
+TEST_F(CEmbeddedSurfaceTest, clearingTextboxFocusDoesNotAffectAnotherTextbox) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto first  = CTextboxBuilder::begin()->commence();
+    const auto second = CTextboxBuilder::begin()->commence();
+    m_surface->rootElement()->addChild(first);
+    m_surface->rootElement()->addChild(second);
+
+    second->focus();
+    first->focus(false);
+    EXPECT_EQ(m_surface->m_keyboardFocus.lock().get(), second.get());
+
+    second->focus();
+    EXPECT_EQ(m_surface->m_keyboardFocus.lock().get(), second.get());
 }
 
 TEST_F(CEmbeddedSurfaceTest, touchIsCapturedByInitialTarget) {
