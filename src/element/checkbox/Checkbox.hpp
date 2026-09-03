@@ -46,14 +46,16 @@ namespace Hyprtoolkit {
     };
 
     struct SCheckboxImpl {
-        SCheckboxData         data;
+        SCheckboxData                                   data;
 
-        WP<CCheckboxElement>  self;
-        SP<CRectangleElement> background;
-        SP<IElement>          foreground;
+        std::function<void(SP<CCheckboxElement>, bool)> onToggledInternal;
 
-        bool                  labelChanged = true;
+        WP<CCheckboxElement>                            self;
+        SP<CRectangleElement>                           background;
+        SP<IElement>                                    foreground;
 
-        bool                  primedForUp = false;
+        bool                                            labelChanged = true;
+
+        bool                                            primedForUp = false;
     };
 }

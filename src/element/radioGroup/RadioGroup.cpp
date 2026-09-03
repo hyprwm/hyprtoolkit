@@ -15,14 +15,7 @@ void CRadioGroup::add(SP<CCheckboxElement> radio) {
     if (!radio)
         return;
 
-    // wrap any existing onToggled so the user's callback still fires, and
-    // tack on the exclusivity + group-level notification afterwards.
-    auto userCb = std::move(radio->m_impl->data.onToggled);
-
-    radio->m_impl->data.onToggled = [userCb = std::move(userCb), groupWp = m_self](SP<CCheckboxElement> elem, bool on) {
-        if (userCb)
-            userCb(elem, on);
-
+    radio->m_impl->onToggledInternal = [groupWp = m_self](SP<CCheckboxElement> elem, bool on) {
         auto group = groupWp.lock();
         if (!group || !on)
             return;

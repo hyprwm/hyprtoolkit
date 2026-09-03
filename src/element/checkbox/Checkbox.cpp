@@ -103,6 +103,8 @@ CCheckboxElement::CCheckboxElement(const SCheckboxData& data) : IElement(), m_im
 
             if (m_impl->data.onToggled)
                 m_impl->data.onToggled(m_impl->self.lock(), m_impl->data.toggled);
+            if (m_impl->onToggledInternal)
+                m_impl->onToggledInternal(m_impl->self.lock(), m_impl->data.toggled);
 
             m_impl->foreground->recheckColor();
         }
