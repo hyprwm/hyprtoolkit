@@ -151,6 +151,28 @@ TEST_F(CEmbeddedSurfaceTest, clearingTextboxFocusDoesNotAffectAnotherTextbox) {
     EXPECT_EQ(m_surface->m_keyboardFocus.lock().get(), second.get());
 }
 
+TEST_F(CEmbeddedSurfaceTest, textboxCallbackWaitsForIMCommit) {
+    Tests::Tricks::createBackendSupport();
+
+    size_t      edits = 0;
+    std::string editedText;
+    const auto  textbox = CTextboxBuilder::begin()
+                              ->onTextEdited([&](SP<CTextboxElement>, const std::string& text) {
+                                 ++edits;
+                                 editedText = text;
+                              })
+                              ->commence();
+    m_surface->rootElement()->addChild(textbox);
+    textbox->focus();
+
+    m_surface->imCommit("é");
+    EXPECT_EQ(edits, 0);
+
+    m_surface->imApply();
+    EXPECT_EQ(edits, 1);
+    EXPECT_EQ(editedText, "é");
+}
+
 TEST_F(CEmbeddedSurfaceTest, touchIsCapturedByInitialTarget) {
     const auto element = CEmbeddedTestElement::create();
     element->setReceivesTouch(true);

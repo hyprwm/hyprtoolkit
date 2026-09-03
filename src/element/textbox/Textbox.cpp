@@ -131,7 +131,7 @@ void CTextboxElement::init() {
 
             if (m_impl->hasSelect()) {
                 m_impl->removeSelectedText();
-                m_impl->updateLabel();
+                m_impl->updateLabel(true);
                 return;
             }
 
@@ -144,7 +144,7 @@ void CTextboxElement::init() {
             m_impl->inputState.selectEnd = m_impl->inputState.cursor;
             m_impl->inputState.cursor    = m_impl->inputState.selectBegin;
             m_impl->removeSelectedText();
-            m_impl->updateLabel();
+            m_impl->updateLabel(true);
             return;
         }
 
@@ -154,7 +154,7 @@ void CTextboxElement::init() {
 
             if (m_impl->hasSelect()) {
                 m_impl->removeSelectedText();
-                m_impl->updateLabel();
+                m_impl->updateLabel(true);
                 return;
             }
 
@@ -167,7 +167,7 @@ void CTextboxElement::init() {
                 m_impl->inputState.selectEnd = m_impl->moveCharForwards();
             m_impl->inputState.cursor = m_impl->inputState.selectBegin;
             m_impl->removeSelectedText();
-            m_impl->updateLabel();
+            m_impl->updateLabel(true);
             return;
         }
 
@@ -367,7 +367,7 @@ void CTextboxElement::init() {
                 const auto end   = std::max(m_impl->inputState.selectBegin, m_impl->inputState.selectEnd);
                 g_backendServices->clipboard->setText(m_impl->data.text.substr(begin, end - begin));
                 m_impl->removeSelectedText();
-                m_impl->updateLabel();
+                m_impl->updateLabel(true);
             }
             return;
         }
@@ -388,7 +388,7 @@ void CTextboxElement::init() {
             m_impl->removeSelectedText();
             m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, text);
             m_impl->inputState.cursor += text.length();
-            m_impl->updateLabel();
+            m_impl->updateLabel(true);
             return;
         }
 
@@ -402,7 +402,7 @@ void CTextboxElement::init() {
 
         m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, ev.utf8);
         m_impl->inputState.cursor += ev.utf8.length();
-        m_impl->updateLabel();
+        m_impl->updateLabel(true);
     });
 
     m_impl->placeholder->setMargin(1);
@@ -497,7 +497,7 @@ std::tuple<ssize_t, ssize_t> CTextboxElement::selection() const {
     return {m_impl->inputState.selectBegin, m_impl->inputState.selectEnd};
 }
 
-void STextboxImpl::updateLabel() {
+void STextboxImpl::updateLabel(bool textEdited) {
     if (data.text.empty()) {
         bgInnerCont->removeChild(text);
         bgInnerCont->addChild(placeholder);
@@ -507,9 +507,9 @@ void STextboxImpl::updateLabel() {
     }
 
     if (!data.password) {
-        auto fullLabel = inputState.imText.empty() ? //
-            data.text :                              //
-            data.text.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
+        auto fullLabel = data.text;
+        if (!inputState.imText.empty())
+            fullLabel.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
 
         text->rebuild()->text(std::move(fullLabel))->commence();
     } else {
@@ -524,7 +524,7 @@ void STextboxImpl::updateLabel() {
 
     updateCursor();
 
-    if (data.onTextEdited)
+    if (textEdited && data.onTextEdited)
         data.onTextEdited(self.lock(), data.text);
 }
 
@@ -537,7 +537,7 @@ void CTextboxElement::imApplyText() {
     m_impl->data.text = m_impl->data.text.insert(m_impl->inputState.cursor, m_impl->inputState.imText);
     m_impl->inputState.cursor += m_impl->inputState.imText.length();
     m_impl->inputState.imText.clear();
-    m_impl->updateLabel();
+    m_impl->updateLabel(true);
 }
 
 size_t STextboxImpl::srcToDisplay(size_t srcByte) const {

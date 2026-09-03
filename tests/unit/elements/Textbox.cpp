@@ -126,6 +126,29 @@ TEST(Element, textboxRebuildClampsEditingState) {
     EXPECT_EQ(textbox->selection(), (std::tuple<ssize_t, ssize_t>{-1, -1}));
 }
 
+TEST(Element, textboxCallbackOnlyReportsUserEdits) {
+    Tests::Tricks::createBackendSupport();
+
+    size_t      edits = 0;
+    std::string editedText;
+    const auto  textbox = CTextboxBuilder::begin()
+                              ->defaultText("initial")
+                              ->onTextEdited([&](SP<CTextboxElement>, const std::string& text) {
+                                 ++edits;
+                                 editedText = text;
+                              })
+                              ->commence();
+
+    EXPECT_EQ(edits, 0);
+    textbox->rebuild()->placeholder("placeholder")->commence();
+    textbox->setText("set");
+    EXPECT_EQ(edits, 0);
+
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.utf8 = "x"});
+    EXPECT_EQ(edits, 1);
+    EXPECT_EQ(editedText, "xset");
+}
+
 // a single-line textbox vertically centers its text, so the selection highlight must be
 // centered too. regression test for the highlight sitting above the glyphs.
 TEST(Element, textboxSingleLineSelectionVCentered) {
