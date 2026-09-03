@@ -42,7 +42,7 @@ void CImageElement::paint() {
     if (impl->window)
         m_impl->lastScale = impl->window->scale();
 
-    if (m_impl->data.icon && m_impl->data.icon->scalable() && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
+    if (m_impl->scalable() && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
         renderTex();
         assetToUse = m_impl->oldCacheEntry;
     }
@@ -205,6 +205,10 @@ std::string SImageImpl::getCacheString() {
     else
         return std::format("icon-{}-{}x{}-{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y,
                            sc<int>(data.fitMode));
+}
+
+bool SImageImpl::scalable() const {
+    return data.icon ? data.icon->scalable() : data.path.ends_with(".svg");
 }
 
 SP<CImageBuilder> CImageElement::rebuild() {

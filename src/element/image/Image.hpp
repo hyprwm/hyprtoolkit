@@ -49,6 +49,7 @@ namespace Hyprtoolkit {
         void                                                       postImageLoad(const SP<SImageLoadRequest>& request);
         void                                                       postImageScheduleRecalc();
         std::string                                                getCacheString();
+        bool                                                       scalable() const;
 
         struct {
             Hyprutils::Signal::CHyprSignalListener cacheEntryDone;

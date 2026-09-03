@@ -62,3 +62,13 @@ TEST(Element, imageCacheEntryReportsFailure) {
     EXPECT_EQ(entry->status(), Asset::CACHE_ENTRY_FAILED);
     EXPECT_EQ(done, 1);
 }
+
+TEST(Element, imageRecognizesScalablePaths) {
+    SImageImpl image;
+
+    image.data.path = "image.png";
+    EXPECT_FALSE(image.scalable());
+
+    image.data.path = "image.svg";
+    EXPECT_TRUE(image.scalable());
+}
