@@ -113,6 +113,19 @@ TEST(Element, textboxRebuildUpdatesEyeIcon) {
     EXPECT_EQ(bg->impl->children.size(), 1);
 }
 
+TEST(Element, textboxRebuildClampsEditingState) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto textbox = CTextboxBuilder::begin()->defaultText("abcdef")->commence();
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_End});
+    textbox->impl->m_externalEvents.key.emit(Input::SKeyboardKeyEvent{.xkbKeysym = XKB_KEY_Left, .modMask = Input::HT_MODIFIER_SHIFT});
+    EXPECT_EQ(textbox->selection(), (std::tuple<ssize_t, ssize_t>{5, 6}));
+
+    textbox->rebuild()->defaultText("x")->commence();
+    EXPECT_EQ(textbox->cursorPos(), 1);
+    EXPECT_EQ(textbox->selection(), (std::tuple<ssize_t, ssize_t>{-1, -1}));
+}
+
 // a single-line textbox vertically centers its text, so the selection highlight must be
 // centered too. regression test for the highlight sitting above the glyphs.
 TEST(Element, textboxSingleLineSelectionVCentered) {

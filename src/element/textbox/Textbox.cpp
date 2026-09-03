@@ -507,7 +507,6 @@ void STextboxImpl::updateLabel() {
     }
 
     if (!data.password) {
-
         auto fullLabel = inputState.imText.empty() ? //
             data.text :                              //
             data.text.insert(inputState.cursor, "<u>" + inputState.imText + "</u>");
@@ -777,8 +776,15 @@ SP<CTextboxBuilder> CTextboxElement::rebuild() {
 void CTextboxElement::replaceData(const STextboxData& data) {
     const bool MULTILINE_CHANGED   = data.multiline != m_impl->data.multiline;
     const bool PLACEHOLDER_CHANGED = data.placeholder != m_impl->data.placeholder;
+    const bool TEXT_CHANGED        = data.text != m_impl->data.text;
 
     m_impl->data = data;
+
+    if (TEXT_CHANGED) {
+        m_impl->inputState.cursor = std::min(m_impl->inputState.cursor, m_impl->data.text.length());
+        m_impl->inputState.imText.clear();
+        m_impl->clearSelect();
+    }
 
     if (MULTILINE_CHANGED) {
         m_impl->cursorCont->setPositionFlag(HT_POSITION_FLAG_VCENTER, !data.multiline);
