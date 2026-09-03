@@ -72,6 +72,47 @@ TEST(Element, scrollAreaRebuild) {
     EXPECT_FLOAT_EQ(scroll->getCurrentScroll().y, 100.F);
 }
 
+TEST(Element, scrollAreaRebuildClampsDisabledAxis) {
+    Tests::Tricks::createBackendSupport();
+
+    const CBox area = {{}, {200, 100}};
+
+    auto       root    = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {area.w, area.h}})->commence();
+    auto       scroll  = CScrollAreaBuilder::begin()->scrollY(true)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    auto       content = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 500}})->commence();
+
+    scroll->addChild(content);
+    root->addChild(scroll);
+    g_positioner->position(root, area);
+    g_positioner->positionChildren(root);
+    scroll->setScroll({0, 200});
+    g_positioner->position(root, area);
+
+    scroll->rebuild()->scrollY(false)->commence();
+    g_positioner->position(root, area);
+
+    EXPECT_EQ(scroll->getCurrentScroll(), Vector2D());
+    EXPECT_FLOAT_EQ(content->impl->position.y, 0.F);
+}
+
+TEST(Element, scrollAreaRepositionClampsNewOverflow) {
+    Tests::Tricks::createBackendSupport();
+
+    auto root    = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 100}})->commence();
+    auto scroll  = CScrollAreaBuilder::begin()->scrollY(true)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    auto content = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {200, 500}})->commence();
+
+    scroll->addChild(content);
+    root->addChild(scroll);
+    g_positioner->position(root, {{}, {200, 100}});
+    scroll->setScroll({0, 400});
+
+    g_positioner->position(root, {{}, {200, 300}});
+
+    EXPECT_FLOAT_EQ(scroll->getCurrentScroll().y, 200.F);
+    EXPECT_FLOAT_EQ(content->impl->position.y, -200.F);
+}
+
 // the scrollbar is a real element in the tree now (so it can take input). its thumb
 // must be sized to the visible fraction and slide from top to bottom as you scroll.
 TEST(Element, scrollAreaThumbTracksScroll) {
