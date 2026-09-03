@@ -2,6 +2,24 @@
 
 using namespace Hyprtoolkit;
 
+void SImageData::setPath(std::string&& value) {
+    path = std::move(value);
+    icon.reset();
+    data.clear();
+}
+
+void SImageData::setIcon(const SP<ISystemIconDescription>& value) {
+    path.clear();
+    icon = value;
+    data.clear();
+}
+
+void SImageData::setData(std::vector<uint8_t>&& value) {
+    path.clear();
+    icon.reset();
+    data = std::move(value);
+}
+
 SP<CImageBuilder> CImageBuilder::begin() {
     SP<CImageBuilder> p = SP<CImageBuilder>(new CImageBuilder());
     p->m_data           = makeUnique<SImageData>();
@@ -10,7 +28,7 @@ SP<CImageBuilder> CImageBuilder::begin() {
 }
 
 SP<CImageBuilder> CImageBuilder::path(std::string&& s) {
-    m_data->path = std::move(s);
+    m_data->setPath(std::move(s));
     return m_self.lock();
 }
 
@@ -35,12 +53,12 @@ SP<CImageBuilder> CImageBuilder::rounding(int x) {
 }
 
 SP<CImageBuilder> CImageBuilder::icon(const SP<ISystemIconDescription>& x) {
-    m_data->icon = x;
+    m_data->setIcon(x);
     return m_self.lock();
 }
 
 SP<CImageBuilder> CImageBuilder::data(std::vector<uint8_t>&& x) {
-    m_data->data = std::move(x);
+    m_data->setData(std::move(x));
     return m_self.lock();
 }
 

@@ -13,6 +13,10 @@ namespace Hyprtoolkit {
         std::vector<uint8_t>       data;
         eImageFitMode              fitMode = IMAGE_FIT_MODE_STRETCH;
         CDynamicSize               size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+
+        void                       setPath(std::string&& value);
+        void                       setIcon(const SP<ISystemIconDescription>& value);
+        void                       setData(std::vector<uint8_t>&& value);
     };
 
     struct SImageImpl {
