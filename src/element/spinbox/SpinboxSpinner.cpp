@@ -35,7 +35,7 @@ void CSpinboxSpinner::init() {
     m_layout->setMargin(INNER_MARG);
 
     m_label = CTextBuilder::begin()
-                  ->text(std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
+                  ->text(m_parent->m_impl->data.items.empty() ? "" : std::string{m_parent->m_impl->data.items.at(m_parent->m_impl->data.currentItem)})
                   ->color([] { return g_palette->m_colors.text; })
                   ->callback([this] {
                       if (impl->window)
@@ -93,6 +93,10 @@ void CSpinboxSpinner::init() {
             ->borderColor([] { return g_palette->m_colors.alternateBase; })
             ->commence();
     });
+}
+
+void CSpinboxSpinner::updateLabel(const std::string& str) {
+    m_label->rebuild()->text(std::string{str})->commence();
 }
 
 void CSpinboxSpinner::moveSelection(bool forward) {

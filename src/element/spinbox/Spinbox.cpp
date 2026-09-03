@@ -27,7 +27,10 @@ CSpinboxElement::CSpinboxElement(const SSpinboxData& data) : IElement(), m_impl(
 }
 
 void CSpinboxElement::init() {
-    RASSERT(!m_impl->data.items.empty(), "Spinbox can't be empty");
+    if (m_impl->data.items.empty())
+        m_impl->data.currentItem = 0;
+    else
+        m_impl->data.currentItem = std::min(m_impl->data.currentItem, m_impl->data.items.size() - 1);
 
     m_impl->layout =
         CRowLayoutBuilder::begin()->gap(3)->size({m_impl->data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
@@ -64,6 +67,8 @@ void CSpinboxElement::replaceData(const SSpinboxData& data) {
     m_impl->data = data;
 
     m_impl->label->rebuild()->text(std::string{data.label})->commence();
+    m_impl->layout->rebuild()->size({data.fill ? CDynamicSize::HT_SIZE_PERCENT : CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    setCurrent(data.currentItem);
 
     if (impl->window)
         impl->window->scheduleReposition(impl->self);
@@ -82,12 +87,14 @@ size_t CSpinboxElement::current() {
 }
 
 void CSpinboxElement::setCurrent(size_t current) {
-    m_impl->data.currentItem = std::min(current, m_impl->data.items.size() - 1);
+    if (m_impl->data.items.empty()) {
+        m_impl->data.currentItem = 0;
+        m_impl->spinner->updateLabel("");
+        return;
+    }
 
-    m_impl->spinner->m_label
-        ->rebuild() //
-        ->text(std::string{m_impl->data.items.at(m_impl->data.currentItem)})
-        ->commence();
+    m_impl->data.currentItem = std::min(current, m_impl->data.items.size() - 1);
+    m_impl->spinner->updateLabel(m_impl->data.items.at(m_impl->data.currentItem));
 }
 
 Hyprutils::Math::Vector2D CSpinboxElement::size() {
@@ -141,7 +148,7 @@ std::optional<Vector2D> CSpinboxElement::maximumSize(const Hyprutils::Math::Vect
 }
 
 bool CSpinboxElement::acceptsMouseInput() {
-    return false;
+    return IElement::acceptsMouseInput();
 }
 
 ePointerShape CSpinboxElement::pointerShape() {
