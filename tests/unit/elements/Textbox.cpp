@@ -99,6 +99,20 @@ TEST(Element, textBoxNewLines) {
     textbox.reset();
 }
 
+TEST(Element, textboxRebuildUpdatesEyeIcon) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto textbox = CTextboxBuilder::begin()->commence();
+    const auto bg      = textbox->impl->children.at(0);
+    ASSERT_EQ(bg->impl->children.size(), 1);
+
+    textbox->rebuild()->eyeIcon(true)->commence();
+    EXPECT_EQ(bg->impl->children.size(), 2);
+
+    textbox->rebuild()->eyeIcon(false)->commence();
+    EXPECT_EQ(bg->impl->children.size(), 1);
+}
+
 // a single-line textbox vertically centers its text, so the selection highlight must be
 // centered too. regression test for the highlight sitting above the glyphs.
 TEST(Element, textboxSingleLineSelectionVCentered) {

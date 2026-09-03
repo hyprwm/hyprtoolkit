@@ -415,25 +415,7 @@ void CTextboxElement::init() {
     m_impl->cursorCont->addChild(m_impl->cursor);
     m_impl->bg->impl->clipChildren = true;
 
-    if (m_impl->data.eyeIcon) {
-        m_impl->eyeBg   = CRectangleBuilder::begin()
-                              ->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })
-                              ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {STextboxImpl::EYE_W, 1.F}})
-                              ->commence();
-        m_impl->eyeText = CTextBuilder::begin()
-                              ->text(std::string{""})
-                              ->color([] { return g_palette->m_colors.text.darken(0.4F); })
-                              ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
-                              ->commence();
-        m_impl->eyeText->setPositionMode(HT_POSITION_ABSOLUTE);
-        m_impl->eyeText->setPositionFlag(HT_POSITION_FLAG_HCENTER, true);
-        m_impl->eyeText->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
-        m_impl->eyeBg->addChild(m_impl->eyeText);
-        m_impl->eyeBg->setPositionMode(HT_POSITION_ABSOLUTE);
-        m_impl->eyeBg->setPositionFlag(HT_POSITION_FLAG_RIGHT, true);
-        m_impl->eyeBg->setPositionFlag(HT_POSITION_FLAG_VCENTER, true);
-        m_impl->bg->addChild(m_impl->eyeBg);
-    }
+    m_impl->updateEyeIcon();
 
     m_impl->updateLabel();
 
@@ -477,6 +459,38 @@ void STextboxImpl::updateEyeSymbol() {
     if (!eyeText)
         return;
     eyeText->rebuild()->text(std::string{data.password ? "" : ""})->commence();
+}
+
+void STextboxImpl::updateEyeIcon() {
+    if (!data.eyeIcon) {
+        if (eyeBg)
+            bg->removeChild(eyeBg);
+        eyeText.reset();
+        eyeBg.reset();
+        eyeHover = false;
+        return;
+    }
+
+    if (eyeBg)
+        return;
+
+    eyeBg   = CRectangleBuilder::begin()
+                  ->color([] { return CHyprColor{0.F, 0.F, 0.F, 0.F}; })
+                  ->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_PERCENT, {EYE_W, 1.F}})
+                  ->commence();
+    eyeText = CTextBuilder::begin()
+                  ->text(std::string{data.password ? "" : ""})
+                  ->color([] { return g_palette->m_colors.text.darken(0.4F); })
+                  ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                  ->commence();
+    eyeText->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    eyeText->setPositionFlag(IElement::HT_POSITION_FLAG_HCENTER, true);
+    eyeText->setPositionFlag(IElement::HT_POSITION_FLAG_VCENTER, true);
+    eyeBg->addChild(eyeText);
+    eyeBg->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+    eyeBg->setPositionFlag(IElement::HT_POSITION_FLAG_RIGHT, true);
+    eyeBg->setPositionFlag(IElement::HT_POSITION_FLAG_VCENTER, true);
+    bg->addChild(eyeBg);
 }
 
 std::tuple<ssize_t, ssize_t> CTextboxElement::selection() const {
@@ -775,6 +789,7 @@ void CTextboxElement::replaceData(const STextboxData& data) {
     if (PLACEHOLDER_CHANGED)
         m_impl->placeholder->rebuild()->text(std::string{data.placeholder})->commence();
 
+    m_impl->updateEyeIcon();
     m_impl->updateLabel();
     m_impl->updateEyeSymbol();
 

@@ -61,6 +61,7 @@ namespace Hyprtoolkit {
 
         void                      clearSelect();
         void                      updateSelect();
+        void                      updateEyeIcon();
         void                      updateEyeSymbol();
         bool                      hasSelect() const;
         void                      removeSelectedText();
