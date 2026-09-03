@@ -74,14 +74,25 @@ void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     if (!m_waylandState.swapchain)
         m_waylandState.swapchain = Aquamarine::CSwapchain::create(g_waylandPlatform->m_allocator, g_waylandBackend->m_aqBackend->getImplementations().at(0));
 
-    m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
-        .length = 2,
-        .size   = pixelSize,
-        .format = g_waylandPlatform->m_dmabufFormats.at(0).drmFormat,
-    });
+    // the compositor can send a fractional-scale update before the first xdg
+    // configure, i.e. while logicalSize is still 0x0. allocating a swapchain
+    // for a zero-sized window makes no sense; wait for a real size.
+    if (pixelSize.x < 1 || pixelSize.y < 1)
+        return;
+
+    if (!m_waylandState.swapchain->reconfigure(Aquamarine::SSwapchainOptions{
+            .length = 2,
+            .size   = pixelSize,
+            .format = g_waylandPlatform->m_dmabufFormats.at(0).drmFormat,
+        }))
+        return;
 
     for (size_t i = 0; i < m_waylandState.wlBuffers.size(); ++i) {
-        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(m_waylandState.swapchain->next(nullptr));
+        auto buf = m_waylandState.swapchain->next(nullptr);
+        if (!buf)
+            return;
+
+        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(buf);
     }
 }
 
