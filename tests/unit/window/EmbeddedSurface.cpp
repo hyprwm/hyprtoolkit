@@ -62,6 +62,22 @@ TEST_F(CEmbeddedSurfaceTest, frameRequestsAreCoalesced) {
     EXPECT_EQ(m_surface->scale(), 2.F);
 }
 
+TEST_F(CEmbeddedSurfaceTest, mouseInputCanBeDisabled) {
+    const auto element = CEmbeddedTestElement::create();
+    int        moves   = 0;
+    element->setMouseMove([&moves](const Vector2D&) { ++moves; });
+
+    element->setReceivesMouse(true);
+    element->impl->m_externalEvents.mouseMove.emit({1, 1});
+    EXPECT_EQ(moves, 1);
+    EXPECT_TRUE(element->acceptsMouseInput());
+
+    element->setReceivesMouse(false);
+    element->impl->m_externalEvents.mouseMove.emit({2, 2});
+    EXPECT_EQ(moves, 1);
+    EXPECT_FALSE(element->acceptsMouseInput());
+}
+
 TEST_F(CEmbeddedSurfaceTest, touchIsCapturedByInitialTarget) {
     const auto element = CEmbeddedTestElement::create();
     element->setReceivesTouch(true);
