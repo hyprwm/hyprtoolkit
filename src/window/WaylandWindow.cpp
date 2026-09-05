@@ -6,6 +6,7 @@
 #include "../element/Element.hpp"
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
+#include "../core/BackendContext.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../core/AnimationManager.hpp"
 
@@ -29,7 +30,8 @@ void CWaylandWindow::open() {
     if (m_open)
         return;
 
-    m_open = true;
+    m_open           = true;
+    m_closeRequested = false;
 
     m_rootElement->impl->window = m_self;
     m_rootElement->impl->breadthfirst([this](SP<IElement> e) { e->impl->window = m_self; });
@@ -119,7 +121,7 @@ void CWaylandWindow::open() {
         }
     });
 
-    m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { m_events.closeRequest.emit(); });
+    m_waylandState.xdgToplevel->setClose([this](CCXdgToplevel* r) { deferCloseRequest(); });
 
     m_waylandState.fractional = makeShared<CCWpFractionalScaleV1>(g_waylandPlatform->m_waylandState.fractional->sendGetFractionalScale(m_waylandState.surface->resource()));
 
@@ -151,6 +153,27 @@ void CWaylandWindow::open() {
     m_waylandState.surface->sendCommit();
 
     inputRegion->sendDestroy();
+}
+
+void CWaylandWindow::deferCloseRequest() {
+    if (m_closeRequested || !g_backendServices || !g_backendServices->eventLoop)
+        return;
+
+    const auto SELF = dynamicPointerCast<CWaylandWindow>(m_self.lock());
+    if (!SELF)
+        return;
+
+    m_closeRequested     = true;
+    const auto TOPLEVEL  = m_waylandState.xdgToplevel;
+    const auto WEAK_SELF = WP<CWaylandWindow>{SELF};
+
+    g_backendServices->eventLoop->addIdle([WEAK_SELF, TOPLEVEL] {
+        const auto WINDOW = WEAK_SELF.lock();
+        if (!WINDOW || !WINDOW->m_open || WINDOW->m_waylandState.xdgToplevel.get() != TOPLEVEL.get())
+            return;
+
+        WINDOW->m_events.closeRequest.emit();
+    });
 }
 
 void CWaylandWindow::close() {
