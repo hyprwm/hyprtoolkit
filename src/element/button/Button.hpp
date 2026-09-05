@@ -31,5 +31,6 @@ namespace Hyprtoolkit {
         SP<CTextElement>      label;
 
         bool                  labelChanged = true;
+        bool                  hovered      = false;
     };
 }

@@ -12,7 +12,21 @@
 using namespace Hyprtoolkit;
 using namespace Hyprgraphics;
 
-constexpr double   BUTTON_PAD = 5;
+constexpr double  BUTTON_PAD = 5;
+
+static CHyprColor buttonColor(const SButtonImpl& impl) {
+    if (impl.data.accent)
+        return impl.hovered ? g_palette->m_colors.accent.brighten(0.1F) : g_palette->m_colors.accent;
+    if (impl.data.noBg)
+        return impl.hovered ? g_palette->m_colors.base.brighten(0.05F) : CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
+    return impl.hovered ? g_palette->m_colors.base.brighten(impl.data.noBorder ? 0.3F : 0.11F) : g_palette->m_colors.base;
+}
+
+static CHyprColor buttonBorderColor(const SButtonImpl& impl) {
+    if (impl.hovered || impl.data.accent)
+        return g_palette->m_colors.accent;
+    return g_palette->m_colors.alternateBase;
+}
 
 SP<CButtonElement> CButtonElement::create(const SButtonData& data) {
     auto p          = SP<CButtonElement>(new CButtonElement(data));
@@ -25,19 +39,9 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     m_impl->data = data;
 
     m_impl->background = CRectangleBuilder::begin()
-                             ->color([impl = m_impl.get()] {
-                                 if (impl->data.accent)
-                                     return g_palette->m_colors.accent;
-                                 if (impl->data.noBg)
-                                     return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
-                                 return g_palette->m_colors.base;
-                             })
+                             ->color([impl = m_impl.get()] { return buttonColor(*impl); })
                              ->rounding(g_palette->m_vars.smallRounding)
-                             ->borderColor([impl = m_impl.get()] {
-                                 if (impl->data.accent)
-                                     return g_palette->m_colors.accent;
-                                 return g_palette->m_colors.alternateBase;
-                             })
+                             ->borderColor([impl = m_impl.get()] { return buttonBorderColor(*impl); })
                              ->borderThickness(data.noBorder ? 0 : 1)
                              ->size(CDynamicSize{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                              ->commence();
@@ -78,35 +82,13 @@ CButtonElement::CButtonElement(const SButtonData& data) : IElement(), m_impl(mak
     impl->m_externalEvents.mouseEnter.listenStatic([this](const Vector2D& pos) {
         if (!m_impl->data.enabled)
             return;
-        m_impl->background
-            ->rebuild() //
-            ->color([acc = m_impl->data.accent, nb = m_impl->data.noBorder, nobg = m_impl->data.noBg] {
-                if (acc)
-                    return g_palette->m_colors.accent.brighten(0.1F);
-                if (nobg)
-                    return g_palette->m_colors.base.brighten(0.05F);
-                return g_palette->m_colors.base.brighten(nb ? 0.3F : 0.11F);
-            })
-            ->borderColor([] { return g_palette->m_colors.accent; })
-            ->commence();
+        m_impl->hovered = true;
+        SP<IElement>{m_impl->background}->recheckColor();
     });
 
     impl->m_externalEvents.mouseLeave.listenStatic([this]() {
-        m_impl->background
-            ->rebuild() //
-            ->color([acc = m_impl->data.accent, nobg = m_impl->data.noBg] {
-                if (acc)
-                    return g_palette->m_colors.accent;
-                if (nobg)
-                    return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
-                return g_palette->m_colors.base;
-            })
-            ->borderColor([acc = m_impl->data.accent] {
-                if (acc)
-                    return g_palette->m_colors.accent;
-                return g_palette->m_colors.alternateBase;
-            })
-            ->commence();
+        m_impl->hovered = false;
+        SP<IElement>{m_impl->background}->recheckColor();
     });
 
     impl->m_externalEvents.mouseButton.listenStatic([this](const Input::eMouseButton button, bool down) {
@@ -180,18 +162,8 @@ void CButtonElement::replaceData(const SButtonData& data) {
     m_impl->data = data;
 
     m_impl->background->rebuild()
-        ->color([impl = m_impl.get()] {
-            if (impl->data.accent)
-                return g_palette->m_colors.accent;
-            if (impl->data.noBg)
-                return CHyprColor{g_palette->m_colors.base.asRGB(), 0.F};
-            return g_palette->m_colors.base;
-        })
-        ->borderColor([impl = m_impl.get()] {
-            if (impl->data.accent)
-                return g_palette->m_colors.accent;
-            return g_palette->m_colors.alternateBase;
-        })
+        ->color([impl = m_impl.get()] { return buttonColor(*impl); })
+        ->borderColor([impl = m_impl.get()] { return buttonBorderColor(*impl); })
         ->borderThickness(data.noBorder ? 0 : 1)
         ->commence();
 
