@@ -24,7 +24,7 @@ find_package(hyprwayland-scanner 0.4.0 REQUIRED)
 
 set(AQUAMARINE_MINIMUM_VERSION 0.10.0)
 set(HYPRLANG_MINIMUM_VERSION 0.6.0)
-set(HYPRUTILS_MINIMUM_VERSION 0.13.0)
+set(HYPRUTILS_MINIMUM_VERSION 0.14.2)
 set(HYPRGRAPHICS_MINIMUM_VERSION 0.3.0)
 
 # quotes and the spaces around '>=' in the list below are necessary for compability with pkg-config grama
