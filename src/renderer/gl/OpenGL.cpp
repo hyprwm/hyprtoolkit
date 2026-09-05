@@ -574,6 +574,9 @@ COpenGLRenderer::~COpenGLRenderer() {
         return;
     }
 
+    glFinish();
+    unsetEGL();
+
     if (m_eglDisplay && m_eglContext != EGL_NO_CONTEXT)
         eglDestroyContext(m_eglDisplay, m_eglContext);
 
