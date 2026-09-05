@@ -33,13 +33,15 @@ namespace Hyprtoolkit {
             Hyprutils::Math::Vector2D size;
         } m_pendingResize;
         void restoreUserSizeConstraints();
+        void deferCloseRequest();
 
         // active xdg_toplevel states from the latest configure. autosize is suppressed
         // when any of these constrain the compositor-decided size.
-        bool m_isMaximized  = false;
-        bool m_isFullscreen = false;
-        bool m_isResizing   = false;
-        bool m_isTiled      = false;
+        bool m_isMaximized    = false;
+        bool m_isFullscreen   = false;
+        bool m_isResizing     = false;
+        bool m_isTiled        = false;
+        bool m_closeRequested = false;
 
         friend class CWaylandPlatform;
         friend class CWaylandPopup;
