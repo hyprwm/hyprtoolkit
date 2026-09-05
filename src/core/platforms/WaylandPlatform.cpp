@@ -177,21 +177,15 @@ CWaylandPlatform::~CWaylandPlatform() {
 }
 
 bool CWaylandPlatform::dispatchEvents() {
-    wl_display_flush(m_waylandState.display);
-
-    if (wl_display_prepare_read(m_waylandState.display) == 0) {
-        wl_display_read_events(m_waylandState.display);
-        wl_display_dispatch_pending(m_waylandState.display);
-    } else
-        wl_display_dispatch(m_waylandState.display);
-
     int ret = 0;
     do {
         ret = wl_display_dispatch_pending(m_waylandState.display);
-        wl_display_flush(m_waylandState.display);
     } while (ret > 0);
 
-    return true;
+    if (ret < 0)
+        return false;
+
+    return wl_display_flush(m_waylandState.display) >= 0 || errno == EAGAIN;
 }
 
 SP<IWaylandWindow> CWaylandPlatform::windowForSurf(wl_proxy* proxy) {

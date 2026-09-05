@@ -24,7 +24,7 @@ find_package(hyprwayland-scanner 0.4.0 REQUIRED)
 
 set(AQUAMARINE_MINIMUM_VERSION 0.10.0)
 set(HYPRLANG_MINIMUM_VERSION 0.6.0)
-set(HYPRUTILS_MINIMUM_VERSION 0.13.0)
+set(HYPRUTILS_MINIMUM_VERSION 0.14.2)
 set(HYPRGRAPHICS_MINIMUM_VERSION 0.3.0)
 
 # quotes and the spaces around '>=' in the list below are necessary for compability with pkg-config grama
@@ -86,13 +86,6 @@ set_target_properties(hyprtoolkit PROPERTIES VERSION ${HYPRTOOLKIT_VERSION}
                                               SOVERSION 5)
 target_link_libraries(hyprtoolkit PUBLIC OpenGL::EGL OpenGL::OpenGL
                                          PkgConfig::deps)
-
-check_include_file("sys/timerfd.h" HAS_TIMERFD)
-pkg_check_modules(epoll IMPORTED_TARGET epoll-shim)
-if(NOT HAS_TIMERFD AND epoll_FOUND)
-  target_link_libraries(hyprtoolkit PUBLIC PkgConfig::epoll)
-  list(APPEND HYPRTOOLKIT_PRIVATE_REQUIRES "epoll-shim")
-endif()
 
 check_include_file("sys/inotify.h" HAS_INOTIFY)
 pkg_check_modules(inotify IMPORTED_TARGET libinotify)
