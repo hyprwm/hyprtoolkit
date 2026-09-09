@@ -293,7 +293,7 @@ void CScrollAreaElement::reposition(const Hyprutils::Math::CBox& sbox, const Vec
     // move the whole content layer by the scroll offset, then lay it (and the scrollbar
     // strips) out. the strips carry no offset of their own, so they stay pinned to the edge.
     m_impl->inner->setAbsolutePosition(-m_impl->data.currentScroll.round());
-    g_positioner->positionChildren(impl->self.lock());
+    g_positioner->positionChildren(impl->self.lock(), {.growX = m_impl->data.scrollX, .growY = m_impl->data.scrollY});
 
     // content is laid out at its natural size now, so this reads the real overflow.
     m_impl->recalcMaxScroll();
@@ -324,8 +324,8 @@ void CScrollAreaElement::setScroll(const Hyprutils::Math::Vector2D& x) {
         impl->window->scheduleReposition(impl->self);
 }
 
-std::optional<Vector2D> CScrollAreaElement::preferredSize(const Vector2D& parent) {
-    return impl->getPreferredSizeGeneric(m_impl->data.size, parent);
+std::optional<Vector2D> CScrollAreaElement::preferredSize(const Vector2D& parent, bool grow) {
+    return impl->getPreferredSizeGeneric(m_impl->data.size, parent, grow);
 }
 
 std::optional<Vector2D> CScrollAreaElement::minimumSize(const Vector2D& parent) {

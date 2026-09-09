@@ -109,7 +109,7 @@ static SP<IElement> stretchLayout(std::string&& label, SP<IElement> control) {
     auto nullE   = CNullBuilder::begin()->commence();
     nullE->setGrow(true);
 
-    auto container = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    auto container = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
     container->setMargin(4);
 
     bg->addChild(container);
@@ -211,7 +211,7 @@ int main(int argc, char** argv, char** envp) {
     auto spinbox = CSpinboxBuilder::begin()
                        ->label("Spinbox")
                        ->items({"Hello", "World", "Amongus"})
-                       ->size({CDynamicSize::HT_SIZE_AUTO, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
+                       ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})
                        ->fill(true)
                        ->commence();
 

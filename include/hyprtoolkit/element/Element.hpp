@@ -91,7 +91,7 @@ namespace Hyprtoolkit {
 
             /* Sizes for auto positioning in layouts */
             virtual std::optional<Hyprutils::Math::Vector2D>
-                                                         preferredSize(const Hyprutils::Math::Vector2D& parent);
+                                                         preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow = true);
         virtual std::optional<Hyprutils::Math::Vector2D> minimumSize(const Hyprutils::Math::Vector2D& parent);
         virtual std::optional<Hyprutils::Math::Vector2D> maximumSize(const Hyprutils::Math::Vector2D& parent);
 

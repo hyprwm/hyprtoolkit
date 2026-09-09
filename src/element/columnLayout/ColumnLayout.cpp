@@ -58,16 +58,29 @@ Hyprutils::Math::Vector2D CColumnLayoutElement::childSize(Hyprutils::Memory::CSh
     return {-1, -1};
 }
 
-std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent) {
-    auto calc = m_impl->data.size.calculate(parent);
+std::optional<Hyprutils::Math::Vector2D> CColumnLayoutElement::preferredSize(const Hyprutils::Math::Vector2D& parent, bool grow) {
+    auto calc = m_impl->data.size.calculate(parent, grow);
 
     if (calc.x != -1 && calc.y != -1)
         return calc;
 
+    Vector2D parentForChild = parent;
+    parentForChild.x -= impl->margin * 2;
+    parentForChild.y -= impl->margin * 2;
+
+    if (calc.x != -1) 
+        parentForChild.x = calc.x;
+    if (calc.y != -1)
+        parentForChild.y = calc.y;
+
+
     Vector2D max;
     for (const auto& child : impl->children) {
-        max.x = std::max(childSize(child).x, max.x);
-        max.y += childSize(child).y + m_impl->data.gap;
+        // We never want percent children to drive the preferred size of their parent.
+        Vector2D childPref = child->preferredSize(parentForChild, false).value_or({ 0, 0 });
+
+        max.x = std::max(max.x, childPref.x);
+        max.y += childPref.y + m_impl->data.gap;
     }
 
     if (!impl->children.empty())

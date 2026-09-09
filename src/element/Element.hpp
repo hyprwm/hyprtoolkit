@@ -98,8 +98,8 @@ namespace Hyprtoolkit {
         float                     effectiveOpacity() const;
         bool                      hasActiveGeometry() const;
         void                      setFailedPositioning(bool set);
-        Hyprutils::Math::Vector2D maxChildSize(const Hyprutils::Math::Vector2D& parent);
-        Hyprutils::Math::Vector2D getPreferredSizeGeneric(const CDynamicSize& size, const Hyprutils::Math::Vector2D& parent);
+        Hyprutils::Math::Vector2D maxChildSize(const Hyprutils::Math::Vector2D& parent, bool grow);
+        Hyprutils::Math::Vector2D getPreferredSizeGeneric(const CDynamicSize& size, const Hyprutils::Math::Vector2D& parent, bool grow);
     };
 
 }

@@ -329,7 +329,7 @@ void CWaylandWindow::onPreRender() {
 
     // pass Vector2D{0, 0} so PERCENT-sized descendants contribute nothing to the
     // natural size; only ABSOLUTE and AUTO content shape the window.
-    const auto preferred = m_rootElement->preferredSize(Vector2D{0, 0});
+    const auto preferred = m_rootElement->preferredSize(Vector2D{0, 0}, false);
 
     if (!preferred || preferred->x <= 0 || preferred->y <= 0)
         return;
