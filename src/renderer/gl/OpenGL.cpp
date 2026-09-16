@@ -12,6 +12,8 @@
 #include "Sync.hpp"
 
 #include <cmath>
+#include <fstream>
+#include <sys/stat.h>
 #include <hyprutils/memory/Casts.hpp>
 #include <hyprutils/string/String.hpp>
 
@@ -108,6 +110,72 @@ static GLuint createProgram(const std::string& vert, const std::string& frag) {
     RASSERT(ok != GL_FALSE, "createProgram() failed! GL_LINK_STATUS not OK!");
 
     return prog;
+}
+
+// Non-fatal variants of compileShader()/createProgram() for untrusted, caller-supplied
+// transition shaders (hyprpaper config/IPC). On failure they log nothing themselves but
+// fill `err` (including the GLSL info log) and delete every GL object created so far.
+static bool tryCompileShader(const GLuint& type, const std::string& src, GLuint& outShader, std::string& err) {
+    auto shader = glCreateShader(type);
+
+    auto shaderSource = src.c_str();
+
+    glShaderSource(shader, 1, &shaderSource, nullptr);
+    glCompileShader(shader);
+
+    GLint ok;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+
+    if (ok == GL_FALSE) {
+        GLint logLen = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLen);
+        std::string log(sc<size_t>(logLen > 0 ? logLen : 1), '\0');
+        glGetShaderInfoLog(shader, logLen, nullptr, log.data());
+        err = std::format("shader compilation failed: {}", log);
+        glDeleteShader(shader);
+        return false;
+    }
+
+    outShader = shader;
+    return true;
+}
+
+static bool tryCreateProgram(const std::string& vert, const std::string& frag, GLuint& outProg, std::string& err) {
+    GLuint vertCompiled = 0;
+    if (!tryCompileShader(GL_VERTEX_SHADER, vert, vertCompiled, err))
+        return false;
+
+    GLuint fragCompiled = 0;
+    if (!tryCompileShader(GL_FRAGMENT_SHADER, frag, fragCompiled, err)) {
+        glDeleteShader(vertCompiled);
+        return false;
+    }
+
+    auto prog = glCreateProgram();
+    glAttachShader(prog, vertCompiled);
+    glAttachShader(prog, fragCompiled);
+    glLinkProgram(prog);
+
+    glDetachShader(prog, vertCompiled);
+    glDetachShader(prog, fragCompiled);
+    glDeleteShader(vertCompiled);
+    glDeleteShader(fragCompiled);
+
+    GLint ok;
+    glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+
+    if (ok == GL_FALSE) {
+        GLint logLen = 0;
+        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLen);
+        std::string log(sc<size_t>(logLen > 0 ? logLen : 1), '\0');
+        glGetProgramInfoLog(prog, logLen, nullptr, log.data());
+        err = std::format("program link failed: {}", log);
+        glDeleteProgram(prog);
+        return false;
+    }
+
+    outProg = prog;
+    return true;
 }
 
 static void glMessageCallbackA(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -433,6 +501,22 @@ void COpenGLRenderer::initGLResources() {
     m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
     m_borderShader.roundingPower         = glGetUniformLocation(prog, "roundingPower");
 
+    const auto TRANSFRAGSRC = processShader("transition.frag", includes);
+    prog                                 = createProgram(VERTSRC, TRANSFRAGSRC);
+    m_transitionShader.program           = prog;
+    m_transitionShader.proj              = glGetUniformLocation(prog, "proj");
+    m_transitionShader.tex               = glGetUniformLocation(prog, "tex1");
+    m_transitionShader.tex2              = glGetUniformLocation(prog, "tex2");
+    m_transitionShader.progress          = glGetUniformLocation(prog, "progress");
+    m_transitionShader.alpha             = glGetUniformLocation(prog, "alpha");
+    m_transitionShader.posAttrib         = glGetAttribLocation(prog, "pos");
+    m_transitionShader.texAttrib         = glGetAttribLocation(prog, "texcoord");
+    m_transitionShader.topLeft           = glGetUniformLocation(prog, "topLeft");
+    m_transitionShader.fullSize          = glGetUniformLocation(prog, "fullSize");
+    m_transitionShader.radius            = glGetUniformLocation(prog, "radius");
+    m_transitionShader.uDuration         = glGetUniformLocation(prog, "u_duration");
+    m_transitionShader.randomPixel       = glGetUniformLocation(prog, "randomPixel");
+
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
     m_polyRenderFb = makeShared<CFramebuffer>();
@@ -560,9 +644,12 @@ COpenGLRenderer::~COpenGLRenderer() {
     }
     m_textures.clear();
     m_polyRenderFb.reset();
+    m_fitFrameCache.clear(); // release cached fit-resolved transition frames while the context is current
+    m_customShaders.clear();
     m_rectShader.destroy();
     m_texShader.destroy();
     m_borderShader.destroy();
+    m_transitionShader.destroy();
 
     if (m_vao)
         glDeleteVertexArrays(1, &m_vao);
@@ -1125,7 +1212,12 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
 
     SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(data.texture);
 
-    const auto     SOURCE_LAYOUT = data.texture->fitMode() == IMAGE_FIT_MODE_CONTAIN ? containImage(data.box, tex->m_size) : data.box;
+    // A fit-applied texture is already a fit-resolved full-screen frame (e.g. a transition
+    // start or capture): sample it with the identity mapping (STRETCH), never re-fit it.
+    // Otherwise a per-call fit mode overrides the texture's stored mode.
+    const eImageFitMode fit = tex->m_fitApplied ? IMAGE_FIT_MODE_STRETCH : data.fitMode.value_or(data.texture->fitMode());
+
+    const auto     SOURCE_LAYOUT = fit == IMAGE_FIT_MODE_CONTAIN ? containImage(data.box, tex->m_size) : data.box;
     const auto     SOURCE_BOX    = presentationBox(SOURCE_LAYOUT);
     const auto     ROUNDEDBOX    = logicalToGL(SOURCE_BOX);
     const auto     UNTRANSFORMED = logicalToGL(SOURCE_BOX, false);
@@ -1167,9 +1259,9 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     std::array<float, 8> texVerts = {
         fullVerts[0], fullVerts[1], fullVerts[2], fullVerts[3], fullVerts[4], fullVerts[5], fullVerts[6], fullVerts[7],
     };
-    if (data.texture->fitMode() == IMAGE_FIT_MODE_COVER)
+    if (fit == IMAGE_FIT_MODE_COVER)
         texVerts = coverImage(data.box, tex->m_size);
-    else if (data.texture->fitMode() == IMAGE_FIT_MODE_TILE) {
+    else if (fit == IMAGE_FIT_MODE_TILE) {
         texVerts = tileImage(data.box, tex->m_size);
         glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1194,6 +1286,464 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glDisableVertexAttribArray(shader->texAttrib);
 
     glBindTexture(tex->m_target, 0);
+}
+
+size_t COpenGLRenderer::ensureTransitionShader(const std::string& source) {
+    if (source.empty())
+        return 0;
+
+    // May be invoked from the IPC handler outside the render loop.
+    makeEGLCurrent();
+
+    const auto KEY = std::hash<std::string>{}(source);
+
+    if (m_customShaders.contains(KEY))
+        return KEY;
+
+    // Caller-supplied shader: compile non-fatally. On any failure, log (including the
+    // GLSL info log) and fall back to the default transition shader.
+    GLuint      prog = 0;
+    std::string err;
+    if (!tryCreateProgram(loadShader("tex300.vert"), source, prog, err)) {
+        g_logger->log(HT_LOG_ERROR, "ensureTransitionShader: failed to compile shader program: {}", err);
+        return 0;
+    }
+
+    const GLint posAttrib   = glGetAttribLocation(prog, "pos");
+    const GLint texAttrib   = glGetAttribLocation(prog, "texcoord");
+    const GLint proj        = glGetUniformLocation(prog, "proj");
+    const GLint tex         = glGetUniformLocation(prog, "tex1");
+    const GLint tex2        = glGetUniformLocation(prog, "tex2");
+    const GLint progress    = glGetUniformLocation(prog, "progress");
+    const GLint alpha       = glGetUniformLocation(prog, "alpha");
+    const GLint topLeft     = glGetUniformLocation(prog, "topLeft");
+    const GLint fullSize    = glGetUniformLocation(prog, "fullSize");
+    const GLint radius      = glGetUniformLocation(prog, "radius");
+    const GLint uDuration   = glGetUniformLocation(prog, "u_duration");
+    const GLint randomPixel = glGetUniformLocation(prog, "randomPixel");
+
+    // Mandatory interface validation: attribs `pos`/`texcoord` (a -1 here makes
+    // glVertexAttribPointer/glEnableVertexAttribArray raise GL_INVALID_VALUE and break
+    // the draw) and uniforms `proj`/`tex1`/`tex2`/`progress` (a program missing these
+    // renders garbage; glUniform with -1 is a silent no-op, so validate explicitly).
+    // `pos`/`proj` come from the fixed vertex stage and are always active, so their
+    // check is redundant-but-harmless. Optional uniforms (`alpha`, `topLeft`,
+    // `fullSize`, `radius`, `randomPixel`, `u_duration`) may be -1; glUniform on them
+    // is a defined no-op.
+    if (posAttrib < 0 || texAttrib < 0 || proj < 0 || tex < 0 || tex2 < 0 || progress < 0) {
+        glDeleteProgram(prog);
+        g_logger->log(HT_LOG_ERROR,
+                      "ensureTransitionShader: shader is missing required interface (pos={}, texcoord={}, proj={}, tex1={}, tex2={}, progress={}); "
+                      "the custom fragment must declare `uniform sampler2D tex1, tex2; uniform float progress;` and consume v_texcoord",
+                      posAttrib, texAttrib, proj, tex, tex2, progress);
+        return 0;
+    }
+
+    // Build directly into the cache so the program outlives this scope.
+    auto& entry    = m_customShaders[KEY];
+    auto& sh       = entry.shader;
+    sh.program     = prog;
+    sh.posAttrib   = posAttrib;
+    sh.texAttrib   = texAttrib;
+    sh.proj        = proj;
+    sh.tex         = tex;
+    sh.tex2        = tex2;
+    sh.progress    = progress;
+    sh.alpha       = alpha;
+    sh.topLeft     = topLeft;
+    sh.fullSize    = fullSize;
+    sh.radius      = radius;
+    sh.uDuration   = uDuration;
+    sh.randomPixel = randomPixel;
+
+    return KEY;
+}
+
+void COpenGLRenderer::renderTransition(const STransitionRenderData& data) {
+    RASSERT(data.startTexture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl start texture");
+    RASSERT(data.endTexture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl end texture");
+
+    SP<CGLTexture> startTex = reinterpretPointerCast<CGLTexture>(data.startTexture);
+    SP<CGLTexture> endTex   = reinterpretPointerCast<CGLTexture>(data.endTexture);
+
+    const auto     ROUNDEDBOX    = logicalToGL(data.box);
+    const auto     UNTRANSFORMED = logicalToGL(data.box, false);
+    Mat3x3         matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, data.box.rot);
+    Mat3x3         glMatrix      = m_projection.copy().multiply(matrix);
+
+    const auto     DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
+        return;
+
+    // Pre-render both frames to fit-resolved offscreen FBOs (cached). The transition
+    // shaders are pure crossfades, so all fit handling lives here.
+    SP<CGLTexture> startFitTex = reinterpretPointerCast<CGLTexture>(renderFitFrame(startTex, data.box, data.fitMode));
+    SP<CGLTexture> endFitTex   = reinterpretPointerCast<CGLTexture>(renderFitFrame(endTex, data.box, data.fitMode));
+    if (!startFitTex || !endFitTex)
+        return;
+
+    CShader* activeShader = &m_transitionShader;
+    if (data.shaderKey) {
+        // Shader was loaded by ensureTransitionShader() at transition start; just look it up.
+        auto it = m_customShaders.find(data.shaderKey);
+        if (it != m_customShaders.end())
+            activeShader = &it->second.shader;
+    }
+
+    glUseProgram(activeShader->program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(startFitTex->m_target, startFitTex->m_texID);
+    glUniform1i(activeShader->tex, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(endFitTex->m_target, endFitTex->m_texID);
+    glUniform1i(activeShader->tex2, 1);
+
+    glUniformMatrix3fv(activeShader->proj, 1, GL_TRUE, glMatrix.getMatrix().data());
+    glUniform1f(activeShader->progress, data.progress);
+    glUniform1f(activeShader->alpha, data.a);
+
+    const auto TOPLEFT  = Vector2D(UNTRANSFORMED.x, UNTRANSFORMED.y);
+    const auto FULLSIZE = Vector2D(UNTRANSFORMED.width, UNTRANSFORMED.height);
+    glUniform2f(activeShader->topLeft, TOPLEFT.x, TOPLEFT.y);
+    glUniform2f(activeShader->fullSize, FULLSIZE.x, FULLSIZE.y);
+    glUniform1f(activeShader->radius, data.rounding * m_scale);
+    glUniform2f(activeShader->randomPixel, data.randomPixel.x, data.randomPixel.y);
+    if (activeShader->uDuration >= 0)
+        glUniform1f(activeShader->uDuration, data.duration);
+
+    std::array<float, 16> vertices;
+    std::ranges::copy(fullVerts, vertices.begin());
+    std::ranges::copy(fullVerts, vertices.begin() + 8);
+    uploadVertices(vertices.data(), sizeof(vertices));
+    glVertexAttribPointer(activeShader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(activeShader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, rc<const void*>(sizeof(fullVerts)));
+
+    glEnableVertexAttribArray(activeShader->posAttrib);
+    glEnableVertexAttribArray(activeShader->texAttrib);
+
+    DAMAGE.forEachRect([this](const auto& RECT) {
+        scissor(&RECT);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    });
+
+    glDisableVertexAttribArray(activeShader->posAttrib);
+    glDisableVertexAttribArray(activeShader->texAttrib);
+
+    // Unbind textures
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(endFitTex->m_target, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(startFitTex->m_target, 0);
+}
+
+SP<IRendererTexture> COpenGLRenderer::captureTransitionState(const STransitionRenderData& data) {
+    if (!data.startTexture || !data.endTexture)
+        return nullptr;
+
+    RASSERT(data.startTexture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl start texture");
+    RASSERT(data.endTexture->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl end texture");
+
+    // Capture may be called from the IPC handler, outside the render loop.
+    makeEGLCurrent();
+
+    SP<CGLTexture> startTex = reinterpretPointerCast<CGLTexture>(data.startTexture);
+    SP<CGLTexture> endTex   = reinterpretPointerCast<CGLTexture>(data.endTexture);
+
+    // Pre-render both source frames (fit-resolved) so the captured blend is correct
+    // for every fit mode; the transition shader is a pure crossfade.
+    SP<CGLTexture> startFitTex = reinterpretPointerCast<CGLTexture>(renderFitFrame(startTex, data.box, data.fitMode));
+    SP<CGLTexture> endFitTex   = reinterpretPointerCast<CGLTexture>(renderFitFrame(endTex, data.box, data.fitMode));
+    if (!startFitTex || !endFitTex)
+        return nullptr;
+
+    int w = static_cast<int>(data.box.width * m_scale);
+    int h = static_cast<int>(data.box.height * m_scale);
+    if (w <= 0 || h <= 0)
+        return nullptr;
+
+    // Save GL state before alloc(): alloc() rebinds GL_FRAMEBUFFER and leaves the
+    // binding at 0, so prevFb must be captured beforehand to restore it afterwards.
+    GLint prevViewport[4];
+    glGetIntegerv(GL_VIEWPORT, prevViewport);
+    GLint prevFb = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFb);
+    GLboolean prevScissor = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean prevBlend   = glIsEnabled(GL_BLEND);
+    GLint     prevScissorBox[4];
+    glGetIntegerv(GL_SCISSOR_BOX, prevScissorBox);
+
+    auto captureFb = makeShared<CFramebuffer>();
+    if (!captureFb->alloc(w, h)) {
+        g_logger->log(HT_LOG_ERROR, "captureTransitionState: failed to allocate framebuffer");
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFb);
+        return nullptr;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFb->getFBID());
+    glViewport(0, 0, w, h);
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+
+    // This FBO is the *result* of the blend (not a per-image pre-render), so an
+    // opaque black clear is correct — the full-box draw overwrites it.
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Use the cached custom shader if any (it was loaded by a prior renderTransition).
+    CShader* activeShader = &m_transitionShader;
+    if (data.shaderKey) {
+        auto it = m_customShaders.find(data.shaderKey);
+        if (it != m_customShaders.end())
+            activeShader = &it->second.shader;
+        else
+            g_logger->log(HT_LOG_ERROR, "captureTransitionState: custom shader not in cache: {}", data.shaderKey);
+    }
+
+    glUseProgram(activeShader->program);
+
+    // Project a box covering the full FBO into 0..1 vertices.
+    CBox captureBox{0, 0, (float)w, (float)h};
+    Mat3x3 captureProj = Mat3x3::outputProjection(Vector2D{w, h}, HYPRUTILS_TRANSFORM_FLIPPED_180);
+    Mat3x3 captureMat  = captureProj.projectBox(captureBox, HYPRUTILS_TRANSFORM_FLIPPED_180, 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(startFitTex->m_target, startFitTex->m_texID);
+    glUniform1i(activeShader->tex, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(endFitTex->m_target, endFitTex->m_texID);
+    glUniform1i(activeShader->tex2, 1);
+
+    glUniformMatrix3fv(activeShader->proj, 1, GL_TRUE, captureMat.getMatrix().data());
+    glUniform1f(activeShader->progress, data.progress);
+    glUniform1f(activeShader->alpha, data.a);
+
+    const auto TOPLEFT  = Vector2D(0, 0);
+    const auto FULLSIZE = Vector2D(w, h);
+    glUniform2f(activeShader->topLeft, TOPLEFT.x, TOPLEFT.y);
+    glUniform2f(activeShader->fullSize, FULLSIZE.x, FULLSIZE.y);
+    glUniform1f(activeShader->radius, data.rounding * m_scale);
+    glUniform2f(activeShader->randomPixel, data.randomPixel.x, data.randomPixel.y);
+    if (activeShader->uDuration >= 0)
+        glUniform1f(activeShader->uDuration, data.duration);
+
+    GLfloat fullVerts[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+    std::array<float, 16> vertices;
+    std::ranges::copy(fullVerts, vertices.begin());
+    std::ranges::copy(fullVerts, vertices.begin() + 8);
+    uploadVertices(vertices.data(), sizeof(vertices));
+    glVertexAttribPointer(activeShader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(activeShader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, rc<const void*>(sizeof(fullVerts)));
+
+    glEnableVertexAttribArray(activeShader->posAttrib);
+    glEnableVertexAttribArray(activeShader->texAttrib);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glDisableVertexAttribArray(activeShader->posAttrib);
+    glDisableVertexAttribArray(activeShader->texAttrib);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(endFitTex->m_target, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(startFitTex->m_target, 0);
+
+    glUseProgram(0);
+    glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+    if (prevScissor) {
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(prevScissorBox[0], prevScissorBox[1], prevScissorBox[2], prevScissorBox[3]);
+    } else
+        glDisable(GL_SCISSOR_TEST);
+    if (prevBlend)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+
+    SP<CGLTexture> capturedTex = captureFb->getTexture();
+    if (!capturedTex) {
+        // NOTE: dead branch — getTexture() is non-null after a successful alloc(); kept for consistency.
+        g_logger->log(HT_LOG_ERROR, "captureTransitionState: failed to get texture from framebuffer");
+        captureFb.reset(); // releases the FBO (binds 0) before restoring the caller's binding
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFb);
+        return nullptr;
+    }
+
+    // The captured blend is already fit-resolved, so mark it to prevent a second fit pass.
+    capturedTex->m_fitApplied = true;
+
+    // Release the FBO before restoring the caller's framebuffer binding: ~CFramebuffer
+    // -> release() issues glBindFramebuffer(0) and would clobber the restored binding.
+    // The EGL context is current here (makeEGLCurrent() above), so the GL calls in
+    // release() are safe.
+    captureFb.reset();
+    glBindFramebuffer(GL_FRAMEBUFFER, prevFb); // restore the caller's render target AFTER the FBO release
+
+    return capturedTex;
+}
+
+SP<IRendererTexture> COpenGLRenderer::renderFitFrame(const SP<IRendererTexture>& src, const CBox& box, eImageFitMode fitMode) {
+    RASSERT(src->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl texture to renderFitFrame");
+
+    SP<CGLTexture> tex = reinterpretPointerCast<CGLTexture>(src);
+
+    // Already a fit-resolved frame (the output of an earlier pre-render or
+    // capture). Return it unchanged so it is never fit-transformed twice.
+    if (tex->m_fitApplied)
+        return src;
+
+    // May run from the IPC handler, outside the render loop.
+    makeEGLCurrent();
+
+    const int w = static_cast<int>(box.width * m_scale);
+    const int h = static_cast<int>(box.height * m_scale);
+    if (w <= 0 || h <= 0)
+        return nullptr;
+
+    // Re-render only when the source identity, its size, the target box, or the
+    // fit mode changes; otherwise reuse the cached fit-resolved frame.
+    const SFitFrameKey key{tex->m_texID, tex->m_size, w, h, static_cast<int>(fitMode)};
+    auto               cached = m_fitFrameCache.find(key);
+    if (cached != m_fitFrameCache.end() && cached->second)
+        return cached->second;
+
+    // Save the GL state up front: captureFb->alloc() rebinds GL_FRAMEBUFFER and leaves
+    // the binding at 0, so prevFb must be captured beforehand in order to restore the
+    // caller's framebuffer (the surface) after the pre-render.
+    GLint prevViewport[4];
+    glGetIntegerv(GL_VIEWPORT, prevViewport);
+    GLint prevFb = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFb);
+    GLboolean prevScissor = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean prevBlend   = glIsEnabled(GL_BLEND);
+    GLint     prevActiveTex = 0;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &prevActiveTex);
+
+    auto captureFb = makeShared<CFramebuffer>();
+    if (!captureFb->alloc(w, h)) {
+        g_logger->log(HT_LOG_ERROR, "renderFitFrame: failed to allocate framebuffer");
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFb);
+        return nullptr;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFb->getFBID());
+    glViewport(0, 0, w, h);
+    glDisable(GL_SCISSOR_TEST);
+
+    // CONTAIN letterbox must stay transparent to match renderTexture's
+    // left-untouched clear. (This is a per-image pre-render, NOT the blend
+    // result, so it differs from captureTransitionState's opaque clear.)
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Premultiplied-alpha texture draw, mirroring renderTexture's environment.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    CShader* shader = &m_texShader;
+    glUseProgram(shader->program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(tex->m_target, tex->m_texID);
+    glUniform1i(shader->tex, 0);
+
+    // Project the (possibly contain-shrunk) box into the full FBO. The box is in
+    // FBO-pixel units so it matches outputProjection's {w,h} size.
+    const CBox srcBox = fitMode == IMAGE_FIT_MODE_CONTAIN
+        ? containImage(CBox{0, 0, (float)w, (float)h}, tex->m_size)
+        : CBox{0, 0, (float)w, (float)h};
+    Mat3x3 outProj = Mat3x3::outputProjection(Vector2D{w, h}, HYPRUTILS_TRANSFORM_FLIPPED_180);
+    Mat3x3 drawMat = outProj.projectBox(srcBox, HYPRUTILS_TRANSFORM_FLIPPED_180, 0);
+    glUniformMatrix3fv(shader->proj, 1, GL_TRUE, drawMat.getMatrix().data());
+    glUniform1f(shader->alpha, 1.F);
+
+    // Plain textured quad: no rounding, no discard, no tint (same as renderTexture).
+    glUniform2f(shader->topLeft, 0.0f, 0.0f);
+    glUniform2f(shader->fullSize, (float)w, (float)h);
+    glUniform1f(shader->radius, 0.F);
+    glUniform1f(shader->roundingPower, 2.F);
+    glUniform1i(shader->discardOpaque, 0);
+    glUniform1i(shader->discardAlpha, 0);
+    glUniform1i(shader->applyTint, 0);
+
+    // Per-mode geometry / texcoords / wrap — identical rules to renderTexture.
+    // coverImage/tileImage only need the box aspect ratio, so the logical box is fine.
+    std::array<float, 8> texVerts = {
+        fullVerts[0], fullVerts[1], fullVerts[2], fullVerts[3], fullVerts[4], fullVerts[5], fullVerts[6], fullVerts[7],
+    };
+    if (fitMode == IMAGE_FIT_MODE_COVER)
+        texVerts = coverImage(box, tex->m_size);
+    else if (fitMode == IMAGE_FIT_MODE_TILE) {
+        texVerts = tileImage(box, tex->m_size);
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+
+    std::array<float, 16> fitVertices;
+    std::ranges::copy(fullVerts, fitVertices.begin());
+    std::ranges::copy(texVerts, fitVertices.begin() + 8);
+    uploadVertices(fitVertices.data(), sizeof(fitVertices));
+    glVertexAttribPointer(shader->posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(shader->texAttrib, 2, GL_FLOAT, GL_FALSE, 0, rc<const void*>(sizeof(fullVerts)));
+
+    glEnableVertexAttribArray(shader->posAttrib);
+    glEnableVertexAttribArray(shader->texAttrib);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glDisableVertexAttribArray(shader->posAttrib);
+    glDisableVertexAttribArray(shader->texAttrib);
+
+    // Restore TILE wrap so it never leaks into the crossfade or later draws.
+    if (fitMode == IMAGE_FIT_MODE_TILE) {
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(tex->m_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+
+    glBindTexture(tex->m_target, 0);
+    glUseProgram(0);
+
+    // Restore GL state (framebuffer binding is restored last, after the FBO release below).
+    glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+    if (prevScissor)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
+    if (prevBlend)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+    glActiveTexture(prevActiveTex);
+
+    SP<CGLTexture> capturedTex = captureFb->getTexture();
+    if (!capturedTex) {
+        // NOTE: dead branch — getTexture() is non-null after a successful alloc(); kept for consistency.
+        g_logger->log(HT_LOG_ERROR, "renderFitFrame: failed to get texture from framebuffer");
+        captureFb.reset(); // releases the FBO (binds 0) before restoring the caller's binding
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFb);
+        return nullptr;
+    }
+
+    // Mark the fit-resolved texture so it is never fit-transformed again.
+    capturedTex->m_fitApplied = true;
+
+    m_fitFrameCache[key] = capturedTex;
+
+    // Release the FBO before restoring the caller's framebuffer binding: ~CFramebuffer
+    // -> release() issues glBindFramebuffer(0) and would clobber the restored binding.
+    // The EGL context is current here (makeEGLCurrent() above), so the GL calls in
+    // release() are safe.
+    captureFb.reset();
+    glBindFramebuffer(GL_FRAMEBUFFER, prevFb); // restore the caller's render target AFTER the FBO release
+
+    return capturedTex;
+}
+
+void COpenGLRenderer::clearTransitionCache() {
+    m_fitFrameCache.clear();
 }
 
 void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {

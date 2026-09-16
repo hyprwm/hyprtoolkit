@@ -8,6 +8,7 @@
 #include "../../system/Icons.hpp"
 #include "../../resource/assetCache/AssetCache.hpp"
 #include "../../renderer/RendererTexture.hpp"
+#include <random>
 
 #include "../Element.hpp"
 
@@ -25,13 +26,18 @@ CImageElement::CImageElement(const SImageData& data) : IElement(), m_impl(makeUn
 }
 
 void CImageElement::paint() {
-    if (m_impl->failed)
+    if (m_impl->transition.active) { // precedence over the failed/fallback guard
+        renderTransition();
         return;
+    }
 
     auto assetToUse = m_impl->cacheEntry;
 
     if (!assetToUse || !assetToUse->tex())
         assetToUse = m_impl->oldCacheEntry;
+
+    if (m_impl->failed && (!assetToUse || !assetToUse->tex()))
+        return; // blank only if failed AND nothing to show
 
     if (!assetToUse || !assetToUse->tex()) {
         if (!m_impl->waitingForTex)
@@ -55,11 +61,14 @@ void CImageElement::paint() {
         .texture  = assetToUse->tex(),
         .a        = m_impl->data.a,
         .rounding = m_impl->data.rounding,
+        .fitMode  = m_impl->data.fitMode,
     });
 }
 
 void CImageElement::renderTex() {
-    const uint64_t GENERATION = ++m_impl->requestGeneration;
+    const uint64_t GENERATION = ++m_impl->requestedGen;
+    // Disarm any prior cached-listener so a stale callback for an old request cannot
+    // fire after this new request.
     m_impl->listeners.cacheEntryDone.reset();
     m_impl->failed = false;
     if (m_impl->cacheEntry && m_impl->cacheEntry->tex())
@@ -74,16 +83,16 @@ void CImageElement::renderTex() {
         m_impl->failed     = false;
         m_impl->cacheEntry = ASSET;
         if (ASSET->status() == Asset::CACHE_ENTRY_DONE)
-            m_impl->postImageScheduleRecalc();
+            m_impl->postImageScheduleRecalc(m_impl->requestedGen);
         else {
             m_impl->waitingForTex            = true;
             m_impl->listeners.cacheEntryDone = ASSET->m_events.done.listen([this, self = impl->self, generation = GENERATION, entry = WP<Asset::CAssetCacheEntry>{ASSET}] {
-                if (!self || generation != m_impl->requestGeneration)
-                    return;
+                if (!self || generation != m_impl->requestedGen)
+                    return; // stale callback: a newer request superseded this one
 
                 const auto ENTRY = entry.lock();
                 m_impl->failed   = !ENTRY || ENTRY->status() == Asset::CACHE_ENTRY_FAILED;
-                m_impl->postImageScheduleRecalc();
+                m_impl->postImageScheduleRecalc(generation);
                 m_impl->listeners.cacheEntryDone.reset();
             });
         }
@@ -118,6 +127,8 @@ void CImageElement::renderTex() {
     m_impl->requests.emplace_back(REQUEST);
 
     m_impl->waitingForTex = true;
+    m_impl->inflightGen   = m_impl->requestedGen;
+    m_impl->failed        = false; // a fresh attempt is not blocked by a stale failure flag
 
     ASP<IAsyncResource> resourceGeneric(REQUEST->resource);
 
@@ -168,31 +179,46 @@ void SImageImpl::postImageLoad(const SP<SImageLoadRequest>& request) {
         g_logger->log(HT_LOG_ERROR, "Image: failed loading, hyprgraphics couldn't load asset {}", request->path);
     }
 
-    const bool CURRENT = request->generation == requestGeneration;
+    const bool CURRENT = request->generation == requestedGen;
     if (CURRENT) {
         cacheEntry = request->cacheEntry;
         failed     = !loaded;
-        if (loaded)
-            size = request->resource->m_asset.pixelSize;
-        oldCacheEntry.reset();
+        if (loaded) {
+            size           = request->resource->m_asset.pixelSize;
+            oldCacheEntry.reset(); // only on success: on failure keep it as the visible fallback
+        }
     }
 
     std::erase(requests, request);
 
     if (CURRENT)
-        postImageScheduleRecalc();
+        postImageScheduleRecalc(request->generation);
 }
 
-void SImageImpl::postImageScheduleRecalc() {
-    waitingForTex = false;
-    if (!failed) {
-        if (cacheEntry && cacheEntry->tex())
-            size = cacheEntry->tex()->size();
-        self->impl->damageEntire();
+void SImageImpl::postImageScheduleRecalc(uint64_t gen) {
+    // Ignore a stale callback when a load for the newest request is already in flight
+    // (e.g. a cached-listener for an old request firing after a newer load started).
+    if (gen != requestedGen && inflightGen == requestedGen)
+        return;
 
-        if (self->impl->window)
-            self->impl->window->scheduleReposition(self);
+    waitingForTex = false;
+    satisfiedGen  = gen;
+
+    // Newest request unsatisfied AND no load for it in flight -> load it now (current data).
+    if (satisfiedGen != requestedGen && inflightGen != requestedGen) {
+        self->renderTex();
+        return; // defer damage until the newest request settles
     }
+
+    // Settled on the newest request. On failure this size update is a deliberate
+    // no-op: paint() owns fallback display (oldCacheEntry is kept alive on failure);
+    // we still damage below so the fallback is repainted.
+    if (!failed && cacheEntry && cacheEntry->tex())
+        size = cacheEntry->tex()->size();
+    self->impl->damageEntire();
+
+    if (self->impl->window)
+        self->impl->window->scheduleReposition(self);
 }
 
 std::string SImageImpl::getCacheString() {
@@ -220,6 +246,7 @@ SP<CImageBuilder> CImageElement::rebuild() {
 }
 
 void CImageElement::replaceData(const SImageData& data) {
+    m_impl->requestedGen++;
     m_impl->data = data;
 
     renderTex();
@@ -281,4 +308,168 @@ Vector2D SImageImpl::preferredSvgSize() {
     auto max = std::max(self->impl->position.size().x, self->impl->position.size().y);
 
     return Vector2D{max * lastScale, max * lastScale}.round();
+}
+
+void CImageElement::transitionTo(const std::string& path,
+                                  eImageFitMode fitMode,
+                                  float duration,
+                                  const std::string& shaderSource) {
+    // New transition: drop the previous transition's cached fit-resolved FBOs.
+    g_renderer->clearTransitionCache();
+
+    if (m_impl->transition.active) {
+        // Capture the in-flight blend to an FBO and use it as the new start texture.
+        if (m_impl->transition.startTexture && m_impl->transition.endTexture) {
+            IRenderer::STransitionRenderData captureData = {
+                .box = impl->position,
+                .startTexture = m_impl->transition.startTexture,
+                .endTexture = m_impl->transition.endTexture,
+                .progress = m_impl->transition.progress,
+                .a = 1.F,
+                .fitMode = m_impl->data.fitMode,
+                .shaderKey = m_impl->transition.shaderKey,
+                .randomPixel = m_impl->transition.randomPixel,
+                .duration = m_impl->transition.duration,
+            };
+
+            auto capturedTex = g_renderer->captureTransitionState(captureData);
+            if (capturedTex)
+                m_impl->transition.startTexture = capturedTex;
+        }
+    } else if (m_impl->cacheEntry && m_impl->cacheEntry->tex()) {
+        // Pre-render the current wallpaper to a full-screen, fit-resolved frame at the fit
+        // mode it is currently displayed with (data.fitMode is still the outgoing mode here;
+        // it is reassigned below). The fit mode is consumed at pre-render time and is not
+        // carried as transition state, so the start frame stays fixed for the whole transition.
+        m_impl->transition.startTexture = g_renderer->renderFitFrame(m_impl->cacheEntry->tex(), impl->position, m_impl->data.fitMode);
+    }
+
+    m_impl->transition.active     = true;
+    m_impl->transition.progress   = 0.0f;
+    m_impl->transition.shaderKey  = g_renderer->ensureTransitionShader(shaderSource);
+    m_impl->transition.startTime  = std::chrono::steady_clock::now();
+
+    m_impl->transition.randomPixel = Hyprutils::Math::Vector2D(
+        static_cast<float>(rand() % 1000) / 1000.0f,
+        static_cast<float>(rand() % 1000) / 1000.0f
+    );
+
+    // GLES cannot initialize uniform values, so u_duration is pushed to the shader
+    // each frame; a shader may further remap progress via a local const.
+    // duration <= 0 means an immediate (non-animated) swap.
+    m_impl->transition.duration = std::max(0.0f, duration);
+
+    // Populated once the new asset finishes loading.
+    m_impl->transition.endTexture.reset();
+
+    m_impl->requestedGen++;
+    m_impl->data.path     = path;
+    m_impl->data.fitMode = fitMode;
+    renderTex();
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self.lock());
+}
+
+bool CImageElement::isTransitioning() const {
+    return m_impl->transition.active;
+}
+
+float CImageElement::getTransitionProgressOut() const {
+    return m_impl->transition.progress;
+}
+
+float CImageElement::getTransitionProgressIn() const {
+    return m_impl->transition.progress;
+}
+
+void CImageElement::renderTransition() {
+    auto& trans = m_impl->transition;
+
+    auto  now     = std::chrono::steady_clock::now();
+    float elapsed = std::chrono::duration<float>(now - trans.startTime).count();
+    trans.progress = (trans.duration > 0.0f) ? std::clamp(elapsed / trans.duration, 0.0f, 1.0f) : 1.0f;
+
+    const bool targetReady  = m_impl->cacheEntry && m_impl->cacheEntry->tex();
+    const bool targetFailed = m_impl->failed;
+
+    if (trans.progress >= 1.0f) {
+        if (targetReady) {
+            // Normal completion.
+            trans.active = false;
+            trans.startTexture.reset();
+            trans.endTexture.reset();
+            g_renderer->clearTransitionCache();
+            g_renderer->renderTexture({
+                .box = impl->position,
+                .texture = m_impl->cacheEntry->tex(),
+                .a = 1.F,
+                .rounding = 0,
+                .fitMode = m_impl->data.fitMode,
+            });
+            return;
+        }
+        if (targetFailed) {
+            // Failure completion: stop transitioning. oldCacheEntry is kept alive on
+            // failure, so the next paint() shows the previous image. Render the start
+            // texture for this frame if present.
+            trans.active = false;
+            g_renderer->clearTransitionCache();
+            if (trans.startTexture)
+                g_renderer->renderTexture({
+                    .box = impl->position,
+                    .texture = trans.startTexture,
+                    .a = 1.F,
+                    .rounding = 0,
+                });
+            trans.startTexture.reset();
+            trans.endTexture.reset();
+            return;
+        }
+        // Still loading after the duration elapsed: keep showing the outgoing frame and
+        // DO NOT schedule animation frames (progress is saturated).
+        // postImageScheduleRecalc() damages on load completion.
+        if (trans.startTexture)
+            g_renderer->renderTexture({
+                .box = impl->position,
+                .texture = trans.startTexture,
+                .a = 1.F,
+                .rounding = 0,
+            });
+        return; // no scheduleReposition -> no busy-repaint while waiting
+    }
+
+    // The end texture is resolved once the new asset finishes loading.
+    SP<IRendererTexture> endTex;
+    if (m_impl->cacheEntry && m_impl->cacheEntry->tex()) {
+        endTex = m_impl->cacheEntry->tex();
+        trans.endTexture = endTex;
+    } else
+        endTex = trans.endTexture;
+
+    if (trans.startTexture && endTex) {
+        g_renderer->renderTransition({
+            .box = impl->position,
+            .startTexture = trans.startTexture,
+            .endTexture = endTex,
+            .progress = trans.progress,
+            .a = 1.F,
+            .rounding = 0,
+            .fitMode = m_impl->data.fitMode,
+            .shaderKey = trans.shaderKey,
+            .randomPixel = trans.randomPixel,
+            .duration = trans.duration,
+        });
+    } else if (trans.startTexture) {
+        // End texture not loaded yet, keep showing the start.
+        g_renderer->renderTexture({
+            .box = impl->position,
+            .texture = trans.startTexture,
+            .a = 1.F,
+            .rounding = 0,
+        });
+    }
+
+    if (impl->window)
+        impl->window->scheduleReposition(impl->self.lock());
 }
