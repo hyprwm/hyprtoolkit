@@ -54,6 +54,8 @@ void IWaylandWindow::onScaleUpdate() {
 }
 
 void IWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
+    if (size.x < 1 || size.y < 1)
+        return;
 
     m_waylandState.logicalSize  = size;
     m_waylandState.appliedScale = m_fractionalScale;
