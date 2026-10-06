@@ -379,11 +379,11 @@ void CWaylandPlatform::initSeat() {
 
                 Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
 
+                setCursor(HT_POINTER_ARROW);
+
                 w->mouseEnter(local);
                 m_currentWindow   = w;
                 m_lastEnterSerial = serial;
-
-                setCursor(HT_POINTER_ARROW);
             });
 
             m_waylandState.pointer->setLeave([this](CCWlPointer* r, uint32_t serial, wl_proxy* surf) {
