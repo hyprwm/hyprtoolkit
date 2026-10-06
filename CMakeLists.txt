@@ -189,6 +189,9 @@ if(BUILD_TESTING)
   target_link_libraries(animations PRIVATE PkgConfig::deps hyprtoolkit)
   add_dependencies(tests animations)
 
+  add_executable(simpleLayer "tests/SimpleLayer.cpp")
+  target_link_libraries(simpleLayer PRIVATE PkgConfig::deps hyprtoolkit)
+  add_dependencies(tests simpleLayer)
 
   # GTest
   find_package(GTest CONFIG REQUIRED)
