@@ -675,7 +675,8 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
     if (state) {
         const auto SYM = xkb_state_key_get_one_sym(m_waylandState.seatState.xkbState, keycode + 8);
 
-        if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down) {
+        if (SYM == XKB_KEY_Left || SYM == XKB_KEY_Right || SYM == XKB_KEY_Up || SYM == XKB_KEY_Down || SYM == XKB_KEY_Home || SYM == XKB_KEY_End || SYM == XKB_KEY_KP_Home ||
+            SYM == XKB_KEY_KP_End) {
             // skip compose
             e.xkbKeysym = SYM;
             m_keyboardWindow->keyboardKey(e);
