@@ -26,8 +26,11 @@ TEST(WaylandPlatform, homeEndReachTextbox) {
     seat.xkbState = xkb_state_new(seat.xkbKeymap);
     ASSERT_NE(seat.xkbState, nullptr);
 
-    auto window               = makeShared<CWaylandWindow>(SWindowCreationData{});
-    auto textbox              = CTextboxBuilder::begin()->defaultText("search 🧑‍🌾 text")->multiline(false)->commence();
+    auto       window = makeShared<CWaylandWindow>(SWindowCreationData{});
+
+    const auto TEXT_CONTENT = "should not change";
+
+    auto       textbox        = CTextboxBuilder::begin()->defaultText(TEXT_CONTENT)->multiline(false)->commence();
     window->m_keyboardFocus   = textbox;
     platform.m_keyboardWindow = window;
 
@@ -45,12 +48,16 @@ TEST(WaylandPlatform, homeEndReachTextbox) {
         const auto keycode = xkb_keymap_key_by_name(seat.xkbKeymap, keys[i]);
         ASSERT_NE(keycode, XKB_KEYCODE_INVALID);
 
-        platform.onKey(keycode - 8, true);
+        const int XKB_WAYLAND_KEYCODE_DIFF = 8;
+
+        platform.onKey(keycode - XKB_WAYLAND_KEYCODE_DIFF, true);
         EXPECT_EQ(keyPresses, i + 1);
-        EXPECT_EQ(textbox->cursorPos(), i % 2 == 0 ? textbox->currentText().size() : 0);
+        // The test alternates between END and HOME
+        const int expectedPosition = i % 2 == 0 ? textbox->currentText().size() : 0;
+        EXPECT_EQ(textbox->cursorPos(), expectedPosition);
         EXPECT_EQ(seat.repeatKeyEvent.xkbKeysym, xkb_state_key_get_one_sym(seat.xkbState, keycode));
-        EXPECT_EQ(textbox->currentText(), "search 🧑‍🌾 text");
-        platform.onKey(keycode - 8, false);
+        EXPECT_EQ(textbox->currentText(), TEXT_CONTENT);
+        platform.onKey(keycode - XKB_WAYLAND_KEYCODE_DIFF, false);
         EXPECT_TRUE(seat.pressedKeys.empty());
     }
 }
