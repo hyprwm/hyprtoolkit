@@ -53,7 +53,7 @@ TEST(WaylandPlatform, homeEndReachTextbox) {
         platform.onKey(keycode - XKB_WAYLAND_KEYCODE_DIFF, true);
         EXPECT_EQ(keyPresses, i + 1);
         // The test alternates between END and HOME
-        const int expectedPosition = i % 2 == 0 ? textbox->currentText().size() : 0;
+        const auto expectedPosition = i % 2 == 0 ? textbox->currentText().size() : 0;
         EXPECT_EQ(textbox->cursorPos(), expectedPosition);
         EXPECT_EQ(seat.repeatKeyEvent.xkbKeysym, xkb_state_key_get_one_sym(seat.xkbState, keycode));
         EXPECT_EQ(textbox->currentText(), TEXT_CONTENT);
