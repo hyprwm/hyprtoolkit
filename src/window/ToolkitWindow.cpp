@@ -1,5 +1,7 @@
 #include "ToolkitWindow.hpp"
 
+#include <utility>
+
 #include "../core/InternalBackend.hpp"
 #include "../layout/Positioner.hpp"
 #include "../core/AnimationManager.hpp"
@@ -123,15 +125,12 @@ void IToolkitWindow::onPreRender() {
         return false;
     });
 
-    for (const auto& e : m_needsReposition) {
+    // step 4: grab what we need now so that anything scheduled during this pass will be
+    // picked up in the next frame
+    const auto needed = std::exchange(m_needsReposition, {});
+    for (const auto& e : needed) {
         g_positioner->repositionNeeded(e.lock());
     }
-    m_needsReposition.clear();
-
-    if (m_needsReposition.empty())
-        return;
-
-    g_positioner->position(m_rootElement, {{}, pixelSize() / scale()});
 }
 
 void IToolkitWindow::scheduleReposition(WP<IElement> e) {

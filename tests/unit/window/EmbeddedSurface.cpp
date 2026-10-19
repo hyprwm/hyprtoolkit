@@ -3,6 +3,9 @@
 #include "core/BackendContext.hpp"
 #include "element/Element.hpp"
 #include "hyprtoolkit/element/Textbox.hpp"
+#include "hyprtoolkit/element/ScrollArea.hpp"
+#include "hyprtoolkit/element/ColumnLayout.hpp"
+#include "hyprtoolkit/element/Null.hpp"
 #include "window/EmbeddedSurface.hpp"
 
 #include "../tricks/Tricks.hpp"
@@ -242,4 +245,40 @@ TEST_F(CEmbeddedSurfaceTest, invalidatedSurfaceIgnoresHostCalls) {
     m_surface->touchDown(1, {10, 10}, 0);
 
     EXPECT_EQ(m_surface->pixelSize(), Vector2D{});
+}
+
+TEST_F(CEmbeddedSurfaceTest, repositionScheduledDuringPreRenderIsKept) {
+    Tests::Tricks::createBackendSupport();
+    m_surface->resize({200, 100}, {200, 100}, 1.F);
+
+    const auto fixed = [] { return CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {100, 100}})->commence(); };
+
+    auto       scroll  = CScrollAreaBuilder::begin()->scrollY(true)->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    auto       content = CColumnLayoutBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_AUTO, {1, 1}})->commence();
+    for (int i = 0; i < 10; ++i) {
+        content->addChild(CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 30}})->commence());
+    }
+    scroll->addChild(content);
+    auto scrollHolder = fixed();
+    scrollHolder->addChild(scroll);
+    m_surface->rootElement()->addChild(scrollHolder);
+
+    auto leaf       = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {10, 10}})->commence();
+    auto leafHolder = fixed();
+    leafHolder->addChild(leaf);
+    m_surface->rootElement()->addChild(leafHolder);
+
+    m_surface->onPreRender();
+    m_surface->onPreRender();
+
+    m_surface->m_needsReposition.clear();
+    m_surface->m_needsReposition.shrink_to_fit();
+    m_surface->m_needsReposition.reserve(2);
+    m_surface->scheduleReposition(scroll);
+    m_surface->scheduleReposition(leaf);
+    ASSERT_EQ(m_surface->m_needsReposition.size(), m_surface->m_needsReposition.capacity());
+
+    m_surface->onPreRender();
+
+    EXPECT_FALSE(m_surface->m_needsReposition.empty());
 }
