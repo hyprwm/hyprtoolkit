@@ -70,6 +70,7 @@ namespace Hyprtoolkit {
         SP<Hyprutils::Animation::SAnimationPropertyConfig>                                             colorAnimationConfig;
         ASP<Hyprgraphics::CTextResource>                                                               resource;
         Hyprutils::Math::Vector2D                                                                      size;
+        Hyprutils::Math::CBox                                                                          lastPaintBox;
 
         Hyprutils::Math::Vector2D                                                                      lastCursorPos;
 
