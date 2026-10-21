@@ -3,6 +3,7 @@
 #include "core/BackendContext.hpp"
 #include "element/Element.hpp"
 #include "hyprtoolkit/element/Textbox.hpp"
+#include "hyprtoolkit/element/Null.hpp"
 #include "window/EmbeddedSurface.hpp"
 
 #include "../tricks/Tricks.hpp"
@@ -242,4 +243,23 @@ TEST_F(CEmbeddedSurfaceTest, invalidatedSurfaceIgnoresHostCalls) {
     m_surface->touchDown(1, {10, 10}, 0);
 
     EXPECT_EQ(m_surface->pixelSize(), Vector2D{});
+}
+
+TEST_F(CEmbeddedSurfaceTest, detachedElementDoesNotDropRootReposition) {
+    Tests::Tricks::createBackendSupport();
+    m_surface->resize({200, 100}, {200, 100}, 1.F);
+
+    auto child = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}})->commence();
+    m_surface->rootElement()->addChild(child);
+    m_surface->onPreRender();
+    ASSERT_EQ(child->size(), (Vector2D{50, 50}));
+
+    auto detached = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {10, 10}})->commence();
+    m_surface->scheduleReposition(detached);
+    m_surface->scheduleReposition(m_surface->rootElement());
+    child->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {80, 50}})->commence();
+
+    m_surface->onPreRender();
+
+    EXPECT_EQ(child->size(), (Vector2D{80, 50}));
 }
