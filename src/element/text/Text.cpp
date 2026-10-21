@@ -164,6 +164,12 @@ void CTextElement::paint() {
     renderBox.w = texSizeLogical.x;
     renderBox.h = texSizeLogical.y;
 
+    if (renderBox != m_impl->lastPaintBox && impl->window) {
+        impl->window->damage(m_impl->lastPaintBox.copy().expand(2));
+        impl->window->damage(renderBox.copy().expand(2));
+        m_impl->lastPaintBox = renderBox;
+    }
+
     const auto COLOR = m_impl->color->value();
     g_renderer->renderTexture({
         .box               = renderBox,
