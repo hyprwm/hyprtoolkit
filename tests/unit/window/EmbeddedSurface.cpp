@@ -282,3 +282,22 @@ TEST_F(CEmbeddedSurfaceTest, repositionScheduledDuringPreRenderIsKept) {
 
     EXPECT_FALSE(m_surface->m_needsReposition.empty());
 }
+
+TEST_F(CEmbeddedSurfaceTest, detachedElementDoesNotDropRootReposition) {
+    Tests::Tricks::createBackendSupport();
+    m_surface->resize({200, 100}, {200, 100}, 1.F);
+
+    auto child = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {50, 50}})->commence();
+    m_surface->rootElement()->addChild(child);
+    m_surface->onPreRender();
+    ASSERT_EQ(child->size(), (Vector2D{50, 50}));
+
+    auto detached = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {10, 10}})->commence();
+    m_surface->scheduleReposition(detached);
+    m_surface->scheduleReposition(m_surface->rootElement());
+    child->rebuild()->size({CDynamicSize::HT_SIZE_ABSOLUTE, CDynamicSize::HT_SIZE_ABSOLUTE, {80, 50}})->commence();
+
+    m_surface->onPreRender();
+
+    EXPECT_EQ(child->size(), (Vector2D{80, 50}));
+}

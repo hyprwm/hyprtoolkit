@@ -118,6 +118,9 @@ void IToolkitWindow::onPreRender() {
     std::vector<WP<IElement>> parents;
     parents.reserve(m_needsReposition.size());
     std::erase_if(m_needsReposition, [&parents](WP<IElement> e) {
+        if (!e->impl->parent)
+            return false;
+
         if (std::ranges::contains(parents, e->impl->parent))
             return true;
 
