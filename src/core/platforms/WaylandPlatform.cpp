@@ -56,7 +56,9 @@ bool CWaylandPlatform::attempt() {
 
         const std::string NAME = name;
 
-        if (NAME == "wl_seat") {
+        if (NAME == "wl_seat" && !m_waylandState.seat) {
+            // Bind only the first seat. Rebinding on every wl_seat global would leave us on
+            // whichever seat the compositor advertised last, which may not carry the user's input.
             TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 9, id));
             m_waylandState.seat = makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_seat_interface, 9));
             initSeat();
