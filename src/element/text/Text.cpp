@@ -1,5 +1,6 @@
 #include "Text.hpp"
 
+#include <charconv>
 #include <cmath>
 #include <glib-object.h>
 #include <hyprtoolkit/palette/Palette.hpp>
@@ -533,12 +534,51 @@ static std::string formatColor(uint32_t col) {
     return std::format("#{0:08x}", ((col & 0x00ffffffu) << 8) | (col >> 24));
 }
 
+// a link's begin/end index into the text pango lays out, which is markup-stripped, not the raw
+// markup assembled here. counting displayed bytes keeps the region on the link's glyphs instead of
+// drifting by the length of the styling tags in front of it. valid markup only: a broken fragment
+// would already have failed the whole-string parse in setPangoText.
+static size_t displayedLength(std::string_view s) {
+    size_t n = 0;
+    for (size_t i = 0; i < s.size();) {
+        const char c = s[i];
+        if (c == '<') {
+            const size_t close = s.find('>', i);
+            if (close == std::string_view::npos)
+                break;
+            i = close + 1;
+        } else if (c == '&') {
+            const size_t semi = s.find(';', i);
+            if (semi == std::string_view::npos) {
+                n++;
+                i++;
+                continue;
+            }
+            const auto body = s.substr(i + 1, semi - i - 1);
+            if (!body.empty() && body[0] == '#') {
+                const int     base   = (body.size() > 1 && (body[1] == 'x' || body[1] == 'X')) ? 16 : 10;
+                const auto    digits = body.substr(base == 16 ? 2 : 1);
+                unsigned long cp     = 0;
+                std::from_chars(digits.data(), digits.data() + digits.size(), cp, base);
+                n += cp ? sc<size_t>(g_unichar_to_utf8(sc<gunichar>(cp), nullptr)) : 1;
+            } else
+                n++; // amp/lt/gt/quot/apos each strip to one byte
+            i = semi + 1;
+        } else {
+            n++;
+            i++;
+        }
+    }
+    return n;
+}
+
 void STextImpl::parseText() {
     parsedLinks.clear();
     hoveredTextLink = nullptr;
 
-    size_t      lastTagClose = 0;
-    const auto& ORIGINAL     = data.text;
+    size_t      lastTagClose    = 0;
+    size_t      displayedOffset = 0; // byte offset into the markup-stripped text, tracked in parallel with newString
+    const auto& ORIGINAL        = data.text;
     std::string newString;
 
     while (true) {
@@ -550,7 +590,9 @@ void STextImpl::parseText() {
             break;
         }
 
-        newString += ORIGINAL.substr(lastTagClose, tagOpen - lastTagClose);
+        const std::string_view PRE = std::string_view{ORIGINAL}.substr(lastTagClose, tagOpen - lastTagClose);
+        newString += PRE;
+        displayedOffset += displayedLength(PRE);
 
         // find the close
         size_t linkOpen  = tagOpen + 9;
@@ -576,16 +618,18 @@ void STextImpl::parseText() {
         if (contentClose == std::string::npos)
             break; // broken tag
 
-        std::string replaceWith = std::format("<u><span foreground=\"{}\">{}</span></u>", formatColor(g_palette->m_colors.linkText.getAsHex()),
-                                              std::string_view{ORIGINAL}.substr(contentOpen, contentClose - contentOpen));
+        const std::string_view CONTENT     = std::string_view{ORIGINAL}.substr(contentOpen, contentClose - contentOpen);
+        const size_t           contentLen  = displayedLength(CONTENT);
+        std::string            replaceWith = std::format("<u><span foreground=\"{}\">{}</span></u>", formatColor(g_palette->m_colors.linkText.getAsHex()), CONTENT);
 
         parsedLinks.emplace_back(STextLink{
-            .begin = newString.size(),
-            .end   = newString.size() + replaceWith.size(),
+            .begin = displayedOffset,
+            .end   = displayedOffset + contentLen,
             .link  = std::string{LINK},
         });
 
         newString += replaceWith;
+        displayedOffset += contentLen; // the <u><span> wrapper adds no displayed bytes
 
         lastTagClose = contentClose + 4;
     }
@@ -598,7 +642,7 @@ void STextImpl::parseText() {
 void STextImpl::recheckTextBoxes() {
     for (auto& link : parsedLinks) {
         link.region.clear();
-        for (size_t i = link.begin; i < link.end + 1; ++i) {
+        for (size_t i = link.begin; i < link.end; ++i) {
             auto box = getCharBox(i);
             link.region.add(box);
         }
