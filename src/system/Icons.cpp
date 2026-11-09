@@ -204,17 +204,22 @@ void CSystemIconFactory::parseTheme(const std::string& themeDir) {
         directoriesEntry = THEME_DATA->find("\nDirectories =");
 
     if (directoriesEntry != std::string::npos) {
-        const auto BASE_PATH = std::filesystem::path{themeDir};
+        const auto        BASE_PATH = std::filesystem::path{themeDir};
+        const std::string THEME     = BASE_PATH.filename().string();
 
-        size_t     directoriesLineEnd = THEME_DATA->find('\n', directoriesEntry + 2);
-        directoriesEntry              = THEME_DATA->find('=', directoriesEntry + 2) + 1;
+        size_t            directoriesLineEnd = THEME_DATA->find('\n', directoriesEntry + 2);
+        directoriesEntry                     = THEME_DATA->find('=', directoriesEntry + 2) + 1;
 
         std::string   directoriesList = THEME_DATA->substr(directoriesEntry, directoriesLineEnd - directoriesEntry);
 
         CConstVarList dirs(directoriesList, 0, ',', true);
 
+        // the index.theme lives in one base dir, but a theme's icon dirs can be spread across all of
+        // them: chromium drops PWA icons into ~/.local/share/icons/<theme>/<size>/apps with no
+        // index.theme there. add each listed dir under every base dir so those are found too.
         for (const auto& d : dirs) {
-            m_lookupPaths.emplace_back(BASE_PATH / d);
+            for (const auto& rawBase : getXDGIconThemeDirs())
+                m_lookupPaths.emplace_back(std::filesystem::path{fromDir(rawBase.c_str())} / THEME / std::string{d});
         }
 
         g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: theme {} has {} dirs", themeDir, dirs.size());
