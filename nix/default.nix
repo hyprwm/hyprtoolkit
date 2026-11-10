@@ -32,22 +32,25 @@ stdenv.mkDerivation {
     cmake
     pkg-config
     hyprwayland-scanner
+    wayland-scanner
   ];
 
-  propagatedBuildInputs = [ hyprgraphics ];
+  propagatedBuildInputs = [
+    aquamarine
+    hyprgraphics
+    hyprutils
+  ];
 
   buildInputs = [
     abseil-cpp
-    aquamarine
     gtest
     hyprlang
-    hyprutils
     iniparser
     libgbm
     libxkbcommon
     wayland
-    wayland-scanner
     wayland-protocols
+    wayland-scanner
   ];
 
   env.XDG_RUNTIME_DIR = "/tmp/runtime";
