@@ -10,6 +10,7 @@ uniform int targetTF; // eTransferFunction
 uniform mat4x2 targetPrimaries;
 
 uniform vec2 fullSizeUntransformed;
+uniform bool axisAligned;
 uniform float radiusOuter;
 uniform float thick;
 
@@ -113,8 +114,6 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     highp vec2 pixCoord = vec2(gl_FragCoord);
     highp vec2 pixCoordOuter = pixCoord;
-    highp vec2 originalPixCoord = v_texcoord;
-    originalPixCoord *= fullSizeUntransformed;
     float additionalAlpha = 1.0;
 
     vec4 pixColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -154,6 +153,9 @@ void main() {
 
     // now check for other shit
     if (!done) {
+        // Avoid interpolation errors at half-pixel border thicknesses when the box is pixel-aligned.
+        highp vec2 originalPixCoord = axisAligned ? gl_FragCoord.xy - topLeft : v_texcoord * fullSizeUntransformed;
+
         // distance to all straight bb borders
         float distanceT = originalPixCoord[1];
         float distanceB = fullSizeUntransformed[1] - originalPixCoord[1];

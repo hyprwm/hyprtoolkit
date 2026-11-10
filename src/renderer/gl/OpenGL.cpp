@@ -421,6 +421,7 @@ void COpenGLRenderer::initGLResources() {
     m_borderShader.bottomRight           = glGetUniformLocation(prog, "bottomRight");
     m_borderShader.fullSize              = glGetUniformLocation(prog, "fullSize");
     m_borderShader.fullSizeUntransformed = glGetUniformLocation(prog, "fullSizeUntransformed");
+    m_borderShader.axisAligned           = glGetUniformLocation(prog, "axisAligned");
     m_borderShader.radius                = glGetUniformLocation(prog, "radius");
     m_borderShader.radiusOuter           = glGetUniformLocation(prog, "radiusOuter");
     m_borderShader.gradient              = glGetUniformLocation(prog, "gradient");
@@ -1235,6 +1236,7 @@ void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
     glUniform2f(m_borderShader.topLeft, sc<float>(TOPLEFT.x), sc<float>(TOPLEFT.y));
     glUniform2f(m_borderShader.fullSize, sc<float>(FULLSIZE.x), sc<float>(FULLSIZE.y));
     glUniform2f(m_borderShader.fullSizeUntransformed, sc<float>(UNTRANSFORMED.width), sc<float>(UNTRANSFORMED.height));
+    glUniform1i(m_borderShader.axisAligned, PRESENTED.rot == 0.0);
     glUniform1f(m_borderShader.radius, data.rounding * m_scale);
     glUniform1f(m_borderShader.radiusOuter, data.rounding * m_scale);
     glUniform1f(m_borderShader.roundingPower, 2);
