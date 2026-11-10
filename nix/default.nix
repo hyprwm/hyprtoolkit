@@ -13,7 +13,6 @@
   iniparser,
   libgbm,
   libxkbcommon,
-  wayland,
   wayland-protocols,
   wayland-scanner,
   version ? "git",
@@ -48,7 +47,6 @@ stdenv.mkDerivation {
     iniparser
     libgbm
     libxkbcommon
-    wayland
     wayland-protocols
     wayland-scanner
   ];
