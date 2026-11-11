@@ -271,6 +271,7 @@ void CWaylandPlatform::initSeat() {
     m_waylandState.seat->setCapabilities([this](CCWlSeat* r, wl_seat_capability cap) {
         const bool HAS_KEYBOARD = ((uint32_t)cap) & WL_SEAT_CAPABILITY_KEYBOARD;
         const bool HAS_POINTER  = ((uint32_t)cap) & WL_SEAT_CAPABILITY_POINTER;
+        const bool HAS_TOUCH    = ((uint32_t)cap) & WL_SEAT_CAPABILITY_TOUCH;
 
         if (HAS_KEYBOARD && !m_waylandState.keyboard) {
             m_waylandState.keyboard = makeShared<CCWlKeyboard>(m_waylandState.seat->sendGetKeyboard());
@@ -427,6 +428,21 @@ void CWaylandPlatform::initSeat() {
         } else if (!HAS_POINTER && m_waylandState.pointer) {
             m_waylandState.pointer.reset();
             m_waylandState.cursorShapeDev.reset();
+        }
+
+        if (HAS_TOUCH && !m_waylandState.touch) {
+            m_waylandState.touch = makeShared<CCWlTouch>(m_waylandState.seat->sendGetTouch());
+
+            m_waylandState.touch->setDown([this](CCWlTouch* r, uint32_t serial, uint32_t time, wl_proxy* surf, int32_t id, wl_fixed_t x, wl_fixed_t y) {
+                onTouchDown(windowForSurf(surf), id, {wl_fixed_to_double(x), wl_fixed_to_double(y)});
+            });
+            m_waylandState.touch->setMotion(
+                [this](CCWlTouch* r, uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y) { onTouchMotion(id, {wl_fixed_to_double(x), wl_fixed_to_double(y)}); });
+            m_waylandState.touch->setUp([this](CCWlTouch* r, uint32_t serial, uint32_t time, int32_t id) { onTouchUp(id); });
+            m_waylandState.touch->setCancel([this](CCWlTouch* r) { onTouchCancel(); });
+        } else if (!HAS_TOUCH && m_waylandState.touch) {
+            onTouchCancel();
+            m_waylandState.touch.reset();
         }
     });
 }
@@ -730,6 +746,44 @@ void CWaylandPlatform::onKeyboardEnter(wl_proxy* surf, wl_array* keys) {
 void CWaylandPlatform::onKeyboardLeave() {
     m_keyboardWindow.reset();
     resetKeyboardState();
+}
+
+void CWaylandPlatform::onTouchDown(SP<IWaylandWindow> window, int32_t id, const Vector2D& local) {
+    if (!window || m_touchId)
+        return;
+
+    m_touchId     = id;
+    m_touchWindow = window;
+    window->mouseEnter(local);
+    window->mouseButton(Input::MOUSE_BUTTON_LEFT, true);
+}
+
+void CWaylandPlatform::onTouchMotion(int32_t id, const Vector2D& local) {
+    if (id != m_touchId)
+        return;
+
+    if (const auto window = m_touchWindow.lock())
+        window->mouseMove(local);
+}
+
+void CWaylandPlatform::onTouchUp(int32_t id) {
+    if (id != m_touchId)
+        return;
+
+    onTouchCancel();
+}
+
+void CWaylandPlatform::onTouchCancel() {
+    const auto window = m_touchWindow.lock();
+    m_touchWindow.reset();
+    m_touchId.reset();
+
+    if (!window)
+        return;
+
+    // buttons act on press, so this release never clicks on a cancel, it only ends a drag
+    window->mouseButton(Input::MOUSE_BUTTON_LEFT, false);
+    window->mouseLeave();
 }
 
 void CWaylandPlatform::resetKeyboardState() {
