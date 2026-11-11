@@ -246,6 +246,20 @@ SP<IWindow> IWaylandWindow::openPopup(const SWindowCreationData& data) {
     return x;
 }
 
+void IWaylandWindow::releaseWayland() {
+    // popup close() erases itself from m_popups
+    const auto popups = m_popups;
+    for (const auto& p : popups) {
+        if (const auto popup = reinterpretPointerCast<IWaylandWindow>(p.lock()))
+            popup->releaseWayland();
+    }
+
+    close();
+
+    // layers and lock surfaces keep their wl_surface across close() for a reopen
+    m_waylandState = {};
+}
+
 void IWaylandWindow::mouseButton(const Input::eMouseButton button, bool state) {
     if (m_popups.empty() || !state || m_ignoreNextButtonEvent) {
         m_ignoreNextButtonEvent = false;

@@ -176,6 +176,28 @@ CWaylandPlatform::~CWaylandPlatform() {
         wl_display_disconnect(DPY);
 }
 
+void CWaylandPlatform::releaseProxies() {
+    // by value: a release can drop the last ref and the destructor erases from the list
+    const auto release = [](auto windows) {
+        for (const auto& w : windows) {
+            if (const auto window = w.lock())
+                window->releaseWayland();
+        }
+    };
+
+    release(m_windows);
+    release(m_layers);
+
+    if (const auto lock = m_sessionLockState.lock()) {
+        release(lock->m_lockSurfaces);
+        lock->m_lock.reset();
+    }
+
+    for (const auto& o : m_outputs) {
+        o->m_wlOutput.reset();
+    }
+}
+
 bool CWaylandPlatform::dispatchEvents() {
     int ret = 0;
     do {

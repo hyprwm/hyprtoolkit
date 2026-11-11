@@ -56,6 +56,7 @@ namespace Hyprtoolkit {
         virtual void                      setIMTo(const Hyprutils::Math::CBox& box, const std::string& str, size_t cursor);
         virtual void                      resetIM();
         virtual void                      onPreRender();
+        void                              releaseWayland();
 
         std::vector<WP<IWindow>>          m_popups;
 

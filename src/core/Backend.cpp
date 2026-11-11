@@ -664,6 +664,9 @@ void CBackend::cleanup() {
     if (m_cleaned.exchange(true))
         return;
 
+    // apps drop their windows and outputs after enterLoop() returns, past the disconnect below
+    g_waylandPlatform->releaseProxies();
+
     g_asyncResourceGatherer.reset();
 
     m_waylandPostDispatch.reset();

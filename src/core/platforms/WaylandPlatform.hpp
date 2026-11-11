@@ -54,6 +54,7 @@ namespace Hyprtoolkit {
         void                         setCursor(ePointerShape shape);
 
         bool                         dispatchEvents();
+        void                         releaseProxies();
 
         void                         setClipboard(const std::string& text);
         std::string                  readClipboard();
