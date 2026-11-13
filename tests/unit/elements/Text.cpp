@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <pango/pango.h>
+
 #include <element/text/Text.hpp>
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/palette/Color.hpp>
@@ -19,6 +21,17 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
+// the text pango actually lays out, with markup stripped. the ground truth a link's begin/end index into.
+static std::string strippedMarkup(const std::string& markup) {
+    char* buf = nullptr;
+    if (!pango_parse_markup(markup.c_str(), -1, 0, nullptr, &buf, nullptr, nullptr))
+        return markup;
+    std::string out = buf ? buf : "";
+    if (buf)
+        g_free(buf);
+    return out;
+}
+
 TEST(Element, text) {
     Tests::Tricks::createBackendSupport();
 
@@ -28,6 +41,34 @@ TEST(Element, text) {
     auto text = CTextBuilder::begin()->text(R"(Hello <a href="https://hypr.land">link</a>! Hi <a href="https://hypr.land">link2</a>!)")->commence();
 
     EXPECT_EQ(text->m_impl->parsedText, "Hello <u><span foreground=\"#ff0000ff\">link</span></u>! Hi <u><span foreground=\"#ff0000ff\">link2</span></u>!");
+
+    // a link's begin/end must index into the text pango lays out, which is markup-stripped, so the
+    // region lands on the glyphs. the styling markup before the second link used to shift it. (#127)
+    const std::string STRIPPED = strippedMarkup(text->m_impl->parsedText);
+    ASSERT_EQ(STRIPPED, "Hello link! Hi link2!");
+    ASSERT_EQ(text->m_impl->parsedLinks.size(), 2u);
+    const auto& l0 = text->m_impl->parsedLinks[0];
+    const auto& l1 = text->m_impl->parsedLinks[1];
+    EXPECT_EQ(STRIPPED.substr(l0.begin, l0.end - l0.begin), "link");
+    EXPECT_EQ(STRIPPED.substr(l1.begin, l1.end - l1.begin), "link2");
+
+    text.reset();
+}
+
+TEST(Element, textLinkOffsetsWithMarkupPrefix) {
+    Tests::Tricks::createBackendSupport();
+
+    g_palette->m_colors.linkText = CHyprColor(1.F, 0.F, 0.F, 1.F);
+
+    // an entity and a styling tag before the link both shrink once pango strips them, so counting
+    // raw markup bytes put the region past the link. count displayed bytes instead. (#127)
+    auto              text = CTextBuilder::begin()->text(R"(a &amp; <b>see <a href="http://x">LINK</a></b> now)")->commence();
+
+    const std::string STRIPPED = strippedMarkup(text->m_impl->parsedText);
+    ASSERT_EQ(STRIPPED, "a & see LINK now");
+    ASSERT_EQ(text->m_impl->parsedLinks.size(), 1u);
+    const auto& link = text->m_impl->parsedLinks[0];
+    EXPECT_EQ(STRIPPED.substr(link.begin, link.end - link.begin), "LINK");
 
     text.reset();
 }
