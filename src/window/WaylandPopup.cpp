@@ -117,7 +117,8 @@ void CWaylandPopup::open() {
 }
 
 void CWaylandPopup::close() {
-    if (g_waylandPlatform->m_currentWindow == m_self)
+    // the app can drop a popup after the backend is gone
+    if (g_waylandPlatform && g_waylandPlatform->m_currentWindow == m_self)
         g_waylandPlatform->m_currentWindow = m_parent;
 
     if (m_parent)
@@ -138,6 +139,7 @@ void CWaylandPopup::close() {
         m_waylandState.surface->sendDestroy();
 
     m_waylandState = {};
+    m_wlPopupState = {};
 
     m_events.popupClosed.emit();
 }
