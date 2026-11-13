@@ -83,7 +83,16 @@ void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
     });
 
     for (size_t i = 0; i < m_waylandState.wlBuffers.size(); ++i) {
-        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(m_waylandState.swapchain->next(nullptr));
+        // next() is null when the swapchain can't allocate (e.g. a software renderer with no dmabuf).
+        // wrapping that in a CWaylandBuffer dereferences null; leave the slot empty instead, onPreRender
+        // and render both already bail when a buffer is missing.
+        auto buf = m_waylandState.swapchain->next(nullptr);
+        if (!buf) {
+            g_logger->log(HT_LOG_ERROR, "resizeSwapchain: swapchain could not allocate a buffer");
+            m_waylandState.wlBuffers[i].reset();
+            continue;
+        }
+        m_waylandState.wlBuffers[i] = makeShared<CWaylandBuffer>(buf);
     }
 }
 
