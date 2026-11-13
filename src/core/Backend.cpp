@@ -191,8 +191,19 @@ SP<IBackend> IBackend::create() {
     g_backendServices->cursor      = makeShared<CWaylandCursor>();
     g_backendServices->outputs     = makeShared<CWaylandOutputProvider>();
     g_backendServices->sessionLock = makeShared<CWaylandSessionLockProvider>();
-    g_openGL                       = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
-    g_renderer                     = g_openGL;
+    // the renderer aborts if it can't open a render node, so a compositor that never sent
+    // linux-dmabuf feedback (drm fd still -1) takes the whole app down. fail the backend
+    // cleanly instead, like the aq and wayland paths above.
+    if (g_waylandPlatform->m_drmState.fd < 0) {
+        g_logger->log(HT_LOG_ERROR, "no drm fd from the compositor (no linux-dmabuf feedback); cannot start the GL renderer");
+        g_waylandPlatform = nullptr;
+        g_backendServices.reset();
+        g_waylandBackend.reset();
+        g_backend.reset();
+        return nullptr;
+    }
+    g_openGL   = makeShared<COpenGLRenderer>(g_waylandPlatform->m_drmState.fd);
+    g_renderer = g_openGL;
 
     if (!backend->initializeEventLoop()) {
         backend->terminate();
