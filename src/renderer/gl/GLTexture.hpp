@@ -12,6 +12,7 @@
 
 namespace Hyprtoolkit {
     struct SBackendLifetime;
+    class CFramebuffer;
     enum eGLTextureType : uint8_t {
         TEXTURE_INVALID,  // Invalid
         TEXTURE_RGBA,     // 4 channels
@@ -47,6 +48,10 @@ namespace Hyprtoolkit {
 
         ASP<Hyprgraphics::IAsyncResource> m_resource;
         WP<SBackendLifetime>              m_lifetime;
+
+        // True when this texture is already a fit-resolved full-screen frame;
+        // renderFitFrame returns it unchanged so it is never fit-transformed twice.
+        bool                              m_fitApplied = false;
 
         void                              upload();
         void                              uploadOnContext(WP<CGLTexture> self);
