@@ -71,6 +71,11 @@ namespace Hyprtoolkit {
 
         void                         onRepeatTimerFire();
 
+        void                         onTouchDown(SP<IWaylandWindow> window, int32_t id, const Hyprutils::Math::Vector2D& local);
+        void                         onTouchMotion(int32_t id, const Hyprutils::Math::Vector2D& local);
+        void                         onTouchUp(int32_t id);
+        void                         onTouchCancel();
+
         SP<CWaylandSessionLockState> aquireSessionLock();
 
         // dmabuf formats
@@ -93,6 +98,7 @@ namespace Hyprtoolkit {
             Hyprutils::Memory::CSharedPointer<CCWpViewporter>                         viewporter;
             Hyprutils::Memory::CSharedPointer<CCWlKeyboard>                           keyboard;
             Hyprutils::Memory::CSharedPointer<CCWlPointer>                            pointer;
+            Hyprutils::Memory::CSharedPointer<CCWlTouch>                              touch;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeManagerV1>               cursorShapeMgr;
             Hyprutils::Memory::CSharedPointer<CCWpCursorShapeDeviceV1>                cursorShapeDev;
             Hyprutils::Memory::CSharedPointer<CCZwpTextInputManagerV3>                textInputManager;
@@ -146,6 +152,8 @@ namespace Hyprtoolkit {
         std::vector<WP<CWaylandLayer>>  m_layers;
         WP<IWaylandWindow>              m_currentWindow;       // window the pointer is over
         WP<IWaylandWindow>              m_keyboardWindow;      // window the compositor gave keyboard focus
+        WP<IWaylandWindow>              m_touchWindow;         // window the tracked touch point went down on
+        std::optional<int32_t>          m_touchId;
         uint32_t                        m_currentMods     = 0; // HT modifiers, not xkb
         uint32_t                        m_lastEnterSerial = 0;
         // xdg_toplevel.resize requires the serial of a button PRESS, not release.
