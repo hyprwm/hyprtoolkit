@@ -75,6 +75,32 @@ TEST_F(CEmbeddedSurfaceTest, frameRequestsAreCoalesced) {
     EXPECT_EQ(m_surface->scale(), 2.F);
 }
 
+TEST_F(CEmbeddedSurfaceTest, rootReflowPreservesConfiguredBounds) {
+    const auto child = CNullBuilder::begin()->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    m_surface->rootElement()->addChild(child);
+
+    for (const float scale : {1.F, 1.25F, 4.F / 3.F, 1.5F, 2.F}) {
+        for (const auto size : {Vector2D{400, 260}, Vector2D{401, 259}, Vector2D{398, 261}}) {
+            const auto pixels = (size * scale).floor();
+            // Embedded hosts supply logical bounds explicitly; Wayland uses the drawable extent.
+            for (const auto logical : {size, pixels / scale}) {
+                SCOPED_TRACE(::testing::Message() << scale << ", " << logical.x << "x" << logical.y);
+                m_surface->resize(logical, pixels, scale);
+                EXPECT_EQ(child->size(), logical);
+
+                for (int i = 0; i < 3; ++i) {
+                    m_surface->rootElement()->forceReposition();
+                    EXPECT_EQ(m_surface->rootElement()->size(), logical);
+                    EXPECT_EQ(child->size(), logical);
+                    if (logical != pixels / scale)
+                        continue;
+                    EXPECT_EQ((CBox{{}, child->size()}.scale(scale).round().size()), pixels);
+                }
+            }
+        }
+    }
+}
+
 TEST_F(CEmbeddedSurfaceTest, mouseInputCanBeDisabled) {
     const auto element = CEmbeddedTestElement::create();
     int        moves   = 0;

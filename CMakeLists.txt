@@ -211,6 +211,7 @@ if(BUILD_TESTING)
   gtest_discover_tests(hyprtoolkit_tests)
 
   add_executable(embeddedRendererTest "tests/EmbeddedRenderer.cpp")
+  target_include_directories(embeddedRendererTest PRIVATE "./src" "./protocols")
   target_link_libraries(embeddedRendererTest PRIVATE hyprtoolkit GTest::gtest_main OpenGL::EGL OpenGL::OpenGL PkgConfig::deps)
   gtest_discover_tests(embeddedRendererTest)
 

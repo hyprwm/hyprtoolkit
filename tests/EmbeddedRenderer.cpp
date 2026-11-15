@@ -8,6 +8,12 @@
 #include <hyprtoolkit/core/Timer.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/window/EmbeddedSurface.hpp>
+#include <hyprutils/utils/ScopeGuard.hpp>
+
+#include "window/EmbeddedSurface.hpp"
+
+#include <array>
+#include <cmath>
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Memory;
@@ -181,4 +187,90 @@ TEST_F(CEmbeddedRendererTest, rendersAndRestoresHostState) {
     surface.reset();
     backend->destroy();
     backend.reset();
+}
+
+TEST_F(CEmbeddedRendererTest, fractionalBordersSurviveReflowAndEdgeDamage) {
+    using namespace Hyprutils::Math;
+
+    IEmbeddedBackend::SCreationData creationData;
+    creationData.eventLoop = makeShared<CTestEventLoop>();
+    auto backend           = IEmbeddedBackend::create(creationData);
+    ASSERT_TRUE(backend);
+    auto surface = backend->createSurface();
+    ASSERT_TRUE(surface);
+    auto window = dynamicPointerCast<CEmbeddedSurface>(surface);
+    ASSERT_TRUE(window);
+
+    GLuint framebuffer = 0, texture = 0;
+    glGenFramebuffers(1, &framebuffer);
+    glGenTextures(1, &texture);
+    Hyprutils::Utils::CScopeGuard cleanup{[&] {
+        glDeleteFramebuffers(1, &framebuffer);
+        glDeleteTextures(1, &texture);
+        window.reset();
+        surface.reset();
+        backend->destroy();
+    }};
+
+    surface->rootElement()->addChild(CRectangleBuilder::begin()
+                                         ->color([] { return CHyprColor{1.F, 0.F, 0.F, 1.F}; })
+                                         ->borderColor([] { return CHyprColor{0.F, 1.F, 0.F, 1.F}; })
+                                         ->borderThickness(1)
+                                         ->rounding(8)
+                                         ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                                         ->commence());
+
+    for (const float scale : {1.F, 1.25F, 4.F / 3.F, 1.5F, 2.F}) {
+        for (const auto size : {Vector2D{400, 260}, Vector2D{401, 259}, Vector2D{398, 261}}) {
+            SCOPED_TRACE(::testing::Message() << scale << ", " << size.x << "x" << size.y);
+            const auto pixels  = (size * scale).floor();
+            const auto logical = pixels / scale;
+            const int  width = pixels.x, height = pixels.y;
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+            ASSERT_EQ(glCheckFramebufferStatus(GL_FRAMEBUFFER), GL_FRAMEBUFFER_COMPLETE);
+            surface->resize(logical, pixels, scale);
+
+            for (int frame = 0; frame < 3; ++frame) {
+                SCOPED_TRACE(frame);
+                if (frame == 1)
+                    surface->rootElement()->forceReposition();
+                else if (frame == 2) {
+                    // Erase the framebuffer edges, then request only logical edge damage.
+                    glEnable(GL_SCISSOR_TEST);
+                    glClearColor(0.F, 0.F, 0.F, 0.F);
+                    for (const auto box : {CBox{0, 0, pixels.x, 1}, CBox{0, pixels.y - 1, pixels.x, 1}, CBox{0, 0, 1, pixels.y}, CBox{pixels.x - 1, 0, 1, pixels.y}}) {
+                        glScissor(box.x, box.y, box.w, box.h);
+                        glClear(GL_COLOR_BUFFER_BIT);
+                    }
+                    glDisable(GL_SCISSOR_TEST);
+
+                    const auto w = std::ceil(logical.x), h = std::ceil(logical.y);
+                    CRegion    edges{CBox{0, 0, w, h}};
+                    edges.subtract(CBox{2, 2, w - 4, h - 4});
+                    window->damage(std::move(edges));
+                }
+
+                surface->render(frame == 0 ? 0 : 1);
+
+                for (const auto point : {Vector2D{width / 2, 0}, Vector2D{width / 2, height - 1}, Vector2D{0, height / 2}, Vector2D{width - 1, height / 2}}) {
+                    SCOPED_TRACE(::testing::Message() << point.x << ", " << point.y);
+                    std::array<GLubyte, 4> pixel = {};
+                    glReadPixels(point.x, point.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel.data());
+                    EXPECT_LT(pixel[0], 10);
+                    EXPECT_GT(pixel[1], 240);
+                    EXPECT_LT(pixel[2], 10);
+                    EXPECT_GT(pixel[3], 240);
+                }
+
+                std::array<GLubyte, 4> center = {};
+                glReadPixels(width / 2, height / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, center.data());
+                EXPECT_GT(center[0], 240);
+                EXPECT_LT(center[1], 10);
+                EXPECT_GT(center[3], 240);
+            }
+        }
+    }
 }

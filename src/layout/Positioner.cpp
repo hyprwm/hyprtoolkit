@@ -26,8 +26,8 @@ void CPositioner::position(SP<IElement> element, const CBox& box, const Hyprutil
 }
 
 void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& data) {
-    const auto C   = element->impl->children;
-    const auto BOX = element->impl->position.copy().translate(data.offset);
+    const auto C        = element->impl->children;
+    const auto BOX      = element->impl->position.copy().translate(data.offset);
     const auto CLIP_BOX = CBox{BOX.pos(), {data.growX ? 99999999 : BOX.width, data.growY ? 99999999 : BOX.height}};
 
     // position children according to how they wanna be positioned
@@ -80,15 +80,9 @@ void CPositioner::positionChildren(SP<IElement> element, const SRepositionData& 
 
 void CPositioner::repositionNeeded(SP<IElement> element, bool force) {
     if (!element->impl->parent) {
-        // root el likely, check
-        if (!element->impl->window || element != element->impl->window->m_rootElement) {
-            initElementIfNeeded(element);
-            position(element, element->impl->positionerData->baseBox);
-            return;
-        }
-
-        // otherwise, max box
-        position(element, {{}, (element->impl->window->pixelSize() / element->impl->window->scale()).round()});
+        // Reuse the configured bounds, including fractional drawable extents.
+        initElementIfNeeded(element);
+        position(element, element->impl->positionerData->baseBox);
         return;
     }
 
