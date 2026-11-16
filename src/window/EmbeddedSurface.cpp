@@ -7,6 +7,7 @@
 #include "../core/BackendContext.hpp"
 #include "../core/EmbeddedBackend.hpp"
 #include "../element/Element.hpp"
+#include "../layout/Positioner.hpp"
 #include "../renderer/Renderer.hpp"
 
 using namespace Hyprtoolkit;
@@ -65,7 +66,7 @@ void CEmbeddedSurface::resize(const Vector2D& logicalSize, const Vector2D& pixel
     m_pixelSize   = pixelSize;
     m_scale       = scale;
     m_damageRing.setSize(pixelSize);
-    m_rootElement->reposition({{}, logicalSize});
+    g_positioner->position(m_rootElement, {{}, logicalSize});
     damageEntire();
 }
 

@@ -4,6 +4,7 @@
 #include <hyprtoolkit/element/Null.hpp>
 
 #include "../element/Element.hpp"
+#include "../layout/Positioner.hpp"
 #include "../core/platforms/WaylandPlatform.hpp"
 #include "../core/InternalBackend.hpp"
 #include "../core/BackendContext.hpp"
@@ -67,7 +68,8 @@ void IWaylandWindow::configure(const Vector2D& size, uint32_t serial) {
     resizeSwapchain(m_waylandState.size);
     damageEntire();
 
-    m_rootElement->reposition({0, 0, m_waylandState.logicalSize.x, m_waylandState.logicalSize.y});
+    // Keep the drawable extent fractional so pixel rounding cannot put borders outside the buffer.
+    g_positioner->position(m_rootElement, {{}, m_waylandState.size / m_fractionalScale});
 }
 
 void IWaylandWindow::resizeSwapchain(const Vector2D& pixelSize) {
