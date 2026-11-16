@@ -38,8 +38,14 @@ namespace Hyprtoolkit {
         virtual void                 renderRectangle(const SRectangleRenderData& data);
         virtual SP<IRendererTexture> uploadTexture(const STextureData& data);
         virtual void                 renderTexture(const STextureRenderData& data);
+        virtual void                 renderTransition(const STransitionRenderData& data);
         virtual void                 renderBorder(const SBorderRenderData& data);
         virtual void                 renderPolygon(const SPolygonRenderData& data);
+        virtual SP<IRendererTexture> captureTransitionState(const STransitionRenderData& data);
+        // Pre-render a single texture to a fit-resolved offscreen FBO (cached).
+        SP<IRendererTexture>         renderFitFrame(const SP<IRendererTexture>& src, const CBox& box, eImageFitMode fitMode);
+        void                         clearTransitionCache();
+        virtual size_t               ensureTransitionShader(const std::string& source);
         virtual void                 renderLine(const SLineRenderData& data);
         virtual SP<CSyncTimeline>    exportSync(SP<Aquamarine::IBuffer> buf);
         virtual void                 signalRenderPoint(SP<CSyncTimeline> timeline);
@@ -174,7 +180,35 @@ namespace Hyprtoolkit {
 
         CShader                            m_rectShader;
         CShader                            m_texShader;
+        CShader                            m_transitionShader;
         CShader                            m_borderShader;
+
+        // Custom transition shaders, cached by source hash.
+        struct SCachedShader {
+            CShader                            shader;
+        };
+        std::unordered_map<size_t, SCachedShader> m_customShaders;
+
+        // Fit-resolved pre-render cache for transitions. Keyed by the source texture
+        // identity, its size, the target box (pixels) and fit mode, so a frame is only
+        // re-rendered when one of those changes.
+        struct SFitFrameKey {
+            GLuint   texID   = 0;
+            Vector2D size;
+            int      boxW    = 0;
+            int      boxH    = 0;
+            int      fitMode = 0;
+            bool     operator==(const SFitFrameKey& o) const {
+                return texID == o.texID && size == o.size && boxW == o.boxW && boxH == o.boxH && fitMode == o.fitMode;
+            }
+        };
+        struct SFitFrameKeyHash {
+            size_t operator()(const SFitFrameKey& k) const {
+                return std::hash<GLuint>()(k.texID) ^ std::hash<float>()(k.size.x) ^ std::hash<float>()(k.size.y) ^
+                    std::hash<int>()(k.boxW) ^ std::hash<int>()(k.boxH) ^ std::hash<int>()(k.fitMode);
+            }
+        };
+        std::unordered_map<SFitFrameKey, SP<CGLTexture>, SFitFrameKeyHash> m_fitFrameCache;
 
         Mat3x3                             m_projMatrix = Mat3x3::identity();
         Mat3x3                             m_projection;
