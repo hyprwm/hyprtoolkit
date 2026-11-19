@@ -73,6 +73,36 @@ TEST(Element, textLinkOffsetsWithMarkupPrefix) {
     text.reset();
 }
 
+TEST(Element, textDisplayedLength) {
+    // whole, valid markup: pango is the ground truth for how many bytes survive the strip
+    const std::vector<std::pair<std::string, size_t>> VALID = {
+        {"", 0},
+        {"plain", 5},
+        {"h\xc3\xa9llo", 6},
+        {"<b>bold</b>", 4},
+        {"<b><i>a</i>b</b>", 2},
+        {"a <span foreground=\"#ff0000ff\">red</span> b", 7},
+        {"<u><span foreground='#abc'>x</span></u>", 1},
+        {"&amp;&lt;&gt;&quot;&apos;", 5},
+        {"&#65;&#x42;", 2},
+        {"&#233;", 2},
+        {"&#x4E2D;", 3},
+        {"&#x1F600;", 4},
+        {"<span font_family=\"a&gt;b\">x</span>", 1},
+        {"<span font_family=\"a>b\">x</span>", 1},
+        {"<span font_family='a>b'>x</span>", 1},
+    };
+    for (const auto& [markup, len] : VALID) {
+        SCOPED_TRACE(markup);
+        EXPECT_EQ(STextImpl::displayedLength(markup), len);
+        EXPECT_EQ(STextImpl::displayedLength(markup), strippedMarkup(markup).size());
+    }
+
+    // parseText measures the pieces between links, which are not valid markup on their own
+    EXPECT_EQ(STextImpl::displayedLength("<b>see "), 4);
+    EXPECT_EQ(STextImpl::displayedLength(" now</b>"), 4);
+}
+
 TEST(Element, synchronousTextRebuildSchedulesTextureRefresh) {
     Tests::Tricks::createBackendSupport();
 

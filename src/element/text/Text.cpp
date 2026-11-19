@@ -538,15 +538,22 @@ static std::string formatColor(uint32_t col) {
 // markup assembled here. counting displayed bytes keeps the region on the link's glyphs instead of
 // drifting by the length of the styling tags in front of it. valid markup only: a broken fragment
 // would already have failed the whole-string parse in setPangoText.
-static size_t displayedLength(std::string_view s) {
+size_t STextImpl::displayedLength(std::string_view s) {
     size_t n = 0;
     for (size_t i = 0; i < s.size();) {
         const char c = s[i];
         if (c == '<') {
-            const size_t close = s.find('>', i);
-            if (close == std::string_view::npos)
-                break;
-            i = close + 1;
+            // pango takes a raw '>' inside a quoted attribute value, that one does not close the tag
+            char quote = 0;
+            for (++i; i < s.size(); ++i) {
+                if (quote && s[i] == quote)
+                    quote = 0;
+                else if (!quote && (s[i] == '"' || s[i] == '\''))
+                    quote = s[i];
+                else if (!quote && s[i] == '>')
+                    break;
+            }
+            ++i;
         } else if (c == '&') {
             const size_t semi = s.find(';', i);
             if (semi == std::string_view::npos) {
@@ -556,7 +563,7 @@ static size_t displayedLength(std::string_view s) {
             }
             const auto body = s.substr(i + 1, semi - i - 1);
             if (!body.empty() && body[0] == '#') {
-                const int     base   = (body.size() > 1 && (body[1] == 'x' || body[1] == 'X')) ? 16 : 10;
+                const int     base   = (body.size() > 1 && body[1] == 'x') ? 16 : 10;
                 const auto    digits = body.substr(base == 16 ? 2 : 1);
                 unsigned long cp     = 0;
                 std::from_chars(digits.data(), digits.data() + digits.size(), cp, base);
