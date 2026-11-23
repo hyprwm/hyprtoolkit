@@ -151,6 +151,32 @@ TEST_F(CEmbeddedSurfaceTest, alwaysHoveredElementReceivesPointerEventsOnce) {
     EXPECT_EQ(axes, 1);
 }
 
+TEST_F(CEmbeddedSurfaceTest, windowSeesMouseButtonsWhateverIsHovered) {
+    using SButton = std::pair<Input::eMouseButton, bool>;
+
+    std::vector<SButton> windowButtons;
+    m_surface->IWindow::m_events.mouseButton.listenStatic([&windowButtons](Input::eMouseButton button, bool down) { windowButtons.emplace_back(button, down); });
+
+    int        elementButtons = 0;
+    const auto element        = CEmbeddedTestElement::create();
+    element->setReceivesMouse(true);
+    element->setMouseButton([&elementButtons](Input::eMouseButton, bool) { ++elementButtons; });
+    element->reposition({10, 10, 20, 20});
+    m_surface->rootElement()->addChild(element);
+
+    // nothing under the cursor
+    m_surface->pointerEnter({50, 50});
+    m_surface->pointerButton(Input::MOUSE_BUTTON_BACK, true);
+    m_surface->pointerButton(Input::MOUSE_BUTTON_BACK, false);
+
+    // over an element, which still gets it as well
+    m_surface->pointerMotion({15, 15});
+    m_surface->pointerButton(Input::MOUSE_BUTTON_FORWARD, true);
+
+    EXPECT_EQ(windowButtons, (std::vector<SButton>{{Input::MOUSE_BUTTON_BACK, true}, {Input::MOUSE_BUTTON_BACK, false}, {Input::MOUSE_BUTTON_FORWARD, true}}));
+    EXPECT_EQ(elementButtons, 1);
+}
+
 TEST_F(CEmbeddedSurfaceTest, textboxFocusCanBeCleared) {
     Tests::Tricks::createBackendSupport();
 

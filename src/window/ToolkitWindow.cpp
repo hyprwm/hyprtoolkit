@@ -247,6 +247,8 @@ void IToolkitWindow::mouseMove(const Hyprutils::Math::Vector2D& local) {
 }
 
 void IToolkitWindow::mouseButton(const Input::eMouseButton button, bool state) {
+    m_events.mouseButton.emit(button, state);
+
     m_mouseIsDown = state;
 
     if (state) {

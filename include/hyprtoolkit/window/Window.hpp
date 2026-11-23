@@ -116,6 +116,9 @@ namespace Hyprtoolkit {
 
             // (global) key events
             Hyprutils::Signal::CSignalT<Input::SKeyboardKeyEvent> keyboardKey;
+
+            // (global) mouse button events, whatever is under the cursor
+            Hyprutils::Signal::CSignalT<Input::eMouseButton, bool> mouseButton;
         } m_events;
 
         Hyprutils::Memory::CSharedPointer<IElement> m_rootElement;
