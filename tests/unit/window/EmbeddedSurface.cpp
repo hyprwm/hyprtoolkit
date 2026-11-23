@@ -206,6 +206,27 @@ TEST_F(CEmbeddedSurfaceTest, clearingTextboxFocusDoesNotAffectAnotherTextbox) {
     EXPECT_EQ(m_surface->m_keyboardFocus.lock().get(), second.get());
 }
 
+TEST_F(CEmbeddedSurfaceTest, textboxKnowsWhetherItIsFocused) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto first  = CTextboxBuilder::begin()->commence();
+    const auto second = CTextboxBuilder::begin()->commence();
+    m_surface->rootElement()->addChild(first);
+    m_surface->rootElement()->addChild(second);
+    EXPECT_FALSE(first->focused());
+
+    first->focus();
+    EXPECT_TRUE(first->focused());
+    EXPECT_FALSE(second->focused());
+
+    second->focus();
+    EXPECT_FALSE(first->focused());
+    EXPECT_TRUE(second->focused());
+
+    second->focus(false);
+    EXPECT_FALSE(second->focused());
+}
+
 TEST_F(CEmbeddedSurfaceTest, textboxCallbackWaitsForIMCommit) {
     Tests::Tricks::createBackendSupport();
 
