@@ -580,6 +580,10 @@ void CTextboxElement::focus(bool focus) {
         impl->window->unfocusKeyboard();
 }
 
+bool CTextboxElement::focused() const {
+    return impl->window && impl->window->m_keyboardFocus == impl->self;
+}
+
 void CTextboxElement::paint() {
     ;
 }

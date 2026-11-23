@@ -44,6 +44,8 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CTextboxBuilder> rebuild();
         virtual Hyprutils::Math::Vector2D                  size();
         void                                               focus(bool focus = true);
+        // whether this textbox has its window's keyboard focus
+        bool                                               focused() const;
         std::string_view                                   currentText();
         size_t                                             cursorPos() const;
         std::tuple<ssize_t, ssize_t>                       selection() const;
