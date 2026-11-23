@@ -56,71 +56,70 @@ bool CWaylandPlatform::attempt() {
 
         const std::string NAME = name;
 
+        // never above what the compositor offers, that's a protocol error
+        const auto BIND = [&](const wl_interface* interface, uint32_t wanted) {
+            const auto BOUND = std::min(version, wanted);
+            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, BOUND, id));
+            return (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, interface, BOUND);
+        };
+
+        // too old globals stay unbound, the protocol check after the roundtrip reports them
+        const auto NEW_ENOUGH = [&](uint32_t minimum) {
+            if (version >= minimum)
+                return true;
+
+            g_logger->log(HT_LOG_ERROR, "{} version {} is too old, {} is required", name, version, minimum);
+            return false;
+        };
+
         if (NAME == "wl_seat" && !m_waylandState.seat) {
             // Bind only the first seat. Rebinding on every wl_seat global would leave us on
             // whichever seat the compositor advertised last, which may not carry the user's input.
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 9, id));
-            m_waylandState.seat = makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_seat_interface, 9));
+            m_waylandState.seat = makeShared<CCWlSeat>(BIND(&wl_seat_interface, 9));
             initSeat();
         } else if (NAME == "xdg_wm_base") {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 6, id));
-            m_waylandState.xdg = makeShared<CCXdgWmBase>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &xdg_wm_base_interface, 6));
+            m_waylandState.xdg = makeShared<CCXdgWmBase>(BIND(&xdg_wm_base_interface, 6));
             initShell();
         } else if (NAME == "wl_compositor") {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 6, id));
-            m_waylandState.compositor = makeShared<CCWlCompositor>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_compositor_interface, 6));
+            // damage_buffer is v4
+            if (NEW_ENOUGH(4))
+                m_waylandState.compositor = makeShared<CCWlCompositor>(BIND(&wl_compositor_interface, 6));
         } else if (NAME == "wl_shm") {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.shm = makeShared<CCWlShm>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_shm_interface, 1));
+            m_waylandState.shm = makeShared<CCWlShm>(BIND(&wl_shm_interface, 1));
         } else if (NAME == "wp_viewporter") {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.viewporter = makeShared<CCWpViewporter>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_viewporter_interface, 1));
+            m_waylandState.viewporter = makeShared<CCWpViewporter>(BIND(&wp_viewporter_interface, 1));
         } else if (NAME == wp_fractional_scale_manager_v1_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.fractional = makeShared<CCWpFractionalScaleManagerV1>(
-                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_fractional_scale_manager_v1_interface, 1));
+            m_waylandState.fractional = makeShared<CCWpFractionalScaleManagerV1>(BIND(&wp_fractional_scale_manager_v1_interface, 1));
         } else if (NAME == wp_cursor_shape_manager_v1_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.cursorShapeMgr =
-                makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_cursor_shape_manager_v1_interface, 1));
+            m_waylandState.cursorShapeMgr = makeShared<CCWpCursorShapeManagerV1>(BIND(&wp_cursor_shape_manager_v1_interface, 1));
         } else if (NAME == zwp_text_input_manager_v3_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.textInputManager =
-                makeShared<CCZwpTextInputManagerV3>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_text_input_manager_v3_interface, 1));
+            m_waylandState.textInputManager = makeShared<CCZwpTextInputManagerV3>(BIND(&zwp_text_input_manager_v3_interface, 1));
         } else if (NAME == zwlr_layer_shell_v1_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 5, id));
-            m_waylandState.layerShell =
-                makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwlr_layer_shell_v1_interface, 5));
+            m_waylandState.layerShell = makeShared<CCZwlrLayerShellV1>(BIND(&zwlr_layer_shell_v1_interface, 5));
         } else if (NAME == wp_linux_drm_syncobj_manager_v1_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.syncobj = makeShared<CCWpLinuxDrmSyncobjManagerV1>(
-                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wp_linux_drm_syncobj_manager_v1_interface, 1));
+            m_waylandState.syncobj = makeShared<CCWpLinuxDrmSyncobjManagerV1>(BIND(&wp_linux_drm_syncobj_manager_v1_interface, 1));
         } else if (NAME == "zwp_linux_dmabuf_v1") {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
-            m_waylandState.dmabuf =
-                makeShared<CCZwpLinuxDmabufV1>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_linux_dmabuf_v1_interface, 4));
+            // get_default_feedback is v4
+            if (!NEW_ENOUGH(4))
+                return;
+
+            m_waylandState.dmabuf = makeShared<CCZwpLinuxDmabufV1>(BIND(&zwp_linux_dmabuf_v1_interface, 4));
             if (!initDmabuf()) {
                 g_logger->log(HT_LOG_ERROR, "Wayland platform cannot start: zwp_linux_dmabuf_v1 init failed");
                 m_waylandState.dmabufFailed = true;
             }
         } else if (NAME == wl_output_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 4, id));
-            auto newOutput = makeShared<CWaylandOutput>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_output_interface, 4), id);
+            auto newOutput = makeShared<CWaylandOutput>(BIND(&wl_output_interface, 4), id);
             m_outputs.emplace_back(newOutput);
             wl_display_roundtrip(m_waylandState.display); // sync display. We emit a new event where the user expects full data. this is not a common event, sync is ok.
             if (m_waylandState.initialized)
                 g_backend->m_events.outputAdded.emit(newOutput);
         } else if (NAME == ext_session_lock_manager_v1_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 1, id));
-            m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(
-                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &ext_session_lock_manager_v1_interface, 1));
+            m_waylandState.sessionLock = makeShared<CCExtSessionLockManagerV1>(BIND(&ext_session_lock_manager_v1_interface, 1));
         } else if (NAME == wl_data_device_manager_interface.name) {
-            TRACE(g_logger->log(HT_LOG_TRACE, "  > binding to global: {} (version {}) with id {}", name, 3, id));
-            m_waylandState.dataDeviceManager =
-                makeShared<CCWlDataDeviceManager>((wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &wl_data_device_manager_interface, 3));
+            m_waylandState.dataDeviceManager = makeShared<CCWlDataDeviceManager>(BIND(&wl_data_device_manager_interface, 3));
         } else if (NAME == zwp_keyboard_shortcuts_inhibit_manager_v1_interface.name) {
-            m_waylandState.shortcutsInhibitMgr = makeShared<CCZwpKeyboardShortcutsInhibitManagerV1>(
-                (wl_proxy*)wl_registry_bind((wl_registry*)m_waylandState.registry->resource(), id, &zwp_keyboard_shortcuts_inhibit_manager_v1_interface, 1));
+            m_waylandState.shortcutsInhibitMgr = makeShared<CCZwpKeyboardShortcutsInhibitManagerV1>(BIND(&zwp_keyboard_shortcuts_inhibit_manager_v1_interface, 1));
         }
     });
     m_waylandState.registry->setGlobalRemove([this](CCWlRegistry* r, uint32_t id) {
