@@ -88,7 +88,8 @@ void CWaylandLayer::open() {
     m_layerState.layerSurface->sendSetMargin(m_creationData.marginTopLeft.y, m_creationData.marginBottomRight.x, m_creationData.marginBottomRight.y,
                                              m_creationData.marginTopLeft.x);
     m_layerState.layerSurface->sendSetKeyboardInteractivity(sc<zwlrLayerSurfaceV1KeyboardInteractivity>(m_creationData.kbInteractive));
-    if (m_creationData.exclusiveEdge > 0)
+    // set_exclusive_edge is v5, older compositors only get the zone
+    if (m_creationData.exclusiveEdge > 0 && m_layerState.layerSurface->version() >= 5)
         m_layerState.layerSurface->sendSetExclusiveEdge(sc<zwlrLayerSurfaceV1Anchor>(m_creationData.exclusiveEdge));
 
     m_waylandState.surface->sendCommit();
