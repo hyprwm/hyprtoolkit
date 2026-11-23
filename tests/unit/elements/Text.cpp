@@ -52,6 +52,26 @@ TEST(Element, textClampRebuildSchedulesTextureRefresh) {
     EXPECT_TRUE(text->m_impl->needsTexRefresh);
 }
 
+TEST(Element, textRepositionOnlyRefreshesWhenTheBoxMatters) {
+    Tests::Tricks::createBackendSupport();
+
+    const auto text    = CTextBuilder::begin()->text("Hello World")->commence();
+    const auto NATURAL = text->preferredSize({0, 0}).value();
+
+    const auto place = [&text](const CBox& box) {
+        text->m_impl->needsTexRefresh = false;
+        g_positioner->position(text, box);
+        return text->m_impl->needsTexRefresh;
+    };
+
+    EXPECT_TRUE(place({0, 0, NATURAL.x + 50, NATURAL.y}));
+    EXPECT_FALSE(place({30, 20, NATURAL.x + 50, NATURAL.y}));           // moved
+    EXPECT_FALSE(place({30, 20, NATURAL.x + 80, NATURAL.y}));           // wider, still fits
+    EXPECT_FALSE(place({30, 20, NATURAL.x + 80, NATURAL.y * 2}));       // taller, still one line
+    EXPECT_TRUE(place({30, 20, std::floor(NATURAL.x / 2), NATURAL.y})); // has to be ellipsized
+    EXPECT_TRUE(place({30, 20, NATURAL.x + 80, NATURAL.y}));            // and back to the full text
+}
+
 TEST(Element, textPreferredSize) {
     Tests::Tricks::createBackendSupport();
 

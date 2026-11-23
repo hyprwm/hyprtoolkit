@@ -176,11 +176,12 @@ void CTextElement::paint() {
 }
 
 void CTextElement::reposition(const Hyprutils::Math::CBox& box, const Hyprutils::Math::Vector2D& maxSize) {
-    auto initial_position = impl->position;
+    const auto PREVIOUS_SIZE = impl->position.size();
 
     IElement::reposition(box);
 
-    if (initial_position != impl->position)
+    // a move keeps the texture, so does a resize the text doesn't run into
+    if (m_impl->boxChangeAffectsTexture(PREVIOUS_SIZE, impl->position.size()))
         m_impl->needsTexRefresh = true;
 
     g_positioner->positionChildren(impl->self.lock());
@@ -627,6 +628,29 @@ void STextImpl::onMouseMove() {
         hoveredTextLink = &link;
         break;
     }
+}
+
+Vector2D STextImpl::naturalSize() {
+    const auto LAYOUT = pangoData.layout;
+    pango_layout_set_width(LAYOUT, -1);
+    pango_layout_set_height(LAYOUT, -1);
+
+    PangoRectangle ink, logical;
+    pango_layout_get_pixel_extents(LAYOUT, &ink, &logical);
+
+    return Vector2D{std::ceil(logical.width / lastScale), std::ceil(logical.height / lastScale)};
+}
+
+bool STextImpl::boxChangeAffectsTexture(const Vector2D& oldBox, const Vector2D& newBox) {
+    const auto OLD = applyClampSize(oldBox);
+    const auto NEW = applyClampSize(newBox);
+    if (OLD == NEW)
+        return false;
+
+    // the texture is rendered at min(natural size, box) per axis, so only an axis that
+    // changed while the text didn't fit one of the two sizes renders differently
+    const auto NATURAL = naturalSize();
+    return (OLD.x != NEW.x && NATURAL.x > std::min(OLD.x, NEW.x)) || (OLD.y != NEW.y && NATURAL.y > std::min(OLD.y, NEW.y));
 }
 
 Vector2D STextImpl::applyClampSize(Vector2D size) {

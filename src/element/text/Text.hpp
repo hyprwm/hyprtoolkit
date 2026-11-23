@@ -96,6 +96,8 @@ namespace Hyprtoolkit {
         void                                                                                           onMouseDown();
         void                                                                                           onMouseMove();
         Hyprutils::Math::Vector2D                                                                      applyClampSize(Hyprutils::Math::Vector2D);
+        Hyprutils::Math::Vector2D                                                                      naturalSize();
+        bool boxChangeAffectsTexture(const Hyprutils::Math::Vector2D& oldBox, const Hyprutils::Math::Vector2D& newBox);
 
         friend class CTextboxElement;
         friend struct STextboxImpl;
