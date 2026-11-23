@@ -11,6 +11,9 @@ namespace Hyprtoolkit::Input {
         MOUSE_BUTTON_LEFT,
         MOUSE_BUTTON_RIGHT,
         MOUSE_BUTTON_MIDDLE,
+        // side buttons, for navigation
+        MOUSE_BUTTON_BACK,
+        MOUSE_BUTTON_FORWARD,
     };
 
     enum eAxisAxis : uint8_t {
