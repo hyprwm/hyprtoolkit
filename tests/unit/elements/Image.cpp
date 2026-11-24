@@ -1,10 +1,13 @@
 #include <gtest/gtest.h>
 
 #include <element/image/Image.hpp>
+
+#include <chrono>
 #include <hyprgraphics/resource/resources/ImageResource.hpp>
 #include <hyprtoolkit/system/Icons.hpp>
 
 using namespace Hyprtoolkit;
+using namespace std::chrono_literals;
 
 class CDummyIcon final : public ISystemIconDescription {
   public:
@@ -71,4 +74,42 @@ TEST(Element, imageRecognizesScalablePaths) {
 
     image.data.path = "image.svg";
     EXPECT_TRUE(image.scalable());
+}
+
+TEST(Element, imageTransitionDefaults) {
+    SImageTransition t;
+    EXPECT_EQ(t.duration.count(), 0);
+    EXPECT_TRUE(t.shader.empty());
+}
+
+TEST(Element, imageTransitionWantedOnlyForChangedSourceWithDurationAndDisplay) {
+    SImageImpl impl;
+    impl.data.path = "a.png";
+
+    SImageData next;
+    next.setPath("b.png");
+    EXPECT_FALSE(impl.transitionWanted(next)); // duration 0: upstream swap
+
+    next.transition.duration = 200ms;
+    EXPECT_FALSE(impl.transitionWanted(next)); // nothing displayed yet
+
+    SImageData same;
+    same.setPath("a.png");
+    same.transition.duration = 200ms;
+    EXPECT_FALSE(impl.transitionWanted(same)); // same source
+}
+
+TEST(Element, imageTransitionNotWantedForIdenticalRawData) {
+    SImageImpl impl;
+    impl.data.data          = {1, 2, 3, 4};
+    impl.transition.pending = true;
+
+    SImageData next;
+    next.data                = impl.data.data; // same bytes, distinct copy
+    next.transition.duration = 200ms;
+
+    EXPECT_FALSE(impl.transitionWanted(next));
+
+    next.data.push_back(5);
+    EXPECT_TRUE(impl.transitionWanted(next));
 }

@@ -2,8 +2,11 @@
 
 #include "../../helpers/Memory.hpp"
 #include "../../resource/assetCache/AssetCacheEntry.hpp"
+#include "../../core/AnimatedVariable.hpp"
 
 namespace Hyprtoolkit {
+    class IRendererShader;
+
     struct SImageData {
         std::string                path;
         float                      a        = 1.F;
@@ -13,6 +16,7 @@ namespace Hyprtoolkit {
         std::vector<uint8_t>       data;
         eImageFitMode              fitMode = IMAGE_FIT_MODE_STRETCH;
         CDynamicSize               size{CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1, 1}};
+        SImageTransition           transition;
 
         void                       setPath(std::string&& value);
         void                       setIcon(const SP<ISystemIconDescription>& value);
@@ -50,6 +54,27 @@ namespace Hyprtoolkit {
         void                                                       postImageScheduleRecalc();
         std::string                                                getCacheString();
         bool                                                       scalable() const;
+
+        bool                                                       transitionWanted(const SImageData& newData) const;
+        bool                                                       transitionActive() const;
+        void                                                       requestTransition();
+        void                                                       cancelTransition();
+        void                                                       paintTransition();
+        SP<IRendererTexture>                                       displayedTexture() const;
+
+        struct {
+            PHLANIMVAR<float>         progress;
+            SP<IRendererTexture>      from, to; // pre-rendered frames at element pixel size
+            SP<IRendererShader>       shader;   // nullptr = built-in crossfade
+            std::string               shaderSource;
+            Hyprutils::Math::Vector2D seed;
+            bool                      pending = false;
+
+            SP<IRendererTexture>      fromSource;
+            Hyprutils::Math::Vector2D frameSize;
+            float                     durationSecs   = 0.F;
+            bool                      capturePending = false;
+        } transition;
 
         struct {
             Hyprutils::Signal::CHyprSignalListener cacheEntryDone;

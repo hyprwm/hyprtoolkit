@@ -75,3 +75,8 @@ SP<CImageElement> CImageBuilder::commence() {
 
     return CImageElement::create(*m_data);
 }
+
+SP<CImageBuilder> CImageBuilder::transition(SImageTransition&& t) {
+    m_data->transition = std::move(t);
+    return m_self.lock();
+}

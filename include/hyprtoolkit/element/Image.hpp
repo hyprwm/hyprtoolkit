@@ -7,6 +7,9 @@
 #include <hyprgraphics/resource/AsyncResourceGatherer.hpp>
 #include <hyprgraphics/resource/resources/ImageResource.hpp>
 
+#include <chrono>
+#include <string>
+
 namespace Hyprtoolkit {
 
     class IRendererTexture;
@@ -14,6 +17,11 @@ namespace Hyprtoolkit {
     struct SImageData;
     class CImageElement;
     class ISystemIconDescription;
+
+    struct SImageTransition {
+        std::chrono::milliseconds duration{0}; // 0 = no transition
+        std::string               shader;      // fragment shader source, empty = built-in crossfade
+    };
 
     class CImageBuilder {
       public:
@@ -28,6 +36,8 @@ namespace Hyprtoolkit {
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        sync(bool);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        rounding(int);
         Hyprutils::Memory::CSharedPointer<CImageBuilder>        size(CDynamicSize&&);
+
+        Hyprutils::Memory::CSharedPointer<CImageBuilder>        transition(SImageTransition&&);
 
         Hyprutils::Memory::CSharedPointer<CImageElement>        commence();
 

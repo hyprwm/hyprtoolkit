@@ -49,6 +49,7 @@ bool CFramebuffer::alloc(int w, int h, uint32_t drmFormat) {
     if (firstAlloc || m_size != Vector2D(w, h)) {
         m_tex->bind();
         glTexImage2D(GL_TEXTURE_2D, 0, glFormat, w, h, 0, GL_RGBA, glType, nullptr);
+        m_tex->m_size = Vector2D(w, h);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fb);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex->m_texID, 0);
 

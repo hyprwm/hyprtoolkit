@@ -8,10 +8,35 @@
 #include "../../system/Icons.hpp"
 #include "../../resource/assetCache/AssetCache.hpp"
 #include "../../renderer/RendererTexture.hpp"
+#include "../../core/AnimationManager.hpp"
 
 #include "../Element.hpp"
 
+#include <random>
+
 using namespace Hyprtoolkit;
+using namespace std::chrono_literals;
+
+static bool imageSourcesDiffer(const SImageData& a, const SImageData& b) {
+    return a.path != b.path || a.icon != b.icon || a.data != b.data;
+}
+
+static Hyprutils::Math::Vector2D randomSeed() {
+    static std::mt19937                          rng{std::random_device{}()};
+    static std::uniform_real_distribution<float> dist{0.F, 1.F};
+    return {dist(rng), dist(rng)};
+}
+
+// Renders `tex` into a fit-resolved frame of `pixelSize` via the normal renderTexture path
+static SP<IRendererTexture> renderFrame(const SP<IRendererTexture>& tex, const Hyprutils::Math::Vector2D& pixelSize) {
+    return g_renderer->renderToTexture(pixelSize, [&tex, &pixelSize] {
+        g_renderer->renderTexture(IRenderer::STextureRenderData{
+            .box     = {0, 0, pixelSize.x, pixelSize.y},
+            .texture = tex,
+            .a       = 1.F,
+        });
+    });
+}
 
 SP<CImageElement> CImageElement::create(const SImageData& data) {
     auto p          = SP<CImageElement>(new CImageElement(data));
@@ -25,6 +50,12 @@ CImageElement::CImageElement(const SImageData& data) : IElement(), m_impl(makeUn
 }
 
 void CImageElement::paint() {
+    if (m_impl->transition.pending || m_impl->transitionActive()) {
+        m_impl->paintTransition();
+        if (m_impl->transitionActive() || (m_impl->transition.pending && m_impl->transition.from))
+            return;
+    }
+
     if (m_impl->failed)
         return;
 
@@ -211,6 +242,170 @@ bool SImageImpl::scalable() const {
     return data.icon ? data.icon->scalable() : data.path.ends_with(".svg");
 }
 
+bool SImageImpl::transitionWanted(const SImageData& newData) const {
+    return imageSourcesDiffer(data, newData) && newData.transition.duration > 0ms && (transitionActive() || transition.pending || displayedTexture());
+}
+
+bool SImageImpl::transitionActive() const {
+    return transition.progress && transition.progress->isBeingAnimated();
+}
+
+SP<IRendererTexture> SImageImpl::displayedTexture() const {
+    if (cacheEntry && cacheEntry->tex())
+        return cacheEntry->tex();
+    if (oldCacheEntry && oldCacheEntry->tex())
+        return oldCacheEntry->tex();
+    return nullptr;
+}
+
+void SImageImpl::requestTransition() {
+    if (transitionActive()) {
+        // freeze in place: the in-flight blend becomes the next transition's start frame
+        transition.capturePending = true;
+        transition.progress->setValueAndWarp(transition.progress->value());
+        transition.pending = true;
+        return;
+    }
+
+    if (!transition.fromSource) {
+        transition.fromSource = displayedTexture();
+        if (!transition.fromSource)
+            return; // nothing displayed yet: upstream swap
+    }
+
+    transition.pending = true;
+}
+
+void SImageImpl::cancelTransition() {
+    if (transition.progress) {
+        if (transitionActive())
+            transition.progress->setValueAndWarp(transition.progress->value());
+        transition.progress->resetAllCallbacks();
+    }
+    transition.pending        = false;
+    transition.capturePending = false;
+    transition.from.reset();
+    transition.to.reset();
+    transition.fromSource.reset();
+}
+
+static void startTransitionAnimation(SImageImpl* impl) {
+    g_animationManager->createAnimation(0.F, impl->transition.progress,
+                                        g_animationManager->configFor(SBezierAnimation{.duration = impl->data.transition.duration, .control1 = {0, 0}, .control2 = {1, 1}}));
+
+    // setCallbackOnEnd fires immediately on a not-animating variable, so the goal comes first
+    *impl->transition.progress = 1.F;
+
+    impl->transition.progress->setUpdateCallback([impl](WP<Hyprutils::Animation::CBaseAnimatedVariable>) { impl->self->impl->damageEntire(); });
+    impl->transition.progress->setCallbackOnEnd(
+        [impl](WP<Hyprutils::Animation::CBaseAnimatedVariable>) {
+            if (impl->transition.capturePending)
+                return; // frozen for an interrupt: the frames are captured in paint()
+            impl->transition.from.reset();
+            impl->transition.to.reset();
+            impl->transition.fromSource.reset();
+            impl->self->impl->damageEntire();
+        },
+        false);
+}
+
+static Hyprutils::Math::Vector2D transitionPixelSize(const SImageImpl* impl) {
+    return (impl->self->impl->position.size() * impl->lastScale).round();
+}
+
+void SImageImpl::paintTransition() {
+    if (self->impl->window)
+        lastScale = self->impl->window->scale();
+
+    if (failed) {
+        cancelTransition();
+        return;
+    }
+
+    if (transition.capturePending) {
+        // freeze the running blend into a texture with the old shader, seed, duration and progress
+        transition.from       = g_renderer->renderToTexture(transition.frameSize, [this] {
+            g_renderer->renderTransition(IRenderer::STransitionRenderData{
+                .box      = {0, 0, transition.frameSize.x, transition.frameSize.y},
+                .from     = transition.from,
+                .to       = transition.to,
+                .shader   = transition.shader,
+                .progress = transition.progress->value(),
+                .a        = 1.F,
+                .duration = transition.durationSecs,
+                .seed     = transition.seed,
+            });
+        });
+        transition.fromSource = transition.from;
+        transition.to.reset();
+        transition.capturePending = false;
+    }
+
+    const auto PIXELS = transitionPixelSize(this);
+    const auto NEWTEX = cacheEntry && cacheEntry->tex() ? cacheEntry->tex() : SP<IRendererTexture>{};
+
+    if (transition.pending && NEWTEX) {
+        // the progress clock starts when the new texture is ready
+        transition.frameSize = PIXELS;
+        if (transition.fromSource) // null after a failed capture
+            transition.from = renderFrame(transition.fromSource, PIXELS);
+        transition.to = renderFrame(NEWTEX, PIXELS);
+        if (!transition.from || !transition.to) {
+            cancelTransition();
+            return;
+        }
+
+        if (transition.shaderSource != data.transition.shader) {
+            transition.shaderSource = data.transition.shader;
+            transition.shader       = transition.shaderSource.empty() ? nullptr : g_renderer->createTransitionShader(transition.shaderSource);
+        }
+        transition.seed         = randomSeed();
+        transition.durationSecs = sc<float>(data.transition.duration.count()) / 1000.F;
+
+        startTransitionAnimation(this);
+        transition.pending = false;
+    } else if (transitionActive() && transition.frameSize != PIXELS) {
+        // element resized mid-transition: re-render the frames at the new size
+        transition.frameSize = PIXELS;
+        transition.from      = renderFrame(transition.fromSource, PIXELS);
+        if (NEWTEX)
+            transition.to = renderFrame(NEWTEX, PIXELS);
+        if (!transition.from || !transition.to) {
+            cancelTransition();
+            return;
+        }
+    }
+
+    if (transitionActive()) {
+        g_renderer->renderTransition(IRenderer::STransitionRenderData{
+            .box      = self->impl->position,
+            .from     = transition.from,
+            .to       = transition.to,
+            .shader   = transition.shader,
+            .progress = transition.progress->value(),
+            .a        = data.a,
+            .duration = transition.durationSecs,
+            .seed     = transition.seed,
+        });
+        return;
+    }
+
+    if (transition.pending && transition.from) {
+        // the new image is still loading: keep showing the frozen frame
+        if (transition.frameSize != PIXELS) {
+            transition.frameSize = PIXELS;
+            transition.from      = renderFrame(transition.fromSource, PIXELS);
+            if (!transition.from)
+                return;
+        }
+        g_renderer->renderTexture(IRenderer::STextureRenderData{
+            .box     = self->impl->position,
+            .texture = transition.from,
+            .a       = data.a,
+        });
+    }
+}
+
 SP<CImageBuilder> CImageElement::rebuild() {
     auto p       = SP<CImageBuilder>(new CImageBuilder());
     p->m_self    = p;
@@ -220,6 +415,11 @@ SP<CImageBuilder> CImageElement::rebuild() {
 }
 
 void CImageElement::replaceData(const SImageData& data) {
+    if (m_impl->transitionWanted(data))
+        m_impl->requestTransition();
+    else if (imageSourcesDiffer(m_impl->data, data))
+        m_impl->cancelTransition();
+
     m_impl->data = data;
 
     renderTex();

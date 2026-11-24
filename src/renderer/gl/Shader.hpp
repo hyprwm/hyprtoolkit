@@ -55,6 +55,11 @@ class CShader {
     GLint   distort   = -1;
     GLint   wl_output = -1;
 
+    // Transition shader
+    GLint progress = -1;
+    GLint duration = -1;
+    GLint seed     = -1;
+
     // Blur prepare
     GLint contrast = -1;
 
