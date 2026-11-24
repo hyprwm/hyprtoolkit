@@ -33,6 +33,7 @@ namespace Hyprtoolkit {
         WP<CImageElement>                                          self;
 
         float                                                      lastScale = 1.F;
+        Hyprutils::Math::Vector2D                                  lastRequestedSize;
 
         Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry> cacheEntry;
         Hyprutils::Memory::CSharedPointer<Asset::CAssetCacheEntry> oldCacheEntry; // while loading a new one
