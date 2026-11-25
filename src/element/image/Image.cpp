@@ -25,6 +25,9 @@ CImageElement::CImageElement(const SImageData& data) : IElement(), m_impl(makeUn
 }
 
 void CImageElement::paint() {
+    if (impl->window)
+        m_impl->lastScale = impl->window->scale();
+
     if (m_impl->failed)
         return;
 
@@ -39,10 +42,7 @@ void CImageElement::paint() {
         return;
     }
 
-    if (impl->window)
-        m_impl->lastScale = impl->window->scale();
-
-    if (m_impl->scalable() && m_impl->preferredSvgSize() != m_impl->size && !m_impl->waitingForTex) {
+    if ((m_impl->scalable() || m_impl->data.icon) && m_impl->preferredSvgSize() != m_impl->lastRequestedSize && !m_impl->waitingForTex) {
         renderTex();
         assetToUse = m_impl->oldCacheEntry;
     }
@@ -66,7 +66,8 @@ void CImageElement::renderTex() {
         m_impl->oldCacheEntry = m_impl->cacheEntry;
     m_impl->cacheEntry.reset();
 
-    const auto CACHE_STR = m_impl->getCacheString();
+    m_impl->lastRequestedSize = m_impl->preferredSvgSize();
+    const auto CACHE_STR      = m_impl->getCacheString();
 
     const auto ASSET = Asset::assetCache()->get(CACHE_STR);
     if (ASSET) {
@@ -101,11 +102,11 @@ void CImageElement::renderTex() {
         REQUEST->resource = makeAtomicShared<CImageResource>(m_impl->data.data, SIZE);
         m_impl->lastData  = m_impl->data.data.data();
     } else if (!m_impl->data.icon) {
-        REQUEST->resource = makeAtomicShared<CImageResource>(m_impl->data.path);
+        REQUEST->resource = makeAtomicShared<CImageResource>(m_impl->data.path, m_impl->preferredSvgSize());
         REQUEST->path     = m_impl->data.path;
         m_impl->lastPath  = m_impl->data.path;
     } else {
-        REQUEST->path     = reinterpretPointerCast<CSystemIconDescription>(m_impl->data.icon)->m_bestPath;
+        REQUEST->path     = reinterpretPointerCast<CSystemIconDescription>(m_impl->data.icon)->pathForSize(sc<int>(m_impl->preferredSvgSize().x));
         m_impl->lastPath  = REQUEST->path;
         const auto SIZE   = m_impl->preferredSvgSize();
         REQUEST->resource = makeAtomicShared<CImageResource>(REQUEST->path, SIZE);
@@ -203,8 +204,8 @@ std::string SImageImpl::getCacheString() {
         return data.path.ends_with(".svg") ? std::format("{}-{}x{}-{}", data.path, preferredSvgSize().x, preferredSvgSize().y, sc<int>(data.fitMode)) :
                                              std::format("{}-{}", data.path, sc<int>(data.fitMode));
     else
-        return std::format("icon-{}-{}x{}-{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->m_bestPath, preferredSvgSize().x, preferredSvgSize().y,
-                           sc<int>(data.fitMode));
+        return std::format("icon-{}-{}x{}-{}", reinterpretPointerCast<CSystemIconDescription>(data.icon)->pathForSize(sc<int>(preferredSvgSize().x)), preferredSvgSize().x,
+                           preferredSvgSize().y, sc<int>(data.fitMode));
 }
 
 bool SImageImpl::scalable() const {

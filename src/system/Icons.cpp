@@ -219,7 +219,7 @@ void CSystemIconFactory::parseTheme(const std::string& themeDir) {
         // index.theme there. add each listed dir under every base dir so those are found too.
         for (const auto& d : dirs) {
             for (const auto& rawBase : getXDGIconThemeDirs())
-                m_lookupPaths.emplace_back(std::filesystem::path{fromDir(rawBase.c_str())} / THEME / std::string{d});
+                m_lookupPaths.push_back({std::filesystem::path{fromDir(rawBase.c_str())} / THEME / std::string{d}, THEME});
         }
 
         g_logger->log(HT_LOG_TRACE, "CSystemIconFactory: theme {} has {} dirs", themeDir, dirs.size());
@@ -277,9 +277,6 @@ CSystemIconFactory::CSystemIconFactory() {
 }
 
 SP<ISystemIconDescription> CSystemIconFactory::lookupIcon(const std::string& iconName) {
-    if (m_lookupPaths.empty())
-        return makeShared<CSystemIconDescription>();
-
     return makeShared<CSystemIconDescription>(iconName);
 }
 

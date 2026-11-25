@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+#include "../tricks/Tricks.hpp"
+#include <system/Icons.hpp>
+#include <element/Element.hpp>
 
 #include <element/image/Image.hpp>
 #include <hyprgraphics/resource/resources/ImageResource.hpp>
@@ -71,4 +74,27 @@ TEST(Element, imageRecognizesScalablePaths) {
 
     image.data.path = "image.svg";
     EXPECT_TRUE(image.scalable());
+}
+
+// Reusing rows must not reuse another application's texture, and changing the
+// physical size must select a different bitmap when one is available.
+TEST(Element, iconCacheTracksArtworkAndDisplayScale) {
+    Tests::Tricks::createBackendSupport();
+    const auto ICON    = makeShared<CSystemIconDescription>();
+    ICON->m_candidates = {{"small.png", 16, false}, {"large.png", 64, false}};
+    SImageImpl image;
+    image.data.icon       = ICON;
+    const auto IMAGE      = CImageBuilder::begin()->icon(ICON)->commence();
+    image.self            = IMAGE;
+    IMAGE->impl->position = {0, 0, 16, 16};
+    const auto SMALL      = image.getCacheString();
+    EXPECT_NE(SMALL.find("small.png"), std::string::npos);
+    image.lastScale  = 2.F;
+    const auto LARGE = image.getCacheString();
+    EXPECT_NE(LARGE.find("large.png"), std::string::npos);
+    EXPECT_NE(SMALL, LARGE);
+    image.lastScale = 1.F;
+    EXPECT_EQ(image.getCacheString(), SMALL);
+    ICON->m_candidates = {{"other.png", 16, false}};
+    EXPECT_NE(image.getCacheString(), SMALL);
 }

@@ -10,6 +10,20 @@
 #include <unordered_set>
 
 namespace Hyprtoolkit {
+    struct SIconDirectory {
+        std::filesystem::path path;
+        std::string           theme;
+    };
+
+    struct SIconCandidate {
+        std::filesystem::path path;
+        int                   pixelSize = 0;
+        bool                  scalable  = false;
+    };
+
+    std::vector<SIconCandidate> findIconCandidates(const std::vector<SIconDirectory>& directories, const std::string& name);
+    std::filesystem::path       selectIconPath(const std::vector<SIconCandidate>& candidates, int pixelSize);
+
     class CSystemIconDescription : public ISystemIconDescription {
       public:
         // invalid icon
@@ -18,11 +32,14 @@ namespace Hyprtoolkit {
         CSystemIconDescription(const std::string& name);
         virtual ~CSystemIconDescription() = default;
 
-        virtual bool exists();
-        virtual bool scalable();
+        virtual bool                exists();
+        virtual bool                scalable();
 
-        std::string  m_bestPath = "";
-        bool         m_scalable = false;
+        std::string                 pathForSize(int pixelSize) const;
+        std::vector<SIconCandidate> m_candidates;
+
+        std::string                 m_bestPath = "";
+        bool                        m_scalable = false;
     };
 
     class CSystemIconFactory : public ISystemIconFactory {
@@ -31,9 +48,10 @@ namespace Hyprtoolkit {
         virtual ~CSystemIconFactory() = default;
 
         struct SIconCacheResult {
-            bool                  badIcon = true;
-            std::filesystem::path path;
-            bool                  scalable = false;
+            bool                        badIcon = true;
+            std::filesystem::path       path;
+            bool                        scalable = false;
+            std::vector<SIconCandidate> candidates;
         };
 
         /*
@@ -51,10 +69,10 @@ namespace Hyprtoolkit {
         bool                            m_hicolorAdded = false;
 
       private:
-        void                     parseThemes(const std::vector<std::string>& themeDirs);
-        void                     parseTheme(const std::string& themeDir);
+        void                        parseThemes(const std::vector<std::string>& themeDirs);
+        void                        parseTheme(const std::string& themeDir);
 
-        std::vector<std::string> m_lookupPaths;
+        std::vector<SIconDirectory> m_lookupPaths;
 
         // theme dirs already walked, to break cyclic Inherits= chains
         std::unordered_set<std::string>                    m_parsedThemes;
