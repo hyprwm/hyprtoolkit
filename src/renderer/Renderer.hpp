@@ -10,6 +10,9 @@
 
 #include "../helpers/Memory.hpp"
 
+#include <functional>
+#include <string>
+
 #include "Polygon.hpp"
 
 using namespace Hyprutils::Math;
@@ -19,6 +22,11 @@ namespace Hyprtoolkit {
     class IToolkitWindow;
     class IRendererTexture;
     class CSyncTimeline;
+
+    class IRendererShader {
+      public:
+        virtual ~IRendererShader() = default;
+    };
 
     class IRenderer {
       public:
@@ -65,6 +73,16 @@ namespace Hyprtoolkit {
             int                         thick = 2;
         };
 
+        struct STransitionRenderData {
+            CBox                 box;
+            SP<IRendererTexture> from, to;
+            SP<IRendererShader>  shader; // nullptr = built-in crossfade
+            float                progress = 0.F;
+            float                a        = 1.F;
+            float                duration = 0.F; // seconds, for the shader
+            Vector2D             seed;
+        };
+
         virtual void                 beginRendering(SP<IToolkitWindow> window, SP<Aquamarine::IBuffer> buf) = 0;
         virtual void                 beginRenderingExternal(SP<IToolkitWindow> window, uint32_t bufferAge)  = 0;
         virtual void                 render(bool ignoreSync = false)                                        = 0;
@@ -78,6 +96,10 @@ namespace Hyprtoolkit {
         virtual void                 signalRenderPoint(SP<CSyncTimeline> timeline)                          = 0;
 
         virtual SP<CSyncTimeline>    exportSync(SP<Aquamarine::IBuffer> buf) = 0;
+
+        virtual SP<IRendererShader>  createTransitionShader(const std::string& fragSource)                       = 0; // nullptr on failure (logged)
+        virtual void                 renderTransition(const STransitionRenderData& data)                         = 0;
+        virtual SP<IRendererTexture> renderToTexture(const Vector2D& pixelSize, const std::function<void()>& fn) = 0;
 
         virtual bool                 explicitSyncSupported() = 0;
 

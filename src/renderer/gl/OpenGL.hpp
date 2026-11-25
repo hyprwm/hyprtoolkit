@@ -44,6 +44,10 @@ namespace Hyprtoolkit {
         virtual SP<CSyncTimeline>    exportSync(SP<Aquamarine::IBuffer> buf);
         virtual void                 signalRenderPoint(SP<CSyncTimeline> timeline);
 
+        virtual SP<IRendererShader>  createTransitionShader(const std::string& fragSource);
+        virtual void                 renderTransition(const STransitionRenderData& data);
+        virtual SP<IRendererTexture> renderToTexture(const Vector2D& pixelSize, const std::function<void()>& fn);
+
         virtual bool                 explicitSyncSupported();
 
         virtual int                  getMaxTextureSize();
@@ -174,6 +178,7 @@ namespace Hyprtoolkit {
 
         CShader                            m_rectShader;
         CShader                            m_texShader;
+        CShader                            m_transitionShader;
         CShader                            m_borderShader;
 
         Mat3x3                             m_projMatrix = Mat3x3::identity();

@@ -6,6 +6,7 @@
 
 #include <hyprtoolkit/core/EmbeddedBackend.hpp>
 #include <hyprtoolkit/core/Timer.hpp>
+#include <hyprtoolkit/element/Image.hpp>
 #include <hyprtoolkit/element/Rectangle.hpp>
 #include <hyprtoolkit/window/EmbeddedSurface.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
@@ -13,7 +14,15 @@
 #include "window/EmbeddedSurface.hpp"
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <string_view>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Memory;
@@ -34,7 +43,7 @@ class CTestEventLoop final : public IEventLoop {
     }
 
     void addIdle(const std::function<void()>& callback) override {
-        callback();
+        m_idles.emplace_back(callback);
     }
 
     void cancelPending() override {
@@ -44,6 +53,15 @@ class CTestEventLoop final : public IEventLoop {
     void enterLoop() override {
         ;
     }
+
+    // runs the idles that were queued before the call; idles queued during the flush wait for the next one
+    void flushIdles() {
+        for (const auto& idle : std::exchange(m_idles, {}))
+            idle();
+    }
+
+  private:
+    std::vector<std::function<void()>> m_idles;
 };
 
 class CEmbeddedRendererTest : public testing::Test {
@@ -273,4 +291,382 @@ TEST_F(CEmbeddedRendererTest, fractionalBordersSurviveReflowAndEdgeDamage) {
             }
         }
     }
+}
+
+namespace {
+    using Pixel = std::array<GLubyte, 4>;
+
+    constexpr std::string_view PROBE_FROM_SHADER = R"#(#version 300 es
+precision highp float;
+in vec2 v_texcoord;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
+uniform float progress;
+uniform float alpha;
+layout(location = 0) out vec4 fragColor;
+void main() { fragColor = texture(tex1, v_texcoord) * alpha; }
+)#";
+
+    constexpr std::string_view PROBE_TO_SHADER = R"#(#version 300 es
+precision highp float;
+in vec2 v_texcoord;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
+uniform float progress;
+uniform float alpha;
+layout(location = 0) out vec4 fragColor;
+void main() { fragColor = texture(tex2, v_texcoord) * alpha; }
+)#";
+
+    constexpr std::string_view OUTGOING_SHADER = R"#(#version 300 es
+precision highp float;
+in vec2 v_texcoord;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
+uniform float progress;
+uniform float alpha;
+layout(location = 0) out vec4 fragColor;
+void main() { fragColor = mix(texture(tex1, v_texcoord), vec4(1.0, 0.0, 0.0, 1.0), progress) * alpha; }
+)#";
+
+    constexpr std::string_view INCOMING_SHADER = R"#(#version 300 es
+precision highp float;
+in vec2 v_texcoord;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
+uniform float progress;
+uniform float alpha;
+layout(location = 0) out vec4 fragColor;
+void main() { fragColor = mix(texture(tex1, v_texcoord), vec4(0.0, 0.0, 1.0, 1.0), progress) * alpha; }
+)#";
+
+    constexpr int              SURFACE_W = 96, SURFACE_H = 64;
+
+    void                       put16(std::string& s, const uint16_t v) {
+        s.push_back(sc<char>(v & 0xFF));
+        s.push_back(sc<char>(v >> 8));
+    }
+
+    void put32(std::string& s, const uint32_t v) {
+        for (int i = 0; i < 4; ++i)
+            s.push_back(sc<char>((v >> (8 * i)) & 0xFF));
+    }
+
+    // minimal uncompressed 24bpp bottom-up BMP, which the hyprgraphics loader accepts
+    void writeBMP(const std::filesystem::path& path, const uint32_t w, const uint32_t h, const std::function<void(uint32_t, uint32_t, uint8_t[3])>& pixel) {
+        constexpr uint32_t DATA_OFFSET = 54;
+        const uint32_t     imageSize   = w * h * 3;
+
+        std::string        bmp;
+        bmp.reserve(DATA_OFFSET + imageSize);
+        bmp += "BM";
+        put32(bmp, DATA_OFFSET + imageSize);
+        put16(bmp, 0);
+        put16(bmp, 0);
+        put32(bmp, DATA_OFFSET);
+        put32(bmp, 40);
+        put32(bmp, w);
+        put32(bmp, h);
+        put16(bmp, 1);
+        put16(bmp, 24);
+        put32(bmp, 0);
+        put32(bmp, imageSize);
+        put32(bmp, 2835);
+        put32(bmp, 2835);
+        put32(bmp, 0);
+        put32(bmp, 0);
+        for (uint32_t y = h; y-- > 0;) {
+            for (uint32_t x = 0; x < w; ++x) {
+                uint8_t rgb[3];
+                pixel(x, y, rgb);
+                bmp.push_back(sc<char>(rgb[2]));
+                bmp.push_back(sc<char>(rgb[1]));
+                bmp.push_back(sc<char>(rgb[0]));
+            }
+        }
+        std::filesystem::create_directories(path.parent_path());
+        std::ofstream{path, std::ios::binary}.write(bmp.data(), sc<std::streamsize>(bmp.size()));
+    }
+
+    // per test: ctest -j runs the tests as parallel processes
+    std::filesystem::path imageDir() {
+        const auto DIR = std::filesystem::temp_directory_path() / "hyprtoolkit-transition-test" / testing::UnitTest::GetInstance()->current_test_info()->name();
+        std::filesystem::remove_all(DIR);
+        std::filesystem::create_directories(DIR);
+        return DIR;
+    }
+
+    std::vector<Pixel> readGrid(const int inset, const int gw, const int gh) {
+        std::vector<Pixel> grid;
+        grid.reserve(sc<size_t>(gw * gh));
+        for (int gy = 0; gy < gh; ++gy) {
+            for (int gx = 0; gx < gw; ++gx) {
+                const int x = inset + gx * (SURFACE_W - 2 * inset - 1) / (gw - 1);
+                const int y = inset + gy * (SURFACE_H - 2 * inset - 1) / (gh - 1);
+                Pixel     p = {};
+                glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, p.data());
+                grid.push_back(p);
+            }
+        }
+        return grid;
+    }
+
+    void expectGridsClose(const std::vector<Pixel>& a, const std::vector<Pixel>& b, const int tol) {
+        ASSERT_EQ(a.size(), b.size());
+        for (size_t i = 0; i < a.size(); ++i) {
+            SCOPED_TRACE(::testing::Message() << "pixel " << i);
+            for (int c = 0; c < 4; ++c) {
+                EXPECT_NEAR(a[i][c], b[i][c], tol) << "channel " << c;
+                if (::testing::Test::HasFailure())
+                    return;
+            }
+        }
+    }
+
+    SP<CImageElement> addImageElement(const SP<IBackend>& backend, std::string path, const eImageFitMode fitMode) {
+        auto element = CImageBuilder::begin()
+                           ->path(std::move(path))
+                           ->fitMode(fitMode)
+                           ->sync(true)
+                           ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+                           ->commence();
+        element->setPositionMode(IElement::HT_POSITION_ABSOLUTE);
+        return element;
+    }
+
+    void swapImage(const SP<CImageElement>& element, std::string path, const eImageFitMode fitMode, SImageTransition&& transition) {
+        element->rebuild()
+            ->path(std::move(path))
+            ->fitMode(fitMode)
+            ->sync(true)
+            ->size({CDynamicSize::HT_SIZE_PERCENT, CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+            ->transition(std::move(transition))
+            ->commence();
+    }
+
+    GLuint bindTestFramebuffer(GLuint& framebuffer, GLuint& texture) {
+        if (!framebuffer) {
+            glGenFramebuffers(1, &framebuffer);
+            glGenTextures(1, &texture);
+        }
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SURFACE_W, SURFACE_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+        EXPECT_EQ(glCheckFramebufferStatus(GL_FRAMEBUFFER), GL_FRAMEBUFFER_COMPLETE);
+        return framebuffer;
+    }
+}
+
+TEST_F(CEmbeddedRendererTest, transitionFramesMatchNormalRendering) {
+    const auto DIR = imageDir();
+
+    // two images with different resolutions and aspect ratios, striped so
+    // letterboxing, cropping and tiling are all detectable
+    const auto A_PATH = (DIR / "a.bmp").string();
+    const auto B_PATH = (DIR / "b.bmp").string();
+    writeBMP(A_PATH, 64, 32, [](const uint32_t, const uint32_t y, uint8_t rgb[3]) {
+        const bool stripe = (y / 8) % 2;
+        rgb[0]            = 0;
+        rgb[1]            = stripe ? 0 : 255;
+        rgb[2]            = stripe ? 255 : 0;
+    });
+    writeBMP(B_PATH, 20, 50, [](const uint32_t x, const uint32_t, uint8_t rgb[3]) {
+        const bool stripe = (x / 5) % 2;
+        rgb[0]            = stripe ? 255 : 255;
+        rgb[1]            = stripe ? 255 : 0;
+        rgb[2]            = stripe ? 0 : 255;
+    });
+
+    IEmbeddedBackend::SCreationData creationData;
+    creationData.eventLoop = makeShared<CTestEventLoop>();
+    auto backend           = IEmbeddedBackend::create(creationData);
+    ASSERT_TRUE(backend);
+    auto surface = backend->createSurface();
+    ASSERT_TRUE(surface);
+    auto                          loop = dynamicPointerCast<CTestEventLoop>(creationData.eventLoop);
+
+    GLuint                        framebuffer = 0, texture = 0;
+    Hyprutils::Utils::CScopeGuard cleanup{[&] {
+        glDeleteFramebuffers(1, &framebuffer);
+        glDeleteTextures(1, &texture);
+        surface.reset();
+        backend->destroy();
+        backend.reset();
+    }};
+
+    const auto                    window  = dynamicPointerCast<CEmbeddedSurface>(surface);
+    const auto                    present = [&](const bool first = false) {
+        loop->flushIdles();
+        bindTestFramebuffer(framebuffer, texture);
+        surface->resize({SURFACE_W, SURFACE_H}, {SURFACE_W, SURFACE_H}, 1.F);
+        window->damageEntire(); // full repaint: the buffer-age bookkeeping of the driven renders is not under test
+        surface->render(first ? 0 : 1);
+    };
+
+    const auto image = addImageElement(backend, A_PATH, IMAGE_FIT_MODE_CONTAIN);
+    surface->rootElement()->addChild(image);
+    surface->resize({SURFACE_W, SURFACE_H}, {SURFACE_W, SURFACE_H}, 1.F);
+
+    struct FitPair {
+        eImageFitMode from, to;
+        const char*   name;
+    };
+    for (const auto& PAIR : std::vector<FitPair>{
+             {IMAGE_FIT_MODE_CONTAIN, IMAGE_FIT_MODE_COVER, "contain->cover"},
+             {IMAGE_FIT_MODE_COVER, IMAGE_FIT_MODE_TILE, "cover->tile"},
+             {IMAGE_FIT_MODE_TILE, IMAGE_FIT_MODE_CONTAIN, "tile->contain"},
+             {IMAGE_FIT_MODE_STRETCH, IMAGE_FIT_MODE_COVER, "stretch->cover"},
+         }) {
+        SCOPED_TRACE(PAIR.name);
+
+        // start from a clean state: a same-source swap does not cancel the previous
+        // pair's still-running transition
+        swapImage(image, B_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{});
+        swapImage(image, A_PATH, PAIR.from, SImageTransition{});
+        present(true);
+        const auto GRID_A = readGrid(3, 13, 9);
+
+        swapImage(image, B_PATH, PAIR.to, SImageTransition{});
+        present();
+        const auto GRID_B = readGrid(3, 13, 9);
+
+        // same image rendered normally twice in a row is identical
+        swapImage(image, A_PATH, PAIR.from, SImageTransition{});
+        present();
+        {
+            SCOPED_TRACE("plain swap-back");
+            expectGridsClose(GRID_A, readGrid(3, 13, 9), 1);
+        }
+
+        // probe shaders only output one frame: the transition must render it
+        // exactly like the normal path did, at every fit-mode pair
+        swapImage(image, B_PATH, PAIR.to, SImageTransition{.duration = 60s, .shader = std::string{PROBE_FROM_SHADER}});
+        present();
+        {
+            SCOPED_TRACE("probe tex1 (outgoing frame)");
+            expectGridsClose(GRID_A, readGrid(3, 13, 9), 2);
+        }
+
+        swapImage(image, A_PATH, PAIR.from, SImageTransition{.duration = 60s, .shader = std::string{PROBE_TO_SHADER}});
+        present();
+        {
+            SCOPED_TRACE("probe tex2 (incoming frame)");
+            expectGridsClose(GRID_A, readGrid(3, 13, 9), 2);
+        }
+    }
+}
+
+TEST_F(CEmbeddedRendererTest, interruptedTransitionFreezesInPlace) {
+    const auto DIR = imageDir();
+
+    const auto A_PATH = (DIR / "a.bmp").string();
+    const auto B_PATH = (DIR / "b.bmp").string();
+    const auto C_PATH = (DIR / "c.bmp").string();
+    const auto D_PATH = (DIR / "d.bmp").string();
+    writeBMP(A_PATH, 64, 32, [](const uint32_t, const uint32_t y, uint8_t rgb[3]) {
+        const bool stripe = (y / 8) % 2;
+        rgb[0]            = 0;
+        rgb[1]            = stripe ? 0 : 255;
+        rgb[2]            = stripe ? 255 : 0;
+    });
+    writeBMP(B_PATH, 20, 50, [](const uint32_t x, const uint32_t, uint8_t rgb[3]) {
+        const bool stripe = (x / 5) % 2;
+        rgb[0]            = 255;
+        rgb[1]            = stripe ? 255 : 0;
+        rgb[2]            = stripe ? 0 : 255;
+    });
+    writeBMP(C_PATH, 40, 40, [](const uint32_t, const uint32_t, uint8_t rgb[3]) {
+        rgb[0] = 255;
+        rgb[1] = 140;
+        rgb[2] = 0;
+    });
+    writeBMP(D_PATH, 30, 60, [](const uint32_t x, const uint32_t y, uint8_t rgb[3]) {
+        const bool checker = ((x / 5) + (y / 5)) % 2;
+        rgb[0]             = checker ? 255 : 60;
+        rgb[1]             = checker ? 0 : 60;
+        rgb[2]             = checker ? 255 : 60;
+    });
+
+    IEmbeddedBackend::SCreationData creationData;
+    creationData.eventLoop = makeShared<CTestEventLoop>();
+    auto backend           = IEmbeddedBackend::create(creationData);
+    ASSERT_TRUE(backend);
+    auto surface = backend->createSurface();
+    ASSERT_TRUE(surface);
+    auto                          loop = dynamicPointerCast<CTestEventLoop>(creationData.eventLoop);
+
+    GLuint                        framebuffer = 0, texture = 0;
+    Hyprutils::Utils::CScopeGuard cleanup{[&] {
+        glDeleteFramebuffers(1, &framebuffer);
+        glDeleteTextures(1, &texture);
+        surface.reset();
+        backend->destroy();
+        backend.reset();
+    }};
+
+    const auto                    window  = dynamicPointerCast<CEmbeddedSurface>(surface);
+    const auto                    present = [&](const bool first = false) {
+        loop->flushIdles();
+        bindTestFramebuffer(framebuffer, texture);
+        surface->resize({SURFACE_W, SURFACE_H}, {SURFACE_W, SURFACE_H}, 1.F);
+        window->damageEntire(); // full repaint: the buffer-age bookkeeping of the driven renders is not under test
+        surface->render(first ? 0 : 1);
+    };
+    const auto centerPixel = [&]() {
+        Pixel p = {};
+        glReadPixels(SURFACE_W / 2, SURFACE_H / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, p.data());
+        return p;
+    };
+    const auto pixelsDiffer = [](const Pixel& a, const Pixel& b) { return std::abs(sc<int>(a[0]) - b[0]) + std::abs(sc<int>(a[1]) - b[1]) + std::abs(sc<int>(a[2]) - b[2]) > 10; };
+
+    const auto image = addImageElement(backend, A_PATH, IMAGE_FIT_MODE_COVER);
+    surface->rootElement()->addChild(image);
+    surface->resize({SURFACE_W, SURFACE_H}, {SURFACE_W, SURFACE_H}, 1.F);
+
+    present(true);
+    swapImage(image, C_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{});
+    present();
+    const auto GRID_C = readGrid(3, 13, 9);
+
+    swapImage(image, A_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{});
+    present();
+    const Pixel CENTER = centerPixel();
+    ASSERT_GT(CENTER[1], CENTER[0] + 50); // A's green dominates the center (the exact pixel sits on a stripe edge)
+    ASSERT_GT(CENTER[1], CENTER[2] + 50);
+
+    // A -> B with a progress-dependent shader
+    swapImage(image, B_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{.duration = 2s, .shader = std::string{OUTGOING_SHADER}});
+    present();
+    const auto BEFORE_MOVE = centerPixel();
+
+    std::this_thread::sleep_for(250ms);
+    present();
+    const auto FROZEN_AT = centerPixel();
+    ASSERT_TRUE(pixelsDiffer(BEFORE_MOVE, FROZEN_AT)) << "progress did not advance before the interrupt";
+
+    // changing the image mid-transition freezes: the first frame after the change is
+    // identical to the last frame before it, and the frozen blend stays put
+    swapImage(image, C_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{.duration = 60s, .shader = std::string{INCOMING_SHADER}});
+    present();
+    expectGridsClose({FROZEN_AT}, {centerPixel()}, 3);
+
+    std::this_thread::sleep_for(150ms);
+    present();
+    expectGridsClose({FROZEN_AT}, {centerPixel()}, 4);
+
+    // a second change re-freezes on the same frame; only the target moves
+    swapImage(image, D_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{.duration = 60s, .shader = std::string{INCOMING_SHADER}});
+    present();
+    expectGridsClose({FROZEN_AT}, {centerPixel()}, 5);
+
+    // the next transition starts on the frozen frame and ends on the new image rendered normally
+    swapImage(image, C_PATH, IMAGE_FIT_MODE_COVER, SImageTransition{.duration = 150ms, .shader = std::string{INCOMING_SHADER}});
+    present();
+    expectGridsClose({FROZEN_AT}, {centerPixel()}, 5);
+
+    std::this_thread::sleep_for(400ms);
+    present();
+    present();
+    expectGridsClose(GRID_C, readGrid(3, 13, 9), 2);
 }

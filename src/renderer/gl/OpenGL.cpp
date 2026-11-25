@@ -67,7 +67,7 @@ static void eglLog(EGLenum error, const char* command, EGLint type, EGLLabelKHR 
     g_logger->log(eglLogToLevel(type), "[EGL] Command {} errored out with {} (0x{}): {}", command, eglErrorToString(error), error, msg);
 }
 
-static GLuint compileShader(const GLuint& type, std::string src) {
+static GLuint compileShader(const GLuint& type, std::string src, const bool dynamic = false) {
     auto shader = glCreateShader(type);
 
     auto shaderSource = src.c_str();
@@ -78,19 +78,37 @@ static GLuint compileShader(const GLuint& type, std::string src) {
     GLint ok;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
 
+    if (dynamic && ok == GL_FALSE) {
+        GLint logLen = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLen);
+        std::string log(sc<size_t>(logLen > 0 ? logLen : 1), '\0');
+        glGetShaderInfoLog(shader, logLen, nullptr, log.data());
+        g_logger->log(HT_LOG_ERROR, "compileShader() failed: {}", log);
+        glDeleteShader(shader);
+        return 0;
+    }
+
     RASSERT(ok != GL_FALSE, "compileShader() failed! GL_COMPILE_STATUS not OK!");
 
     return shader;
 }
 
-static GLuint createProgram(const std::string& vert, const std::string& frag) {
-    auto vertCompiled = compileShader(GL_VERTEX_SHADER, vert);
+static GLuint createProgram(const std::string& vert, const std::string& frag, const bool dynamic = false) {
+    auto vertCompiled = compileShader(GL_VERTEX_SHADER, vert, dynamic);
 
-    RASSERT(vertCompiled, "Compiling shader failed. VERTEX NULL! Shader source:\n\n{}", vert);
+    RASSERT(dynamic || vertCompiled, "Compiling shader failed. VERTEX NULL! Shader source:\n\n{}", vert);
 
-    auto fragCompiled = compileShader(GL_FRAGMENT_SHADER, frag);
+    if (!vertCompiled)
+        return 0;
 
-    RASSERT(fragCompiled, "Compiling shader failed. FRAGMENT NULL! Shader source:\n\n{}", frag);
+    auto fragCompiled = compileShader(GL_FRAGMENT_SHADER, frag, dynamic);
+
+    RASSERT(dynamic || fragCompiled, "Compiling shader failed. FRAGMENT NULL! Shader source:\n\n{}", frag);
+
+    if (!fragCompiled) {
+        glDeleteShader(vertCompiled);
+        return 0;
+    }
 
     auto prog = glCreateProgram();
     glAttachShader(prog, vertCompiled);
@@ -104,6 +122,16 @@ static GLuint createProgram(const std::string& vert, const std::string& frag) {
 
     GLint ok;
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+
+    if (dynamic && ok == GL_FALSE) {
+        GLint logLen = 0;
+        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &logLen);
+        std::string log(sc<size_t>(logLen > 0 ? logLen : 1), '\0');
+        glGetProgramInfoLog(prog, logLen, nullptr, log.data());
+        g_logger->log(HT_LOG_ERROR, "createProgram() failed: {}", log);
+        glDeleteProgram(prog);
+        return 0;
+    }
 
     RASSERT(ok != GL_FALSE, "createProgram() failed! GL_LINK_STATUS not OK!");
 
@@ -434,6 +462,20 @@ void COpenGLRenderer::initGLResources() {
     m_borderShader.alpha                 = glGetUniformLocation(prog, "alpha");
     m_borderShader.roundingPower         = glGetUniformLocation(prog, "roundingPower");
 
+    const auto TRANSFRAGSRC      = processShader("transition.frag", includes);
+    prog                         = createProgram(VERTSRC, TRANSFRAGSRC);
+    m_transitionShader.program   = prog;
+    m_transitionShader.proj      = glGetUniformLocation(prog, "proj");
+    m_transitionShader.tex       = glGetUniformLocation(prog, "tex1");
+    m_transitionShader.tex2      = glGetUniformLocation(prog, "tex2");
+    m_transitionShader.progress  = glGetUniformLocation(prog, "progress");
+    m_transitionShader.alpha     = glGetUniformLocation(prog, "alpha");
+    m_transitionShader.duration  = glGetUniformLocation(prog, "duration");
+    m_transitionShader.fullSize  = glGetUniformLocation(prog, "fullSize");
+    m_transitionShader.seed      = glGetUniformLocation(prog, "seed");
+    m_transitionShader.posAttrib = glGetAttribLocation(prog, "pos");
+    m_transitionShader.texAttrib = glGetAttribLocation(prog, "texcoord");
+
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
     m_polyRenderFb = makeShared<CFramebuffer>();
@@ -564,6 +606,7 @@ COpenGLRenderer::~COpenGLRenderer() {
     m_rectShader.destroy();
     m_texShader.destroy();
     m_borderShader.destroy();
+    m_transitionShader.destroy();
 
     if (m_vao)
         glDeleteVertexArrays(1, &m_vao);
@@ -1195,6 +1238,158 @@ void COpenGLRenderer::renderTexture(const STextureRenderData& data) {
     glDisableVertexAttribArray(shader->texAttrib);
 
     glBindTexture(tex->m_target, 0);
+}
+
+namespace Hyprtoolkit {
+    struct STransitionShader final : public IRendererShader {
+        CShader shader;
+    };
+}
+
+SP<IRendererShader> COpenGLRenderer::createTransitionShader(const std::string& fragSource) {
+    if (fragSource.empty())
+        return nullptr;
+
+    // untrusted source: logs and returns 0 instead of asserting
+    const auto PROG = createProgram(loadShader("tex300.vert"), fragSource, true);
+    if (PROG == 0)
+        return nullptr;
+
+    const auto CUSTOM = makeShared<STransitionShader>();
+    CShader&   SH     = CUSTOM->shader;
+    SH.program        = PROG;
+    SH.posAttrib      = glGetAttribLocation(PROG, "pos");
+    SH.texAttrib      = glGetAttribLocation(PROG, "texcoord");
+    SH.proj           = glGetUniformLocation(PROG, "proj");
+    SH.tex            = glGetUniformLocation(PROG, "tex1");
+    SH.tex2           = glGetUniformLocation(PROG, "tex2");
+    SH.progress       = glGetUniformLocation(PROG, "progress");
+    SH.alpha          = glGetUniformLocation(PROG, "alpha");
+    SH.duration       = glGetUniformLocation(PROG, "duration");
+    SH.fullSize       = glGetUniformLocation(PROG, "fullSize");
+    SH.seed           = glGetUniformLocation(PROG, "seed");
+
+    // missing uniforms are dead-stripped to -1 (glUniform on -1 is a no-op), but a
+    // missing pos/texcoord breaks the draw
+    if (SH.posAttrib < 0 || SH.texAttrib < 0) {
+        glDeleteProgram(PROG);
+        SH.program = 0;
+        g_logger->log(HT_LOG_ERROR, "transition shader is missing the pos/texcoord attributes ({}, {})", SH.posAttrib, SH.texAttrib);
+        return nullptr;
+    }
+
+    return CUSTOM;
+}
+
+void COpenGLRenderer::renderTransition(const STransitionRenderData& data) {
+    RASSERT(data.from && data.from->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl from texture");
+    RASSERT(data.to && data.to->type() == IRendererTexture::TEXTURE_GL, "OpenGL renderer: passed a non-gl to texture");
+
+    const auto CUSTOM = dynamic_cast<STransitionShader*>(data.shader.get());
+    RASSERT(!data.shader || CUSTOM, "OpenGL renderer: passed a foreign transition shader");
+    const CShader& SH = CUSTOM ? CUSTOM->shader : m_transitionShader;
+
+    const auto     PRESENTED     = presentationBox(data.box);
+    const auto     ROUNDEDBOX    = logicalToGL(PRESENTED);
+    const auto     UNTRANSFORMED = logicalToGL(PRESENTED, false);
+    Mat3x3         matrix        = m_projMatrix.projectBox(ROUNDEDBOX, HYPRUTILS_TRANSFORM_FLIPPED_180, PRESENTED.rot);
+    Mat3x3         glMatrix      = m_projection.copy().multiply(matrix);
+
+    const auto     DAMAGE = damageWithClip();
+
+    if (DAMAGE.copy().intersect(UNTRANSFORMED).empty())
+        return;
+
+    const auto FROM = reinterpretPointerCast<CGLTexture>(data.from);
+    const auto TO   = reinterpretPointerCast<CGLTexture>(data.to);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(FROM->m_target, FROM->m_texID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(TO->m_target, TO->m_texID);
+
+    glUseProgram(SH.program);
+
+    glUniformMatrix3fv(SH.proj, 1, GL_TRUE, glMatrix.getMatrix().data());
+    glUniform1i(SH.tex, 0);
+    glUniform1i(SH.tex2, 1);
+    glUniform1f(SH.progress, data.progress);
+    glUniform1f(SH.alpha, data.a * presentationOpacity());
+    glUniform1f(SH.duration, data.duration);
+    glUniform2f(SH.fullSize, UNTRANSFORMED.width, UNTRANSFORMED.height);
+    glUniform2f(SH.seed, data.seed.x, data.seed.y);
+
+    std::array<float, 16> vertices;
+    std::ranges::copy(fullVerts, vertices.begin());
+    std::ranges::copy(fullVerts, vertices.begin() + 8);
+    uploadVertices(vertices.data(), sizeof(vertices));
+    glVertexAttribPointer(SH.posAttrib, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glVertexAttribPointer(SH.texAttrib, 2, GL_FLOAT, GL_FALSE, 0, rc<const void*>(sizeof(fullVerts)));
+
+    glEnableVertexAttribArray(SH.posAttrib);
+    glEnableVertexAttribArray(SH.texAttrib);
+
+    DAMAGE.forEachRect([this](const auto& RECT) {
+        scissor(&RECT);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    });
+
+    glDisableVertexAttribArray(SH.posAttrib);
+    glDisableVertexAttribArray(SH.texAttrib);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(TO->m_target, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(FROM->m_target, 0);
+}
+
+SP<IRendererTexture> COpenGLRenderer::renderToTexture(const Vector2D& pixelSize, const std::function<void()>& fn) {
+    if (pixelSize.x < 1 || pixelSize.y < 1)
+        return nullptr;
+
+    auto fb = makeShared<CFramebuffer>();
+    if (!fb->alloc(pixelSize.x, pixelSize.y))
+        return nullptr;
+
+    const GLuint TARGETFB   = m_targetFB;
+    const auto   VIEWPORT   = m_currentViewport;
+    const auto   PROJECTION = m_projection;
+    const auto   DAMAGE     = m_damage.copy();
+    const float  SCALE      = m_scale;
+    const auto   ELEMENT    = m_currentElement;
+    const auto   CLIPBOXES  = m_clipBoxes;
+
+    m_targetFB        = fb->getFBID();
+    m_currentViewport = pixelSize;
+    m_projection      = Mat3x3::outputProjection(pixelSize, HYPRUTILS_TRANSFORM_FLIPPED_180);
+    m_scale           = 1.F;
+    m_damage          = CRegion{CBox{0, 0, pixelSize.x, pixelSize.y}};
+    m_currentElement.reset();
+    m_clipBoxes.clear();
+
+    fb->bind();
+    glViewport(0, 0, pixelSize.x, pixelSize.y);
+    scissor(nullptr);
+    glClearColor(0.F, 0.F, 0.F, 0.F);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    fn();
+
+    m_targetFB        = TARGETFB;
+    m_currentViewport = VIEWPORT;
+    m_projection      = PROJECTION;
+    m_damage          = DAMAGE;
+    m_scale           = SCALE;
+    m_currentElement  = ELEMENT;
+    m_clipBoxes       = CLIPBOXES;
+
+    const auto TEX = fb->getTexture();
+    fb.reset(); // releases the FBO (binds 0); the returned texture outlives it
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_targetFB);
+    glViewport(0, 0, m_currentViewport.x, m_currentViewport.y);
+
+    return TEX;
 }
 
 void COpenGLRenderer::renderBorder(const SBorderRenderData& data) {
