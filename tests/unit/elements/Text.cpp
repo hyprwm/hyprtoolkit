@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <pango/pango.h>
+
 #include <element/text/Text.hpp>
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/palette/Color.hpp>
@@ -19,6 +21,17 @@
 using namespace Hyprtoolkit;
 using namespace Hyprutils::Math;
 
+// the text pango actually lays out, with markup stripped. the ground truth a link's begin/end index into.
+static std::string strippedMarkup(const std::string& markup) {
+    char* buf = nullptr;
+    if (!pango_parse_markup(markup.c_str(), -1, 0, nullptr, &buf, nullptr, nullptr))
+        return markup;
+    std::string out = buf ? buf : "";
+    if (buf)
+        g_free(buf);
+    return out;
+}
+
 TEST(Element, text) {
     Tests::Tricks::createBackendSupport();
 
@@ -29,7 +42,65 @@ TEST(Element, text) {
 
     EXPECT_EQ(text->m_impl->parsedText, "Hello <u><span foreground=\"#ff0000ff\">link</span></u>! Hi <u><span foreground=\"#ff0000ff\">link2</span></u>!");
 
+    // a link's begin/end must index into the text pango lays out, which is markup-stripped, so the
+    // region lands on the glyphs. the styling markup before the second link used to shift it. (#127)
+    const std::string STRIPPED = strippedMarkup(text->m_impl->parsedText);
+    ASSERT_EQ(STRIPPED, "Hello link! Hi link2!");
+    ASSERT_EQ(text->m_impl->parsedLinks.size(), 2u);
+    const auto& l0 = text->m_impl->parsedLinks[0];
+    const auto& l1 = text->m_impl->parsedLinks[1];
+    EXPECT_EQ(STRIPPED.substr(l0.begin, l0.end - l0.begin), "link");
+    EXPECT_EQ(STRIPPED.substr(l1.begin, l1.end - l1.begin), "link2");
+
     text.reset();
+}
+
+TEST(Element, textLinkOffsetsWithMarkupPrefix) {
+    Tests::Tricks::createBackendSupport();
+
+    g_palette->m_colors.linkText = CHyprColor(1.F, 0.F, 0.F, 1.F);
+
+    // an entity and a styling tag before the link both shrink once pango strips them, so counting
+    // raw markup bytes put the region past the link. count displayed bytes instead. (#127)
+    auto              text = CTextBuilder::begin()->text(R"(a &amp; <b>see <a href="http://x">LINK</a></b> now)")->commence();
+
+    const std::string STRIPPED = strippedMarkup(text->m_impl->parsedText);
+    ASSERT_EQ(STRIPPED, "a & see LINK now");
+    ASSERT_EQ(text->m_impl->parsedLinks.size(), 1u);
+    const auto& link = text->m_impl->parsedLinks[0];
+    EXPECT_EQ(STRIPPED.substr(link.begin, link.end - link.begin), "LINK");
+
+    text.reset();
+}
+
+TEST(Element, textDisplayedLength) {
+    // whole, valid markup: pango is the ground truth for how many bytes survive the strip
+    const std::vector<std::pair<std::string, size_t>> VALID = {
+        {"", 0},
+        {"plain", 5},
+        {"h\xc3\xa9llo", 6},
+        {"<b>bold</b>", 4},
+        {"<b><i>a</i>b</b>", 2},
+        {"a <span foreground=\"#ff0000ff\">red</span> b", 7},
+        {"<u><span foreground='#abc'>x</span></u>", 1},
+        {"&amp;&lt;&gt;&quot;&apos;", 5},
+        {"&#65;&#x42;", 2},
+        {"&#233;", 2},
+        {"&#x4E2D;", 3},
+        {"&#x1F600;", 4},
+        {"<span font_family=\"a&gt;b\">x</span>", 1},
+        {"<span font_family=\"a>b\">x</span>", 1},
+        {"<span font_family='a>b'>x</span>", 1},
+    };
+    for (const auto& [markup, len] : VALID) {
+        SCOPED_TRACE(markup);
+        EXPECT_EQ(STextImpl::displayedLength(markup), len);
+        EXPECT_EQ(STextImpl::displayedLength(markup), strippedMarkup(markup).size());
+    }
+
+    // parseText measures the pieces between links, which are not valid markup on their own
+    EXPECT_EQ(STextImpl::displayedLength("<b>see "), 4);
+    EXPECT_EQ(STextImpl::displayedLength(" now</b>"), 4);
 }
 
 TEST(Element, synchronousTextRebuildSchedulesTextureRefresh) {

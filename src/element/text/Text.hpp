@@ -93,6 +93,7 @@ namespace Hyprtoolkit {
         void                                                                                           postTexLoad();
         void                                                                                           parseText();
         void                                                                                           recheckTextBoxes();
+        static size_t                                                                                  displayedLength(std::string_view markup);
         void                                                                                           onMouseDown();
         void                                                                                           onMouseMove();
         Hyprutils::Math::Vector2D                                                                      applyClampSize(Hyprutils::Math::Vector2D);
