@@ -302,6 +302,28 @@ TEST_F(CEmbeddedSurfaceTooltipTest, tooltipComesFromParentOfHoveredElement) {
     EXPECT_FALSE(m_surface->m_tooltip.hoverTooltipTimer);
 }
 
+TEST_F(CEmbeddedSurfaceTooltipTest, tooltipDoesNotCaptureMouseInput) {
+    std::vector<std::string> log;
+
+    const auto               parent = CEmbeddedTestElement::create();
+    const auto               child  = CEmbeddedTestElement::create();
+    parent->setReceivesMouse(true);
+    parent->setMouseEnter([&log](const Vector2D&) { log.emplace_back("enter"); });
+    parent->setMouseButton([&log](Input::eMouseButton, bool down) { log.emplace_back(down ? "down" : "up"); });
+    child->setTooltip("child tooltip");
+    parent->reposition({10, 10, 40, 40});
+    child->reposition({20, 20, 20, 20});
+    parent->addChild(child);
+    m_surface->rootElement()->addChild(parent);
+
+    m_surface->pointerEnter({25, 25});
+    m_surface->pointerButton(Input::MOUSE_BUTTON_LEFT, true);
+    m_surface->pointerButton(Input::MOUSE_BUTTON_LEFT, false);
+
+    EXPECT_EQ(log, (std::vector<std::string>{"enter", "down", "up"}));
+    EXPECT_EQ(m_surface->m_tooltip.hoverElement.lock().get(), child.get());
+}
+
 TEST_F(CEmbeddedSurfaceTest, textboxFocusCanBeCleared) {
     Tests::Tricks::createBackendSupport();
 

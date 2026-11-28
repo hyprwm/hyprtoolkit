@@ -71,6 +71,7 @@ namespace Hyprtoolkit {
         virtual void setTouchUp(std::function<void(const Input::STouchEvent&)>&& fn);
         virtual void setTouchCancel(std::function<void(const Input::STouchEvent&)>&& fn);
 
+        // tooltips don't capture mouse input, parents keep receiving it
         virtual void setTooltip(std::string&&);
 
         virtual void setRepositioned(std::function<void()>&& fn);

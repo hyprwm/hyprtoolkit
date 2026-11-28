@@ -242,7 +242,7 @@ void IElement::clearChildren() {
 }
 
 bool IElement::acceptsMouseInput() {
-    return impl->userRequestedMouseInput || impl->hasTooltip;
+    return impl->userRequestedMouseInput;
 }
 
 ePointerShape IElement::pointerShape() {
