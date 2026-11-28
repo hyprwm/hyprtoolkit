@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "core/BackendContext.hpp"
+#include "core/InternalBackend.hpp"
 #include "element/Element.hpp"
+#include "hyprtoolkit/core/Timer.hpp"
 #include "hyprtoolkit/element/Textbox.hpp"
 #include "hyprtoolkit/element/ScrollArea.hpp"
 #include "hyprtoolkit/element/ColumnLayout.hpp"
@@ -61,6 +63,67 @@ class CEmbeddedSurfaceTest : public testing::Test {
 
     SP<CEmbeddedSurface> m_surface;
     bool                 m_installedServices = false;
+};
+
+// only hands out timers that never fire, which is all tooltips need
+class CTimerOnlyBackend final : public IBackend {
+  public:
+    void destroy() override {
+        ;
+    }
+
+    void setLogFn(LogFn&& fn) override {
+        ;
+    }
+
+    void addFd(int fd, std::function<void()>&& callback) override {
+        ;
+    }
+
+    void removeFd(int fd) override {
+        ;
+    }
+
+    SP<ISystemIconFactory> systemIcons() override {
+        return nullptr;
+    }
+
+    ASP<CTimer> addTimer(const TimerDuration& timeout, std::function<void(ASP<CTimer> self, void* data)> cb, void* data, bool force) override {
+        return makeAtomicShared<CTimer>(timeout, std::move(cb), data, force);
+    }
+
+    void addIdle(const std::function<void()>& fn) override {
+        ;
+    }
+
+    void enterLoop() override {
+        ;
+    }
+
+    SP<CPalette> getPalette() override {
+        return nullptr;
+    }
+
+    std::vector<SP<IOutput>> getOutputs() override {
+        return {};
+    }
+
+    std::expected<SP<ISessionLockState>, eSessionLockError> aquireSessionLock() override {
+        return std::unexpected(LOCK_ERROR_PLATFORM_UNINITIALIZED);
+    }
+};
+
+class CEmbeddedSurfaceTooltipTest : public CEmbeddedSurfaceTest {
+  protected:
+    void SetUp() override {
+        CEmbeddedSurfaceTest::SetUp();
+        g_backend = makeShared<CTimerOnlyBackend>();
+    }
+
+    void TearDown() override {
+        CEmbeddedSurfaceTest::TearDown();
+        g_backend.reset();
+    }
 };
 
 // Hovers A, moves onto the adjacent B, then moves within B. Returns the enter / leave log.
@@ -214,6 +277,51 @@ TEST_F(CEmbeddedSurfaceTest, windowSeesMouseButtonsWhateverIsHovered) {
 
     EXPECT_EQ(windowButtons, (std::vector<SButton>{{Input::MOUSE_BUTTON_BACK, true}, {Input::MOUSE_BUTTON_BACK, false}, {Input::MOUSE_BUTTON_FORWARD, true}}));
     EXPECT_EQ(elementButtons, 1);
+}
+
+TEST_F(CEmbeddedSurfaceTooltipTest, tooltipComesFromParentOfHoveredElement) {
+    const auto parent = CEmbeddedTestElement::create();
+    const auto child  = CEmbeddedTestElement::create();
+    parent->setTooltip("parent tooltip");
+    child->setReceivesMouse(true);
+    parent->reposition({10, 10, 40, 40});
+    child->reposition({20, 20, 20, 20});
+    parent->addChild(child);
+    m_surface->rootElement()->addChild(parent);
+
+    m_surface->pointerEnter({25, 25});
+
+    ASSERT_TRUE(m_surface->m_mainHoverElement);
+    EXPECT_EQ(m_surface->m_mainHoverElement->m_el.lock().get(), child.get());
+    EXPECT_EQ(m_surface->m_tooltip.hoverElement.lock().get(), parent.get());
+    EXPECT_TRUE(m_surface->m_tooltip.hoverTooltipTimer);
+
+    m_surface->pointerLeave();
+
+    EXPECT_FALSE(m_surface->m_tooltip.hoverElement);
+    EXPECT_FALSE(m_surface->m_tooltip.hoverTooltipTimer);
+}
+
+TEST_F(CEmbeddedSurfaceTooltipTest, tooltipDoesNotCaptureMouseInput) {
+    std::vector<std::string> log;
+
+    const auto               parent = CEmbeddedTestElement::create();
+    const auto               child  = CEmbeddedTestElement::create();
+    parent->setReceivesMouse(true);
+    parent->setMouseEnter([&log](const Vector2D&) { log.emplace_back("enter"); });
+    parent->setMouseButton([&log](Input::eMouseButton, bool down) { log.emplace_back(down ? "down" : "up"); });
+    child->setTooltip("child tooltip");
+    parent->reposition({10, 10, 40, 40});
+    child->reposition({20, 20, 20, 20});
+    parent->addChild(child);
+    m_surface->rootElement()->addChild(parent);
+
+    m_surface->pointerEnter({25, 25});
+    m_surface->pointerButton(Input::MOUSE_BUTTON_LEFT, true);
+    m_surface->pointerButton(Input::MOUSE_BUTTON_LEFT, false);
+
+    EXPECT_EQ(log, (std::vector<std::string>{"enter", "down", "up"}));
+    EXPECT_EQ(m_surface->m_tooltip.hoverElement.lock().get(), child.get());
 }
 
 TEST_F(CEmbeddedSurfaceTest, textboxFocusCanBeCleared) {

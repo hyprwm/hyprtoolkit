@@ -61,6 +61,7 @@ namespace Hyprtoolkit {
 
         virtual void                      openTooltip(const std::string& s, const Hyprutils::Math::Vector2D& pos);
         virtual void                      closeTooltip();
+        void                              updateTooltipTarget(SP<IElement> el);
 
         void                              initElementIfNeeded(SP<IElement>);
 
@@ -88,6 +89,7 @@ namespace Hyprtoolkit {
             SP<CRectangleElement> bg;
             SP<CTextElement>      text;
             ASP<CTimer>           hoverTooltipTimer;
+            WP<IElement>          hoverElement;
         } m_tooltip;
     };
 }
