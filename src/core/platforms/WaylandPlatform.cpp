@@ -708,7 +708,9 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
     else
         std::erase(m_waylandState.seatState.pressedKeys, keycode);
 
-    if (!m_keyboardWindow)
+    // hold a ref: handlers can drop the last one, e.g. closing a popup
+    const auto window = m_keyboardWindow.lock();
+    if (!window)
         return;
 
     Input::SKeyboardKeyEvent e;
@@ -722,7 +724,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
             SYM == XKB_KEY_KP_End) {
             // skip compose
             e.xkbKeysym = SYM;
-            m_keyboardWindow->keyboardKey(e);
+            window->keyboardKey(e);
             m_waylandState.seatState.repeatKeyEvent = e;
             startRepeatTimer();
             return;
@@ -743,7 +745,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         if (len > 1) {
             e.xkbKeysym = SYM;
             e.utf8      = std::string{buf, sc<size_t>(len - 1)};
-            m_keyboardWindow->keyboardKey(e);
+            window->keyboardKey(e);
             m_waylandState.seatState.repeatKeyEvent = e;
         }
 
@@ -755,7 +757,7 @@ void CWaylandPlatform::onKey(uint32_t keycode, bool state) {
         xkb_compose_state_reset(m_waylandState.seatState.xkbComposeState);
 
     m_waylandState.seatState.repeatKeyEvent = e;
-    m_keyboardWindow->keyboardKey(e);
+    window->keyboardKey(e);
     stopRepeatTimer();
 }
 
@@ -829,10 +831,11 @@ void CWaylandPlatform::resetKeyboardState() {
 }
 
 void CWaylandPlatform::onRepeatTimerFire() {
-    if (!m_keyboardWindow)
+    const auto window = m_keyboardWindow.lock();
+    if (!window)
         return;
 
-    m_keyboardWindow->keyboardKey(m_waylandState.seatState.repeatKeyEvent);
+    window->keyboardKey(m_waylandState.seatState.repeatKeyEvent);
 
     // add a repeat timer
     m_waylandState.seatState.repeatTimer =
