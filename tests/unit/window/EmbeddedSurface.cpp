@@ -63,6 +63,29 @@ class CEmbeddedSurfaceTest : public testing::Test {
     bool                 m_installedServices = false;
 };
 
+// Hovers A, moves onto the adjacent B, then moves within B. Returns the enter / leave log.
+static std::vector<std::string> hoverAcross(SP<CEmbeddedSurface> surface, bool firstAlways, bool secondAlways) {
+    // the elements outlive this function, so the log has to as well
+    const auto log = makeShared<std::vector<std::string>>();
+
+    const auto track = [&surface, &log](SP<CEmbeddedTestElement> el, const std::string& name, const CBox& box) {
+        el->setReceivesMouse(true);
+        el->setMouseEnter([log, name](const Vector2D&) { log->emplace_back(name + " enter"); });
+        el->setMouseLeave([log, name] { log->emplace_back(name + " leave"); });
+        el->reposition(box);
+        surface->rootElement()->addChild(el);
+    };
+
+    track(CEmbeddedTestElement::create(firstAlways), "A", {10, 10, 20, 20});
+    track(CEmbeddedTestElement::create(secondAlways), "B", {30, 10, 20, 20});
+
+    surface->pointerEnter({15, 15});
+    surface->pointerMotion({35, 15});
+    surface->pointerMotion({40, 15});
+
+    return *log;
+}
+
 TEST_F(CEmbeddedSurfaceTest, frameRequestsAreCoalesced) {
     int requests = 0;
     m_surface->IEmbeddedSurface::m_events.frameRequested.listenStatic([&requests] { requests++; });
@@ -149,6 +172,10 @@ TEST_F(CEmbeddedSurfaceTest, alwaysHoveredElementReceivesPointerEventsOnce) {
     EXPECT_EQ(moves, 2);
     EXPECT_EQ(buttons, 1);
     EXPECT_EQ(axes, 1);
+}
+
+TEST_F(CEmbeddedSurfaceTest, hoverLeavesBeforeEntering) {
+    EXPECT_EQ(hoverAcross(m_surface, false, false), (std::vector<std::string>{"A enter", "A leave", "B enter"}));
 }
 
 TEST_F(CEmbeddedSurfaceTest, windowSeesMouseButtonsWhateverIsHovered) {

@@ -180,11 +180,13 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
         return;
     }
 
+    // release the old hover first, so its leave comes before the new enter
+    m_mainHoverElement.reset();
+
     if (el) {
         initElementIfNeeded(el);
         m_mainHoverElement = makeShared<SToolkitFocusLock>(el, coords - el->impl->position.pos());
-    } else
-        m_mainHoverElement.reset();
+    }
 
     if (m_mainHoverElement && m_mainHoverElement->m_el) {
         if (auto fn = m_mainHoverElement->m_el->pointerShapeFn(); fn)
