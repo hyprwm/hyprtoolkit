@@ -421,29 +421,33 @@ void CWaylandPlatform::initSeat() {
             });
 
             m_waylandState.pointer->setMotion([this](CCWlPointer* r, uint32_t time, wl_fixed_t x, wl_fixed_t y) {
-                if (!m_currentWindow)
+                // hold a ref: handlers can drop the last one, e.g. closing a popup
+                const auto window = m_currentWindow.lock();
+                if (!window)
                     return;
 
                 Vector2D local = {wl_fixed_to_double(x), wl_fixed_to_double(y)};
 
-                m_currentWindow->mouseMove(local);
+                window->mouseMove(local);
             });
 
             m_waylandState.pointer->setButton([this](CCWlPointer* r, uint32_t serial, uint32_t time, uint32_t button, wl_pointer_button_state state) {
-                if (!m_currentWindow)
+                const auto window = m_currentWindow.lock();
+                if (!window)
                     return;
 
                 if (state == WL_POINTER_BUTTON_STATE_PRESSED)
                     m_lastPointerButtonPressSerial = serial;
 
-                m_currentWindow->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
+                window->mouseButton(Input::buttonFromWayland(button), state == WL_POINTER_BUTTON_STATE_PRESSED);
             });
 
             m_waylandState.pointer->setAxis([this](CCWlPointer* r, uint32_t serial, wl_pointer_axis axis, wl_fixed_t delta) {
-                if (!m_currentWindow)
+                const auto window = m_currentWindow.lock();
+                if (!window)
                     return;
 
-                m_currentWindow->mouseAxis(axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL ? Input::AXIS_AXIS_HORIZONTAL : Input::AXIS_AXIS_VERTICAL, wl_fixed_to_double(delta));
+                window->mouseAxis(axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL ? Input::AXIS_AXIS_HORIZONTAL : Input::AXIS_AXIS_VERTICAL, wl_fixed_to_double(delta));
             });
 
             m_waylandState.cursorShapeDev = makeShared<CCWpCursorShapeDeviceV1>(m_waylandState.cursorShapeMgr->sendGetPointer(m_waylandState.pointer->resource()));
