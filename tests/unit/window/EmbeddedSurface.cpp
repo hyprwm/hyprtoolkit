@@ -178,6 +178,18 @@ TEST_F(CEmbeddedSurfaceTest, hoverLeavesBeforeEntering) {
     EXPECT_EQ(hoverAcross(m_surface, false, false), (std::vector<std::string>{"A enter", "A leave", "B enter"}));
 }
 
+TEST_F(CEmbeddedSurfaceTest, alwaysHoverLeavesBeforeEntering) {
+    for (const auto& [firstAlways, secondAlways] : {std::pair{true, false}, std::pair{false, true}, std::pair{true, true}}) {
+        SCOPED_TRACE(::testing::Message() << "A always: " << firstAlways << ", B always: " << secondAlways);
+
+        // start every combination from a clean, unhovered surface
+        m_surface->pointerLeave();
+        m_surface->rootElement()->clearChildren();
+
+        EXPECT_EQ(hoverAcross(m_surface, firstAlways, secondAlways), (std::vector<std::string>{"A enter", "A leave", "B enter"}));
+    }
+}
+
 TEST_F(CEmbeddedSurfaceTest, windowSeesMouseButtonsWhateverIsHovered) {
     using SButton = std::pair<Input::eMouseButton, bool>;
 

@@ -152,9 +152,9 @@ void IToolkitWindow::initElementIfNeeded(SP<IElement> e) {
 void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
     m_mousePos = coords;
 
-    SP<IElement>                       el;
-    std::vector<SP<SToolkitFocusLock>> alwaysHover;
-    m_rootElement->impl->breadthfirst([this, &el, &alwaysHover, coords](SP<IElement> current) {
+    SP<IElement>              el;
+    std::vector<SP<IElement>> alwaysHover;
+    m_rootElement->impl->breadthfirst([&el, &alwaysHover, coords](SP<IElement> current) {
         if (current->acceptsMouseInput() && current->impl->position.containsPoint(coords)) {
             // check for any parent being a clip
             auto parent = current->impl->parent;
@@ -165,23 +165,33 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
                 parent = parent->impl->parent;
             }
             el = current;
-            if (current->alwaysGetMouseInput()) {
-                initElementIfNeeded(el);
-                alwaysHover.emplace_back(makeShared<SToolkitFocusLock>(el, coords - el->impl->position.pos()));
-            }
+            if (current->alwaysGetMouseInput())
+                alwaysHover.emplace_back(current);
         }
     });
 
-    m_hoveredElements = alwaysHover;
+    const bool mainChanged = el != (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{}) && !m_mouseIsDown /* Lock focus while mouse is down */;
 
-    if ((el == (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{})) || m_mouseIsDown /* Lock focus while mouse is down */) {
+    // release whatever is no longer hovered first, so all leaves come before any enters
+    if (mainChanged)
+        m_mainHoverElement.reset();
+
+    std::erase_if(m_hoveredElements, [&alwaysHover](const auto& lock) { return !std::ranges::contains(alwaysHover, lock->m_el.lock()); });
+
+    // the surviving locks keep their elements hovered, so these won't enter them again
+    std::vector<SP<SToolkitFocusLock>> hovered;
+    for (const auto& e : alwaysHover) {
+        initElementIfNeeded(e);
+        hovered.emplace_back(makeShared<SToolkitFocusLock>(e, coords - e->impl->position.pos()));
+    }
+
+    m_hoveredElements = std::move(hovered);
+
+    if (!mainChanged) {
         if (m_pointerFn)
             setCursor(m_pointerFn());
         return;
     }
-
-    // release the old hover first, so its leave comes before the new enter
-    m_mainHoverElement.reset();
 
     if (el) {
         initElementIfNeeded(el);
