@@ -152,23 +152,36 @@ void IToolkitWindow::initElementIfNeeded(SP<IElement> e) {
 void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
     m_mousePos = coords;
 
-    SP<IElement>              el;
+    SP<IElement>              el, tooltipEl;
     std::vector<SP<IElement>> alwaysHover;
-    m_rootElement->impl->breadthfirst([&el, &alwaysHover, coords](SP<IElement> current) {
-        if (current->acceptsMouseInput() && current->impl->position.containsPoint(coords)) {
-            // check for any parent being a clip
-            auto parent = current->impl->parent;
-            while (parent) {
-                if (parent->impl->clipChildren && !parent->impl->position.containsPoint(coords))
-                    return; // nope
+    m_rootElement->impl->breadthfirst([&el, &tooltipEl, &alwaysHover, coords](SP<IElement> current) {
+        const bool acceptsMouse = current->acceptsMouseInput();
 
-                parent = parent->impl->parent;
-            }
-            el = current;
-            if (current->alwaysGetMouseInput())
-                alwaysHover.emplace_back(current);
+        if ((!acceptsMouse && !current->impl->hasTooltip) || !current->impl->position.containsPoint(coords))
+            return;
+
+        // check for any parent being a clip
+        auto parent = current->impl->parent;
+        while (parent) {
+            if (parent->impl->clipChildren && !parent->impl->position.containsPoint(coords))
+                return; // nope
+
+            parent = parent->impl->parent;
         }
+
+        if (current->impl->hasTooltip)
+            tooltipEl = current;
+
+        if (!acceptsMouse)
+            return;
+
+        el = current;
+        if (current->alwaysGetMouseInput())
+            alwaysHover.emplace_back(current);
     });
+
+    if (!m_mouseIsDown)
+        updateTooltipTarget(tooltipEl);
 
     const bool mainChanged = el != (m_mainHoverElement ? m_mainHoverElement->m_el : WP<IElement>{}) && !m_mouseIsDown /* Lock focus while mouse is down */;
 
@@ -212,18 +225,32 @@ void IToolkitWindow::updateFocus(const Hyprutils::Math::Vector2D& coords) {
 
     if (m_pointerFn)
         setCursor(m_pointerFn());
+}
 
-    if (m_mainHoverElement && m_mainHoverElement->m_el && m_mainHoverElement->m_el->impl->hasTooltip && !m_tooltip.hoverTooltipTimer) {
-        m_tooltip.hoverTooltipTimer = g_backend->addTimer(
-            std::chrono::milliseconds(1000),
-            [this, self = m_self](ASP<CTimer> s, void*) {
-                if (!self || !m_mainHoverElement || !m_mainHoverElement->m_el || !m_mainHoverElement->m_el->impl->hasTooltip)
-                    return;
-                openTooltip(m_mainHoverElement->m_el->impl->tooltip, m_mousePos);
-            },
-            nullptr);
-    } else
-        m_tooltip.hoverTooltipTimer.reset();
+void IToolkitWindow::updateTooltipTarget(SP<IElement> el) {
+    if (el == m_tooltip.hoverElement)
+        return;
+
+    m_tooltip.hoverElement = el;
+
+    // the backend holds its own ref, so the old timer has to be stopped explicitly
+    if (m_tooltip.hoverTooltipTimer)
+        m_tooltip.hoverTooltipTimer->cancel();
+
+    m_tooltip.hoverTooltipTimer.reset();
+
+    if (!el)
+        return;
+
+    m_tooltip.hoverTooltipTimer = g_backend->addTimer(
+        std::chrono::milliseconds(1000),
+        [this, self = m_self](ASP<CTimer> s, void*) {
+            if (!self || !m_tooltip.hoverElement || !m_tooltip.hoverElement->impl->hasTooltip)
+                return;
+
+            openTooltip(m_tooltip.hoverElement->impl->tooltip, m_mousePos);
+        },
+        nullptr);
 }
 
 void IToolkitWindow::mouseEnter(const Hyprutils::Math::Vector2D& local) {
@@ -302,6 +329,7 @@ void IToolkitWindow::mouseAxis(const Input::eAxisAxis axis, float delta) {
 void IToolkitWindow::mouseLeave() {
     m_mainHoverElement.reset();
     m_hoveredElements.clear();
+    updateTooltipTarget(nullptr);
 }
 
 void IToolkitWindow::keyboardKey(const Input::SKeyboardKeyEvent& ev) {
